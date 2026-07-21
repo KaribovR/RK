@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RK // LAB v2 — Бэктест плейбуков</title>
+<style>
+:root{
+  --bg:#0a0c0f; --bg2:#11151a; --bg3:#161b22; --bd:#222b36; --bd2:#2e3a48;
+  --t1:#e6edf3; --t2:#8b98a8; --t3:#5c6875;
+  --amb:#ffb020; --amb-dim:rgba(255,176,32,.12);
+  --up:#26d07c; --dn:#ff4d5e; --vio:#a78bfa; --blu:#4aa8ff;
+  --fm:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --fs:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--t1);font-family:var(--fs);font-size:13px;line-height:1.5}
+a{color:var(--blu)}
+.wrap{max-width:1440px;margin:0 auto;padding:18px 16px 60px}
+.hdr{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--bd);padding-bottom:12px;margin-bottom:18px}
+.logo{font-family:var(--fm);font-size:15px;font-weight:700;letter-spacing:.5px;color:var(--amb)}
+.logo span{color:var(--t3)}
+.tag{font-family:var(--fm);font-size:11px;color:var(--t2)}
+.warnbar{margin-left:auto;font-family:var(--fm);font-size:10px;color:var(--t3);border:1px solid var(--bd);border-radius:4px;padding:3px 8px}
+.panel{background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:14px 16px;margin-bottom:14px}
+.panel-t{font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:1px;color:var(--t3);text-transform:uppercase;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld label{font-family:var(--fm);font-size:10px;color:var(--t2);letter-spacing:.3px}
+.fld input,.fld select{background:var(--bg3);border:1px solid var(--bd2);color:var(--t1);border-radius:5px;padding:6px 8px;font-family:var(--fm);font-size:12px}
+.fld input:focus,.fld select:focus{outline:2px solid var(--amb);border-color:var(--amb)}
+.hint{font-family:var(--fm);font-size:9px;color:var(--t3)}
+.chk{display:flex;align-items:center;gap:7px;font-family:var(--fm);font-size:11px;color:var(--t2);cursor:pointer;padding:4px 0}
+.chk input{width:14px;height:14px;accent-color:var(--amb);cursor:pointer}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+button{font-family:var(--fm);font-size:12px;font-weight:700;letter-spacing:.4px;border-radius:6px;padding:9px 18px;cursor:pointer;border:1px solid var(--bd2);background:var(--bg3);color:var(--t1);transition:.15s}
+button:hover:not(:disabled){border-color:var(--amb);color:var(--amb)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible{outline:2px solid var(--amb);outline-offset:2px}
+.btn-run{background:var(--amb-dim);border-color:var(--amb);color:var(--amb)}
+.prog{height:3px;background:var(--bd);border-radius:2px;overflow:hidden;margin-top:12px}
+.prog i{display:block;height:100%;width:0;background:var(--amb);transition:width .2s}
+.status{font-family:var(--fm);font-size:11px;color:var(--t2);margin-top:8px;min-height:16px}
+.status b{color:var(--amb);font-weight:700}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:10px;margin-bottom:14px}
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:12px 14px}
+.card .k{font-family:var(--fm);font-size:9px;letter-spacing:.8px;color:var(--t3);text-transform:uppercase}
+.card .v{font-family:var(--fm);font-size:21px;font-weight:700;margin-top:5px;letter-spacing:-.5px}
+.card .s{font-family:var(--fm);font-size:10px;color:var(--t3);margin-top:2px}
+.tw{overflow-x:auto;border:1px solid var(--bd);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-family:var(--fm);font-size:11px;min-width:640px}
+th{background:var(--bg3);color:var(--t3);font-size:9px;letter-spacing:.7px;text-transform:uppercase;text-align:right;padding:8px 10px;font-weight:700;border-bottom:1px solid var(--bd);white-space:nowrap}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--amb)}
+th.sorted{color:var(--amb)}
+th:first-child,td:first-child{text-align:left}
+td{padding:7px 10px;text-align:right;border-bottom:1px solid rgba(34,43,54,.5);white-space:nowrap}
+tbody tr:hover{background:rgba(255,176,32,.04)}
+.up{color:var(--up)}.dn{color:var(--dn)}.mut{color:var(--t3)}.amb{color:var(--amb)}
+.sym{cursor:pointer;border-bottom:1px dotted var(--bd2)}
+.sym:hover{color:var(--amb);border-bottom-color:var(--amb)}
+.tier{display:inline-block;font-size:9px;font-weight:700;border-radius:3px;padding:1px 5px}
+.tA{background:rgba(38,208,124,.14);color:var(--up);border:1px solid rgba(38,208,124,.4)}
+.tB{background:rgba(74,168,255,.12);color:var(--blu);border:1px solid rgba(74,168,255,.35)}
+.tC{background:rgba(255,176,32,.12);color:var(--amb);border:1px solid rgba(255,176,32,.4)}
+.sig{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:900px){.sig{grid-template-columns:1fr 1fr}}
+.viz{background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:14px 16px}
+.viz-t{font-family:var(--fm);font-size:10px;letter-spacing:1px;color:var(--t3);text-transform:uppercase;margin-bottom:4px}
+.viz-s{font-family:var(--fm);font-size:10px;color:var(--t3);margin-bottom:10px}
+svg{display:block;width:100%;height:auto}
+.empty{font-family:var(--fm);font-size:11px;color:var(--t3);padding:26px 0;text-align:center}
+.err{border-color:rgba(255,77,94,.5);background:rgba(255,77,94,.06)}
+.err .panel-t{color:var(--dn)}
+.note{font-family:var(--fm);font-size:10px;color:var(--t3);line-height:1.7;margin-top:10px}
+.srch{background:var(--bg3);border:1px solid var(--bd2);color:var(--t1);border-radius:5px;padding:6px 10px;font-family:var(--fm);font-size:11px;width:190px}
+.srch:focus{outline:2px solid var(--amb);border-color:var(--amb)}
+.thead-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--amb);color:#0a0c0f;font-family:var(--fm);font-size:11px;font-weight:700;padding:8px 16px;border-radius:6px;opacity:0;pointer-events:none;transition:.2s}
+.toast.on{opacity:1}
+.oos{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:760px){.oos{grid-template-columns:1fr 1fr}}
+.oosbox{border:1px solid var(--bd);border-radius:8px;padding:12px 14px;background:var(--bg2)}
+.oosbox.fail{border-color:rgba(255,77,94,.45)}
+.oosbox.pass{border-color:rgba(38,208,124,.45)}
+.oos-h{font-family:var(--fm);font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--t3);margin-bottom:8px}
+.cfgline{font-family:var(--fm);font-size:10px;color:var(--t3);margin-bottom:12px;line-height:1.8}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <div class="logo">RK <span>//</span> LAB <span>v2</span></div>
+  <div class="tag">бэктест плейбуков · глубокая история · проверка вне выборки</div>
+  <div class="warnbar">стенд, а не боевой сканер — сделок не открывает</div>
+</div>
+
+<div class="panel">
+  <div class="panel-t">Данные</div>
+  <div class="grid">
+    <div class="fld">
+      <label>Монет в тесте</label>
+      <input type="number" id="cfgTop" value="40" min="5" max="140" step="5">
+      <span class="hint">по обороту за 24ч</span>
+    </div>
+    <div class="fld">
+      <label>Мин. оборот, млн $</label>
+      <input type="number" id="cfgMinVol" value="50" min="1" step="10">
+    </div>
+    <div class="fld">
+      <label>Глубина, дней</label>
+      <input type="number" id="cfgDays" value="30" min="7" max="90" step="5">
+      <span class="hint">качается постранично</span>
+    </div>
+    <div class="fld">
+      <label>Таймфрейм входа</label>
+      <select id="cfgBase">
+        <option value="15m">15m (контекст 1H)</option>
+        <option value="1h">1H (контекст 4H)</option>
+      </select>
+      <span class="hint">1H сильно снижает долю издержек</span>
+    </div>
+  </div>
+
+  <div class="panel-t" style="margin-top:18px">Правила сделки</div>
+  <div class="grid">
+    <div class="fld"><label>Цель, в R</label><input type="number" id="cfgRR" value="2" min="0.5" max="6" step="0.5"></div>
+    <div class="fld"><label>Тайм-стоп, часов</label><input type="number" id="cfgTimeH" value="8" min="2" max="72" step="1"></div>
+    <div class="fld"><label>Пауза после сделки, баров</label><input type="number" id="cfgCool" value="4" min="0" max="48" step="1"></div>
+    <div class="fld"><label>Проскальзывание, %</label><input type="number" id="cfgSlip" value="0.05" min="0" max="1" step="0.01"></div>
+    <div class="fld"><label>Комиссия, % за сторону</label><input type="number" id="cfgFee" value="0.05" min="0" max="0.5" step="0.01"></div>
+    <div class="fld">
+      <label>Направления</label>
+      <select id="cfgSide">
+        <option value="both">Лонг и шорт</option>
+        <option value="long">Только лонг</option>
+        <option value="short">Только шорт</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="panel-t" style="margin-top:18px">Пол по издержкам <span style="color:var(--amb)">— главное лекарство из прошлого прогона</span></div>
+  <div class="grid">
+    <div class="fld">
+      <label>Мин. ширина стопа, %</label>
+      <input type="number" id="cfgMinStop" value="1.0" min="0" max="5" step="0.1">
+      <span class="hint">узкий стоп съедается комиссией</span>
+    </div>
+    <div class="fld">
+      <label>Мин. ATR, %</label>
+      <input type="number" id="cfgMinAtr" value="0.5" min="0" max="5" step="0.1">
+      <span class="hint">тихие монеты убыточны</span>
+    </div>
+    <div class="fld">
+      <label>Макс. издержки, % от R</label>
+      <input type="number" id="cfgMaxCost" value="15" min="1" max="60" step="1">
+      <span class="hint">сетап отклоняется, если дороже</span>
+    </div>
+  </div>
+
+  <div class="panel-t" style="margin-top:18px">Плейбуки и допуски</div>
+  <div class="grid">
+    <label class="chk"><input type="checkbox" id="pb1" checked> PB1 · Откат в тренде</label>
+    <label class="chk"><input type="checkbox" id="pb2" checked> PB2 · Пробой сжатия</label>
+    <label class="chk"><input type="checkbox" id="cfgConf4h" checked> Старший ТФ влияет на тир</label>
+    <label class="chk"><input type="checkbox" id="cfgRange"> Пускать диапазон (тир C)</label>
+    <label class="chk"><input type="checkbox" id="cfgParabola"> Пускать параболу (тир C)</label>
+  </div>
+  <div class="note">
+    Диапазон и парабола выключены по итогам прошлого прогона: RANGE дал −0.329R на 448 сделках,
+    а PARABOLIC был «в плюсе» всего на 7 сделках — это шум, а не преимущество. Включай, если хочешь перепроверить.
+  </div>
+
+  <div class="row">
+    <button class="btn-run" id="btnRun">▶ Запустить бэктест</button>
+    <button id="btnStop" disabled>■ Стоп</button>
+    <button id="btnCsv" disabled>↓ Сделки в CSV</button>
+  </div>
+  <div class="prog"><i id="progBar"></i></div>
+  <div class="status" id="status">Готов. Данные берутся с Binance Futures, ничего никуда не отправляется.</div>
+</div>
+
+<div id="errBox"></div>
+<div id="results"></div>
+</div>
+<div class="toast" id="toast">скопировано</div>
+
+<script>
+"use strict";
+/* ==========================================================================
+   RK LAB v2 — стенд бэктеста плейбуков
+
+   Правила проектирования (не нарушать):
+   1. Индикаторы считаются ОДИН РАЗ по всей серии, дальше только индексируются.
+   2. Первые warmup баров отбрасываются (прогрев EMA200 и сходимость RMA).
+   3. Только ЗАКРЫТЫЕ свечи; формирующийся бар отбрасывается при загрузке.
+   4. Старший ТФ выравнивается ПО ВРЕМЕНИ ЗАКРЫТИЯ (без заглядывания вперёд).
+   5. Стоп и цель в одной свече → считаем СТОП.
+   6. Плейбук — чистая функция (данные до бара i) → сигнал | null.
+
+   Новое в v2:
+   - постраничная загрузка истории (не 1500 свечей, а произвольная глубина);
+   - пол по издержкам: минимальная ширина стопа, минимальный ATR%,
+     потолок доли комиссий в R — лечит главную причину убытка v1;
+   - выбор базового ТФ (15m или 1H) — проверка гипотезы про издержки;
+   - PB2 «Пробой сжатия»;
+   - разделение выборки: настроечная часть / проверочная (защита от подгонки);
+   - исправлены подписи гистограммы распределения R (в v1 были сдвинуты).
+   ========================================================================== */
+
+const BASE = "https://fapi.binance.com";
+const MS = { "15m": 900000, "1h": 3600000, "4h": 14400000, "1d": 86400000 };
+
+let STOP = false, TRADES = [], LAST = null;
+
+const $ = id => document.getElementById(id);
+const num = id => parseFloat($(id).value);
+const setStatus = h => { $("status").innerHTML = h; };
+const setProg = p => { $("progBar").style.width = Math.max(0, Math.min(100, p)) + "%"; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const fmt = (v, d = 2) => (v === null || v === undefined || isNaN(v)) ? "—" : Number(v).toFixed(d);
+const clearError = () => { $("errBox").innerHTML = ""; };
+function showError(t, m) {
+  $("errBox").innerHTML = `<div class="panel err"><div class="panel-t">${t}</div>
+    <div style="font-family:var(--fm);font-size:11px;color:var(--t2);line-height:1.7">${m}</div></div>`;
+}
+function toast(msg) {
+  const el = $("toast"); el.textContent = msg; el.classList.add("on");
+  setTimeout(() => el.classList.remove("on"), 1100);
+}
+
+/* ---------- запросы с учётом веса ---------- */
+const API = { used: 0, resetAt: Date.now() + 60000, limit: 1700 };
+async function apiGet(url, weight) {
+  for (let a = 0; a < 4; a++) {
+    if (Date.now() > API.resetAt) { API.used = 0; API.resetAt = Date.now() + 60000; }
+    if (API.used + weight > API.limit) {
+      const w = API.resetAt - Date.now() + 250;
+      setStatus(`Пауза по лимиту Binance: <b>${Math.ceil(w / 1000)}с</b>`);
+      await sleep(Math.max(500, w)); API.used = 0; API.resetAt = Date.now() + 60000;
+    }
+    API.used += weight;
+    try {
+      const r = await fetch(url);
+      if (r.status === 429 || r.status === 418) { await sleep(2000 * (a + 1)); continue; }
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } catch (e) { if (a === 3) throw e; await sleep(700 * (a + 1)); }
+  }
+  throw new Error("нет ответа: " + url);
+}
+const klineWeight = lim => lim > 1000 ? 10 : lim > 500 ? 5 : 2;
+
+/* Постраничная загрузка вглубь истории: идём от текущего момента назад,
+   каждый следующий запрос заканчивается там, где начался предыдущий. */
+async function fetchKlines(sym, interval, needBars) {
+  let out = [], endTime = null, guard = 0;
+  while (out.length < needBars && guard++ < 12) {
+    const lim = Math.min(1500, needBars - out.length);
+    let url = `${BASE}/fapi/v1/klines?symbol=${sym}&interval=${interval}&limit=${lim}`;
+    if (endTime) url += `&endTime=${endTime}`;
+    const batch = await apiGet(url, klineWeight(lim));
+    if (!batch || !batch.length) break;
+    out = batch.concat(out);
+    endTime = batch[0][0] - 1;
+    if (batch.length < lim) break;
+  }
+  const seen = new Set(), uniq = [];
+  for (const k of out) { if (!seen.has(k[0])) { seen.add(k[0]); uniq.push(k); } }
+  uniq.sort((a, b) => a[0] - b[0]);
+  return uniq;
+}
+
+/* ==========================================================================
+   ИНДИКАТОРЫ — массивы, выровненные по индексу свечи. Формулы совпадают
+   с боевым сканером, чтобы результаты переносились один в один.
+   ========================================================================== */
+function emaArr(a, p) {
+  const out = new Array(a.length).fill(null);
+  if (a.length < p) return out;
+  let s = 0; for (let i = 0; i < p; i++) s += a[i];
+  let v = s / p; out[p - 1] = v; const k = 2 / (p + 1);
+  for (let i = p; i < a.length; i++) { v = a[i] * k + v * (1 - k); out[i] = v; }
+  return out;
+}
+function rsiArr(c, p = 14) {
+  if (c.length < p + 1) return new Array(c.length).fill(50);
+  const r = new Array(p).fill(50);
+  let g = 0, l = 0;
+  for (let i = 1; i <= p; i++) { const d = c[i] - c[i - 1]; d > 0 ? g += d : l -= d; }
+  let ag = g / p, al = l / p;
+  r.push(al === 0 ? 100 : 100 - 100 / (1 + ag / al));
+  for (let i = p + 1; i < c.length; i++) {
+    const d = c[i] - c[i - 1];
+    ag = (ag * (p - 1) + Math.max(0, d)) / p;
+    al = (al * (p - 1) + Math.max(0, -d)) / p;
+    r.push(al === 0 ? 100 : 100 - 100 / (1 + ag / al));
+  }
+  return r;
+}
+function atrArr(h, l, c, p = 14) {
+  const out = new Array(c.length).fill(null);
+  if (c.length < p + 1) return out;
+  const tr = [0];
+  for (let i = 1; i < c.length; i++) tr.push(Math.max(h[i] - l[i], Math.abs(h[i] - c[i - 1]), Math.abs(l[i] - c[i - 1])));
+  let s = 0; for (let i = 1; i <= p; i++) s += tr[i];
+  let v = s / p; out[p] = v;
+  for (let i = p + 1; i < c.length; i++) { v = (v * (p - 1) + tr[i]) / p; out[i] = v; }
+  return out;
+}
+function adxArr(h, l, c, p = 14) {
+  const n = c.length, adx = new Array(n).fill(null), pdi = new Array(n).fill(null), ndi = new Array(n).fill(null);
+  if (n < p * 2 + 2) return { adx, pdi, ndi };
+  const tr = [0], pm = [0], nm = [0];
+  for (let i = 1; i < n; i++) {
+    tr.push(Math.max(h[i] - l[i], Math.abs(h[i] - c[i - 1]), Math.abs(l[i] - c[i - 1])));
+    const u = h[i] - h[i - 1], d = l[i - 1] - l[i];
+    pm.push(u > d && u > 0 ? u : 0); nm.push(d > u && d > 0 ? d : 0);
+  }
+  let str = 0, sp = 0, sn = 0;
+  for (let i = 1; i <= p; i++) { str += tr[i]; sp += pm[i]; sn += nm[i]; }
+  const dxs = [];
+  const push = i => {
+    const P = str === 0 ? 0 : 100 * sp / str, N = str === 0 ? 0 : 100 * sn / str;
+    pdi[i] = P; ndi[i] = N; const s = P + N;
+    dxs.push({ i, dx: s === 0 ? 0 : 100 * Math.abs(P - N) / s });
+  };
+  push(p);
+  for (let i = p + 1; i < n; i++) { str = str - str / p + tr[i]; sp = sp - sp / p + pm[i]; sn = sn - sn / p + nm[i]; push(i); }
+  if (dxs.length < p) return { adx, pdi, ndi };
+  let a = 0; for (let k = 0; k < p; k++) a += dxs[k].dx;
+  a /= p; adx[dxs[p - 1].i] = a;
+  for (let k = p; k < dxs.length; k++) { a = (a * (p - 1) + dxs[k].dx) / p; adx[dxs[k].i] = a; }
+  return { adx, pdi, ndi };
+}
+function stochRsiArr(c, rp = 14, sp = 14, kp = 3, dp = 3) {
+  const n = c.length, K = new Array(n).fill(null), D = new Array(n).fill(null);
+  const ra = rsiArr(c, rp), raw = new Array(n).fill(null);
+  for (let i = sp - 1; i < n; i++) {
+    let lo = Infinity, hi = -Infinity;
+    for (let j = i - sp + 1; j <= i; j++) { if (ra[j] < lo) lo = ra[j]; if (ra[j] > hi) hi = ra[j]; }
+    raw[i] = hi === lo ? 50 : ((ra[i] - lo) / (hi - lo)) * 100;
+  }
+  for (let i = 0; i < n; i++) {
+    if (i < sp - 2 + kp) continue;
+    let s = 0, ok = true;
+    for (let j = i - kp + 1; j <= i; j++) { if (raw[j] === null) { ok = false; break; } s += raw[j]; }
+    if (ok) K[i] = s / kp;
+  }
+  for (let i = 0; i < n; i++) {
+    let s = 0, ok = true;
+    for (let j = i - dp + 1; j <= i; j++) { if (j < 0 || K[j] === null) { ok = false; break; } s += K[j]; }
+    if (ok) D[i] = s / dp;
+  }
+  return { k: K, d: D };
+}
+function smaArr(a, p) {
+  const out = new Array(a.length).fill(null); let s = 0;
+  for (let i = 0; i < a.length; i++) { s += a[i]; if (i >= p) s -= a[i - p]; if (i >= p - 1) out[i] = s / p; }
+  return out;
+}
+/* скользящий минимум/максимум — для сжатия и границ диапазона */
+function rollMin(a, p) {
+  const out = new Array(a.length).fill(null);
+  for (let i = p - 1; i < a.length; i++) { let m = Infinity; for (let j = i - p + 1; j <= i; j++) if (a[j] < m) m = a[j]; out[i] = m; }
+  return out;
+}
+function rollMax(a, p) {
+  const out = new Array(a.length).fill(null);
+  for (let i = p - 1; i < a.length; i++) { let m = -Infinity; for (let j = i - p + 1; j <= i; j++) if (a[j] > m) m = a[j]; out[i] = m; }
+  return out;
+}
+
+/* ==========================================================================
+   ДАННЫЕ
+   ========================================================================== */
+const toSeries = raw => ({
+  t: raw.map(k => +k[0]), o: raw.map(k => +k[1]), h: raw.map(k => +k[2]),
+  l: raw.map(k => +k[3]), c: raw.map(k => +k[4]), v: raw.map(k => +k[5])
+});
+
+function aggregate(src, ms) {
+  const t = [], o = [], h = [], l = [], c = [], v = []; let cur = null;
+  for (let i = 0; i < src.t.length; i++) {
+    const key = Math.floor(src.t[i] / ms) * ms;
+    if (key !== cur) { cur = key; t.push(key); o.push(src.o[i]); h.push(src.h[i]); l.push(src.l[i]); c.push(src.c[i]); v.push(src.v[i]); }
+    else { const j = t.length - 1; if (src.h[i] > h[j]) h[j] = src.h[i]; if (src.l[i] < l[j]) l[j] = src.l[i]; c[j] = src.c[i]; v[j] += src.v[i]; }
+  }
+  return { t, o, h, l, c, v };
+}
+
+/* Индекс последнего ЗАКРЫТОГО бара старшего ТФ для каждого бара базового ТФ. */
+function alignIndex(tBase, msBase, tHi, msHi) {
+  const out = new Array(tBase.length).fill(-1); let j = -1;
+  for (let i = 0; i < tBase.length; i++) {
+    const close = tBase[i] + msBase;
+    while (j + 1 < tHi.length && tHi[j + 1] + msHi <= close) j++;
+    out[i] = j;
+  }
+  return out;
+}
+
+/* ==========================================================================
+   РЕЖИМ РЫНКА
+   ========================================================================== */
+function classifyRegime(x, i) {
+  const p = x.c[i], atr = x.atr[i];
+  if (!atr || x.ema50[i] === null) return "DEAD";
+  const ext = Math.abs(p - x.ema50[i]) / atr;
+  const back = i >= x.bars24 ? x.c[i - x.bars24] : null;
+  const chg = back ? Math.abs(p / back - 1) : 0;
+  const atrPct = atr / p;
+  if (ext > 4 || chg > 0.40) return "PARABOLIC";
+  if (atrPct < 0.0015) return "DEAD";
+  const j = x.iCtx[i];
+  if (j < 0) return "DEAD";
+  const adx = x.ctxAdx[j], e50 = x.ctxE50[j], e200 = x.ctxE200[j];
+  if (adx === null || e50 === null || e200 === null) return "DEAD";
+  if (adx < 15 && atrPct < 0.0025) return "DEAD";
+  const up = e50 > e200, dn = e50 < e200;
+  if (adx >= 20 && ((up && p > e50) || (dn && p < e50))) return "TREND";
+  return "RANGE";
+}
+
+/* Общая проверка «стоит ли игра свеч»: издержки против ширины стопа.
+   Именно её отсутствие убило v1 — комиссии съедали до 40% каждого R. */
+function costCheck(entry, dist, cfg) {
+  const stopPct = dist / entry * 100;
+  if (stopPct < cfg.minStopPct) return null;
+  const costR = (2 * (cfg.fee + cfg.slip) / 100) * entry / dist;
+  if (costR * 100 > cfg.maxCostPct) return null;
+  return { stopPct, costR };
+}
+
+/* Модификатор тира по старшему ТФ (4H при базе 15m, 1D при базе 1H). */
+function confirmTier(x, i, dir, cfg, tier) {
+  if (!cfg.useConf) return tier;
+  const j = x.iConf[i];
+  if (j < 0) return tier;
+  const e50 = x.confE50[j], e200 = x.confE200[j];
+  if (e50 === null || e200 === null) return tier;
+  const agree = dir === "LONG" ? e50 > e200 : e50 < e200;
+  if (agree) return tier;
+  return "C";                       // старший ТФ против — потолок C
+}
+
+/* ==========================================================================
+   PB1 — ОТКАТ В ТРЕНДЕ
+   ========================================================================== */
+function pb1(x, i, cfg, regime) {
+  if (regime === "DEAD") return null;
+  if (regime === "PARABOLIC" && !cfg.allowParabola) return null;
+  if (regime === "RANGE" && !cfg.allowRange) return null;
+  const j = x.iCtx[i]; if (j < 0) return null;
+  const adx = x.ctxAdx[j], e50c = x.ctxE50[j], e200c = x.ctxE200[j];
+  if (adx === null || e50c === null || e200c === null) return null;
+  if (x.ema21[i] === null || x.ema50[i] === null || x.atr[i] === null || x.volSma[i] === null) return null;
+  if (x.stochK[i] === null || x.stochK[i - 1] === null) return null;
+
+  const p = x.c[i], atr = x.atr[i];
+  if (atr / p * 100 < cfg.minAtrPct) return null;
+
+  const up = e50c > e200c, dn = e50c < e200c;
+  const LOOK = 8, SL_LOOK = 6;
+  let dir = null;
+
+  if (up && cfg.side !== "short") {
+    let disch = false;
+    for (let k = Math.max(0, i - LOOK); k <= i; k++)
+      if ((x.stochK[k] !== null && x.stochK[k] < 30) || x.rsi[k] < 45) { disch = true; break; }
+    if (disch && p > x.ema21[i] && x.c[i - 1] <= x.ema21[i - 1] && p > x.ema50[i] * 0.995) dir = "LONG";
+  }
+  if (!dir && dn && cfg.side !== "long") {
+    let disch = false;
+    for (let k = Math.max(0, i - LOOK); k <= i; k++)
+      if ((x.stochK[k] !== null && x.stochK[k] > 70) || x.rsi[k] > 55) { disch = true; break; }
+    if (disch && p < x.ema21[i] && x.c[i - 1] >= x.ema21[i - 1] && p < x.ema50[i] * 1.005) dir = "SHORT";
+  }
+  if (!dir) return null;
+
+  const volRatio = x.volSma[i] > 0 ? x.v[i] / x.volSma[i] : 0;
+  if (volRatio < 0.7) return null;
+
+  let sl;
+  if (dir === "LONG") { let lo = Infinity; for (let k = Math.max(0, i - SL_LOOK); k <= i; k++) if (x.l[k] < lo) lo = x.l[k]; sl = lo - atr * 0.15; }
+  else { let hi = -Infinity; for (let k = Math.max(0, i - SL_LOOK); k <= i; k++) if (x.h[k] > hi) hi = x.h[k]; sl = hi + atr * 0.15; }
+
+  let dist = Math.abs(p - sl);
+  const minD = atr * 0.8, maxD = Math.min(atr * 3.0, p * 0.08);
+  if (dist < minD) { dist = minD; sl = dir === "LONG" ? p - dist : p + dist; }
+  if (dist > maxD) return null;
+
+  const cc = costCheck(p, dist, cfg); if (!cc) return null;
+
+  let tier;
+  if (regime === "TREND" && adx >= 25 && volRatio >= 1.0 && dist <= atr * 2.0) tier = "A";
+  else if (regime === "TREND") tier = "B";
+  else tier = "C";
+  tier = confirmTier(x, i, dir, cfg, tier);
+
+  return {
+    playbook: "PB1", dir, entry: p, sl, dist, tier, regime,
+    tp: dir === "LONG" ? p + dist * cfg.rr : p - dist * cfg.rr,
+    meta: { adx, volRatio, rsi: x.rsi[i], atrPct: atr / p * 100, stopPct: cc.stopPct, costR: cc.costR }
+  };
+}
+
+/* ==========================================================================
+   PB2 — ПРОБОЙ СЖАТИЯ
+   Сжатие волатильности → пробой границы накопления на расширении объёма.
+   Событие здесь настоящее: цена ВЫШЛА за диапазон, которого держалась.
+   ========================================================================== */
+function pb2(x, i, cfg, regime) {
+  if (regime === "DEAD") return null;
+  if (regime === "PARABOLIC" && !cfg.allowParabola) return null;
+  if (x.atr[i] === null || x.volSma[i] === null || x.atrSmaLong[i] === null) return null;
+  if (x.hiRange[i - 1] === null || x.loRange[i - 1] === null) return null;
+
+  const p = x.c[i], atr = x.atr[i];
+  if (atr / p * 100 < cfg.minAtrPct) return null;
+
+  // 1) сжатие: текущая волатильность заметно ниже своей же средней за длинное окно
+  const squeeze = atr < x.atrSmaLong[i] * 0.85;
+  if (!squeeze) return null;
+
+  // 2) диапазон, из которого выходим (границы берём ДО текущего бара)
+  const hi = x.hiRange[i - 1], lo = x.loRange[i - 1];
+  const width = hi - lo;
+  if (width <= 0 || width / p > 0.12) return null;      // слишком широкий «диапазон» — это уже тренд
+
+  // 3) событие пробоя на расширении объёма
+  const volRatio = x.volSma[i] > 0 ? x.v[i] / x.volSma[i] : 0;
+  if (volRatio < 1.2) return null;
+
+  let dir = null;
+  if (p > hi && x.c[i - 1] <= hi && cfg.side !== "short") dir = "LONG";
+  else if (p < lo && x.c[i - 1] >= lo && cfg.side !== "long") dir = "SHORT";
+  if (!dir) return null;
+
+  // стоп — за середину диапазона (структурный уровень пробоя)
+  const mid = (hi + lo) / 2;
+  let sl = dir === "LONG" ? Math.min(mid, p - atr * 0.8) : Math.max(mid, p + atr * 0.8);
+  let dist = Math.abs(p - sl);
+  const maxD = Math.min(atr * 3.5, p * 0.08);
+  if (dist > maxD) return null;
+
+  const cc = costCheck(p, dist, cfg); if (!cc) return null;
+
+  const j = x.iCtx[i];
+  const adx = j >= 0 ? x.ctxAdx[j] : null;
+  let tier;
+  if (regime === "TREND" && volRatio >= 1.8) tier = "A";
+  else if (regime === "TREND" || volRatio >= 1.8) tier = "B";
+  else tier = "C";
+  tier = confirmTier(x, i, dir, cfg, tier);
+
+  return {
+    playbook: "PB2", dir, entry: p, sl, dist, tier, regime,
+    tp: dir === "LONG" ? p + dist * cfg.rr : p - dist * cfg.rr,
+    meta: { adx: adx || 0, volRatio, rsi: x.rsi[i], atrPct: atr / p * 100, stopPct: cc.stopPct, costR: cc.costR }
+  };
+}
+
+/* ==========================================================================
+   ДВИЖОК ПО ОДНОЙ МОНЕТЕ
+   ========================================================================== */
+function buildCtx(sym, base, ctx, conf, cfg) {
+  const msBase = MS[cfg.baseTF];
+  const x = {
+    sym, t: base.t, o: base.o, h: base.h, l: base.l, c: base.c, v: base.v,
+    ema21: emaArr(base.c, 21), ema50: emaArr(base.c, 50),
+    atr: atrArr(base.h, base.l, base.c, 14),
+    rsi: rsiArr(base.c, 14),
+    stochK: stochRsiArr(base.c).k,
+    volSma: smaArr(base.v, 20),
+    hiRange: rollMax(base.h, 20), loRange: rollMin(base.l, 20),
+    iCtx: alignIndex(base.t, msBase, ctx.t, MS[cfg.ctxTF]),
+    iConf: alignIndex(base.t, msBase, conf.t, MS[cfg.confTF]),
+    ctxAdx: adxArr(ctx.h, ctx.l, ctx.c, 14).adx,
+    ctxE50: emaArr(ctx.c, 50), ctxE200: emaArr(ctx.c, 200),
+    confE50: emaArr(conf.c, 50), confE200: emaArr(conf.c, 200),
+    bars24: Math.round(MS["1d"] / msBase)
+  };
+  x.atrSmaLong = smaArr(x.atr.map(v => v === null ? 0 : v), 96);
+  return x;
+}
+
+function backtestSymbol(sym, base, ctx, conf, cfg) {
+  const n = base.c.length;
+  if (n < cfg.warm + 60) return [];
+  const x = buildCtx(sym, base, ctx, conf, cfg);
+  const trades = [];
+  const slip = cfg.slip / 100, fee = cfg.fee / 100;
+  let blocked = -1;
+
+  for (let i = cfg.warm; i < n - 1; i++) {
+    if (i < blocked) continue;
+    const regime = classifyRegime(x, i);
+    let sig = null;
+    if (cfg.pb1) sig = pb1(x, i, cfg, regime);
+    if (!sig && cfg.pb2) sig = pb2(x, i, cfg, regime);
+    if (!sig) continue;
+
+    const entry = sig.dir === "LONG" ? sig.entry * (1 + slip) : sig.entry * (1 - slip);
+    const risk = Math.abs(entry - sig.sl);
+    if (risk <= 0) continue;
+
+    let exit = null, bar = null, reason = null, mae = 0;
+    for (let j = i + 1; j < n; j++) {
+      const hi = x.h[j], lo = x.l[j];
+      const adv = sig.dir === "LONG" ? (entry - lo) / risk : (hi - entry) / risk;
+      if (adv > mae) mae = adv;
+      if (sig.dir === "LONG") {
+        if (lo <= sig.sl) { exit = sig.sl * (1 - slip); reason = "SL"; bar = j; break; }
+        if (hi >= sig.tp) { exit = sig.tp * (1 - slip); reason = "TP"; bar = j; break; }
+      } else {
+        if (hi >= sig.sl) { exit = sig.sl * (1 + slip); reason = "SL"; bar = j; break; }
+        if (lo <= sig.tp) { exit = sig.tp * (1 + slip); reason = "TP"; bar = j; break; }
+      }
+      if (j - i >= cfg.timeStop) { exit = x.c[j]; reason = "TIME"; bar = j; break; }
+    }
+    if (exit === null) continue;
+
+    const gross = sig.dir === "LONG" ? (exit - entry) : (entry - exit);
+    const feeCost = (entry + exit) * fee;
+    const R = (gross - feeCost) / risk;
+
+    trades.push({
+      sym, playbook: sig.playbook, dir: sig.dir, tier: sig.tier, regime: sig.regime,
+      tEntry: x.t[i], tExit: x.t[bar], entry, sl: sig.sl, tp: sig.tp, exit, reason,
+      bars: bar - i, R, mae,
+      adx: sig.meta.adx, volRatio: sig.meta.volRatio, rsi: sig.meta.rsi,
+      atrPct: sig.meta.atrPct, stopPct: sig.meta.stopPct, costR: sig.meta.costR
+    });
+    blocked = bar + cfg.cool;
+    i = bar;
+  }
+  return trades;
+}
+
+/* ==========================================================================
+   МЕТРИКИ
+   ========================================================================== */
+function metrics(l) {
+  const n = l.length;
+  if (!n) return { n: 0, wr: null, avgR: null, sumR: 0, pf: null, maxDD: null, avgMae: null, medBars: null, avgCost: null };
+  let w = 0, s = 0, gp = 0, gl = 0, mae = 0, cost = 0;
+  for (const t of l) {
+    if (t.R > 0) { w++; gp += t.R; } else gl += -t.R;
+    s += t.R; mae += t.mae; cost += (t.costR || 0);
+  }
+  const bars = l.map(t => t.bars).sort((a, b) => a - b);
+  const srt = [...l].sort((a, b) => a.tEntry - b.tEntry);
+  let eq = 0, pk = 0, dd = 0;
+  for (const t of srt) { eq += t.R; if (eq > pk) pk = eq; if (pk - eq > dd) dd = pk - eq; }
+  return {
+    n, wr: w / n * 100, avgR: s / n, sumR: s,
+    pf: gl === 0 ? (gp > 0 ? Infinity : null) : gp / gl,
+    maxDD: dd, avgMae: mae / n, medBars: bars[Math.floor(bars.length / 2)], avgCost: cost / n * 100
+  };
+}
+function groupBy(l, k) { const m = {}; for (const t of l) (m[t[k]] = m[t[k]] || []).push(t); return m; }
+
+/* ==========================================================================
+   ОТРИСОВКА
+   ========================================================================== */
+const cls = v => v > 0 ? "up" : v < 0 ? "dn" : "mut";
+const HEAD = [
+  ["label", "Срез"], ["n", "Сделок"], ["wr", "Винрейт"], ["avgR", "Средний R"],
+  ["sumR", "Сумма R"], ["pf", "Профит-фактор"], ["maxDD", "Макс. просадка R"],
+  ["avgMae", "Ср. MAE"], ["medBars", "Медиана баров"]
+];
+
+function metricCells(m) {
+  return `<td>${m.n}</td>
+    <td class="${m.wr >= 50 ? "up" : "dn"}">${fmt(m.wr, 1)}%</td>
+    <td class="${cls(m.avgR)}">${fmt(m.avgR, 3)}</td>
+    <td class="${cls(m.sumR)}">${fmt(m.sumR, 1)}</td>
+    <td class="${m.pf === null ? "mut" : m.pf >= 1 ? "up" : "dn"}">${m.pf === Infinity ? "∞" : fmt(m.pf, 2)}</td>
+    <td class="dn">${fmt(m.maxDD, 1)}</td>
+    <td class="mut">${fmt(m.avgMae, 2)}</td>
+    <td class="mut">${m.medBars}</td>`;
+}
+function metricRow(label, m) {
+  if (!m.n) return `<tr><td>${label}</td><td colspan="8" class="mut">нет сделок</td></tr>`;
+  return `<tr><td>${label}</td>${metricCells(m)}</tr>`;
+}
+
+/* --- ИСПРАВЛЕНО: подписи корзин соответствуют содержимому (в v1 были сдвинуты) --- */
+function histSVG(list) {
+  if (!list.length) return `<div class="empty">нет данных</div>`;
+  const ranges = [[-Infinity, -2], [-2, -1.5], [-1.5, -1], [-1, -0.5], [-0.5, 0], [0, 0.5], [0.5, 1], [1, 1.5], [1.5, 2], [2, Infinity]];
+  const labels = ["<-2", "-2..-1.5", "-1.5..-1", "-1..-0.5", "-0.5..0", "0..0.5", "0.5..1", "1..1.5", "1.5..2", ">2"];
+  const bins = ranges.map(([a, b]) => list.filter(t => t.R >= a && t.R < b).length);
+  const W = 600, H = 180, pad = 26, bw = (W - pad * 2) / bins.length, mx = Math.max(...bins, 1);
+  let s = "";
+  bins.forEach((c, k) => {
+    const h = (c / mx) * (H - pad * 2), x = pad + k * bw, y = H - pad - h, neg = ranges[k][1] <= 0;
+    s += `<rect x="${(x + 1.5).toFixed(1)}" y="${y.toFixed(1)}" width="${(bw - 3).toFixed(1)}" height="${h.toFixed(1)}"
+      fill="${neg ? "rgba(255,77,94,.55)" : "rgba(38,208,124,.55)"}" stroke="${neg ? "var(--dn)" : "var(--up)"}" stroke-width=".8"/>`;
+    if (c) s += `<text x="${(x + bw / 2).toFixed(1)}" y="${(y - 4).toFixed(1)}" fill="var(--t2)" font-size="9" font-family="var(--fm)" text-anchor="middle">${c}</text>`;
+    s += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 8}" fill="var(--t3)" font-size="7.5" font-family="var(--fm)" text-anchor="middle">${labels[k]}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Распределение сделок по R">${s}</svg>`;
+}
+function equitySVG(list) {
+  const srt = [...list].sort((a, b) => a.tEntry - b.tEntry);
+  if (!srt.length) return `<div class="empty">нет данных</div>`;
+  const W = 600, H = 180, pad = 26;
+  let eq = 0; const pts = [{ x: 0, y: 0 }];
+  srt.forEach((t, i) => { eq += t.R; pts.push({ x: i + 1, y: eq }); });
+  const mxY = Math.max(...pts.map(p => p.y), 0.5), mnY = Math.min(...pts.map(p => p.y), -0.5);
+  const sx = v => pad + (v / (pts.length - 1 || 1)) * (W - pad * 2);
+  const sy = v => H - pad - ((v - mnY) / ((mxY - mnY) || 1)) * (H - pad * 2);
+  const d = pts.map((p, k) => (k ? "L" : "M") + sx(p.x).toFixed(1) + " " + sy(p.y).toFixed(1)).join(" ");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Накопленный R">
+    <line x1="${pad}" y1="${sy(0)}" x2="${W - pad}" y2="${sy(0)}" stroke="var(--bd2)" stroke-dasharray="3 3"/>
+    <path d="${d}" fill="none" stroke="${eq >= 0 ? "var(--up)" : "var(--dn)"}" stroke-width="1.8"/>
+    <text x="${pad}" y="14" fill="var(--t3)" font-size="10" font-family="var(--fm)">${fmt(mxY, 1)}R</text>
+    <text x="${pad}" y="${H - 6}" fill="var(--t3)" font-size="10" font-family="var(--fm)">${fmt(mnY, 1)}R</text>
+  </svg>`;
+}
+
+/* сортируемая таблица по монетам + поиск */
+let symSort = { key: "sumR", dir: -1 }, symFilter = "";
+function renderSymTable() {
+  if (!LAST) return;
+  const rows = LAST.symRows.filter(r => !symFilter || r.label.includes(symFilter));
+  rows.sort((a, b) => {
+    const k = symSort.key;
+    const va = k === "label" ? a.label : a.m[k], vb = k === "label" ? b.label : b.m[k];
+    if (typeof va === "string") return symSort.dir * va.localeCompare(vb);
+    return symSort.dir * ((va || 0) - (vb || 0));
+  });
+  const th = HEAD.map(([k, t]) =>
+    `<th class="sortable ${symSort.key === k ? "sorted" : ""}" data-k="${k}">${t}${symSort.key === k ? (symSort.dir < 0 ? " ↓" : " ↑") : ""}</th>`).join("");
+  $("symTable").innerHTML = `<thead><tr>${th}</tr></thead><tbody>${rows.map(r =>
+    `<tr><td><span class="sym" data-sym="${r.label}">${r.label}</span></td>${metricCells(r.m)}</tr>`).join("")
+    || `<tr><td colspan="9" class="mut" style="text-align:center">ничего не найдено</td></tr>`}</tbody>`;
+
+  $("symTable").querySelectorAll("th.sortable").forEach(el => el.onclick = () => {
+    const k = el.dataset.k;
+    if (symSort.key === k) symSort.dir *= -1; else { symSort.key = k; symSort.dir = k === "label" ? 1 : -1; }
+    renderSymTable();
+  });
+  $("symTable").querySelectorAll(".sym").forEach(el => el.onclick = async () => {
+    const s = el.dataset.sym;
+    try { await navigator.clipboard.writeText(s); toast(s + " скопировано"); }
+    catch { const ta = document.createElement("textarea"); ta.value = s; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); toast(s + " скопировано"); }
+  });
+}
+
+function oosBox(title, m, sub) {
+  const good = m.n >= 20 && m.avgR > 0;
+  return `<div class="oosbox ${m.n < 20 ? "" : good ? "pass" : "fail"}">
+    <div class="oos-h">${title}</div>
+    <div style="font-family:var(--fm);font-size:19px;font-weight:700" class="${cls(m.avgR)}">${fmt(m.avgR, 3)}R</div>
+    <div style="font-family:var(--fm);font-size:10px;color:var(--t3);margin-top:4px">
+      ${m.n} сделок · винрейт ${fmt(m.wr, 1)}% · сумма ${fmt(m.sumR, 1)}R<br>${sub}</div>
+  </div>`;
+}
+
+function render(all, meta) {
+  if (!all.length) {
+    $("results").innerHTML = `<div class="panel"><div class="panel-t">Результат</div>
+      <div class="empty">Сделок не найдено. Скорее всего пол по издержкам отсёк всё:
+      снизь «мин. ширину стопа» или «мин. ATR», либо включи диапазон.</div></div>`;
+    return;
+  }
+  const m = metrics(all);
+  const byTier = groupBy(all, "tier"), byReg = groupBy(all, "regime"),
+        byDir = groupBy(all, "dir"), byPb = groupBy(all, "playbook");
+
+  // разделение выборки по времени: 70% настроечная / 30% проверочная
+  const srt = [...all].sort((a, b) => a.tEntry - b.tEntry);
+  const t0 = srt[0].tEntry, t1 = srt[srt.length - 1].tEntry, cut = t0 + (t1 - t0) * 0.7;
+  const inS = srt.filter(t => t.tEntry <= cut), outS = srt.filter(t => t.tEntry > cut);
+  const mIn = metrics(inS), mOut = metrics(outS);
+
+  LAST = {
+    symRows: Object.entries(groupBy(all, "sym")).map(([s, l]) => ({ label: s, m: metrics(l) }))
+  };
+
+  $("results").innerHTML = `
+  <div class="cards">
+    <div class="card"><div class="k">Сделок</div><div class="v">${m.n}</div><div class="s">${meta.symbols} монет · ${meta.days} дн.</div></div>
+    <div class="card"><div class="k">Винрейт</div><div class="v ${m.wr >= 50 ? "up" : "dn"}">${fmt(m.wr, 1)}%</div><div class="s">цель ${meta.rr}R</div></div>
+    <div class="card"><div class="k">Средний R</div><div class="v ${cls(m.avgR)}">${fmt(m.avgR, 3)}</div><div class="s">главное число</div></div>
+    <div class="card"><div class="k">Сумма R</div><div class="v ${cls(m.sumR)}">${fmt(m.sumR, 1)}</div><div class="s">итог за период</div></div>
+    <div class="card"><div class="k">Профит-фактор</div><div class="v ${m.pf >= 1 ? "up" : "dn"}">${m.pf === Infinity ? "∞" : fmt(m.pf, 2)}</div><div class="s">прибыль / убыток</div></div>
+    <div class="card"><div class="k">Издержки</div><div class="v ${m.avgCost > 20 ? "dn" : "amb"}">${fmt(m.avgCost, 1)}%</div><div class="s">от каждого R</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-t">Проверка вне выборки — главный тест на самообман</div>
+    <div class="oos">
+      ${oosBox("Настроечная часть · первые 70% периода", mIn, "на этих данных всё выглядит как выглядит")}
+      ${oosBox("Проверочная часть · последние 30%", mOut, "здесь правило видит «новый» рынок")}
+    </div>
+    <div class="note">
+      Если левая половина в плюсе, а правая в минусе — преимущества нет, есть подгонка под прошлое.
+      Верить можно только тогда, когда <b style="color:var(--amb)">обе части положительные</b> и в проверочной хотя бы 20 сделок.
+    </div>
+  </div>
+
+  <div class="sig">
+    <div class="viz"><div class="viz-t">Накопленный результат</div>
+      <div class="viz-s">по порядку входов, в единицах риска</div>${equitySVG(all)}</div>
+    <div class="viz"><div class="viz-t">Распределение сделок</div>
+      <div class="viz-s">подписи корзин исправлены — теперь соответствуют содержимому</div>${histSVG(all)}</div>
+  </div>
+
+  <div class="panel" style="margin-top:14px">
+    <div class="panel-t">Разрезы</div>
+    <div class="tw"><table><thead><tr>${HEAD.map(h => `<th>${h[1]}</th>`).join("")}</tr></thead><tbody>
+      ${Object.keys(byPb).sort().map(k => metricRow(`Плейбук ${k}`, metrics(byPb[k]))).join("")}
+      <tr><td colspan="9" style="height:6px;padding:0;background:var(--bg3)"></td></tr>
+      ${["A", "B", "C"].map(t => byTier[t] ? metricRow(`<span class="tier t${t}">ТИР ${t}</span>`, metrics(byTier[t])) : "").join("")}
+      <tr><td colspan="9" style="height:6px;padding:0;background:var(--bg3)"></td></tr>
+      ${["TREND", "RANGE", "PARABOLIC"].map(r => byReg[r] ? metricRow(`Режим: ${r}`, metrics(byReg[r])) : "").join("")}
+      <tr><td colspan="9" style="height:6px;padding:0;background:var(--bg3)"></td></tr>
+      ${["LONG", "SHORT"].map(d => byDir[d] ? metricRow(d === "LONG" ? "Лонги" : "Шорты", metrics(byDir[d])) : "").join("")}
+    </tbody></table></div>
+  </div>
+
+  <div class="panel">
+    <div class="thead-row">
+      <div class="panel-t" style="margin:0">По монетам · клик по заголовку сортирует, клик по тикеру копирует</div>
+      <input class="srch" id="symSearch" placeholder="поиск монеты…" value="${symFilter}">
+    </div>
+    <div class="tw"><table id="symTable"></table></div>
+    <div class="note">
+      Осторожно: отбирать монеты по этой таблице для будущей торговли — прямая подгонка.
+      Она нужна, чтобы искать <b>признак</b> («убытки там, где ATR ниже X»), а не список тикеров.
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-t">Последние 40 сделок</div>
+    <div class="tw"><table style="min-width:1000px">
+      <thead><tr><th>Монета</th><th>Вход</th><th>План</th><th>Напр.</th><th>Тир</th><th>Режим</th>
+        <th>Цена входа</th><th>Стоп %</th><th>Выход</th><th>Причина</th><th>Баров</th><th>R</th></tr></thead>
+      <tbody>${srt.slice(-40).reverse().map(t => `<tr>
+        <td><span class="sym" data-sym="${t.sym}">${t.sym}</span></td>
+        <td class="mut">${new Date(t.tEntry).toISOString().slice(5, 16).replace("T", " ")}</td>
+        <td class="mut">${t.playbook}</td>
+        <td class="${t.dir === "LONG" ? "up" : "dn"}">${t.dir === "LONG" ? "ЛОНГ" : "ШОРТ"}</td>
+        <td><span class="tier t${t.tier}">${t.tier}</span></td>
+        <td class="mut">${t.regime}</td>
+        <td>${t.entry.toPrecision(6)}</td>
+        <td class="mut">${fmt(t.stopPct, 2)}%</td>
+        <td>${t.exit.toPrecision(6)}</td>
+        <td class="${t.reason === "TP" ? "up" : t.reason === "SL" ? "dn" : "mut"}">${t.reason}</td>
+        <td class="mut">${t.bars}</td>
+        <td class="${cls(t.R)}">${fmt(t.R, 2)}</td></tr>`).join("")}</tbody>
+    </table></div>
+    <div class="cfgline" style="margin-top:12px">Конфигурация прогона: ${meta.cfgLine}</div>
+  </div>`;
+
+  renderSymTable();
+  $("symSearch").oninput = e => { symFilter = e.target.value.trim().toUpperCase(); renderSymTable(); };
+  $("results").querySelectorAll(".sym").forEach(el => el.onclick = async () => {
+    const s = el.dataset.sym;
+    try { await navigator.clipboard.writeText(s); toast(s + " скопировано"); } catch { toast("не удалось скопировать"); }
+  });
+}
+
+/* ==========================================================================
+   ЗАПУСК
+   ========================================================================== */
+async function run() {
+  STOP = false; TRADES = []; clearError(); $("results").innerHTML = "";
+  $("btnRun").disabled = true; $("btnStop").disabled = false; $("btnCsv").disabled = true;
+  setProg(0);
+
+  const baseTF = $("cfgBase").value;
+  const cfg = {
+    top: Math.round(num("cfgTop")), minVol: num("cfgMinVol") * 1e6,
+    days: Math.round(num("cfgDays")), baseTF,
+    ctxTF: baseTF === "15m" ? "1h" : "4h",
+    confTF: baseTF === "15m" ? "4h" : "1d",
+    rr: num("cfgRR"), cool: Math.round(num("cfgCool")),
+    slip: num("cfgSlip"), fee: num("cfgFee"), side: $("cfgSide").value,
+    minStopPct: num("cfgMinStop"), minAtrPct: num("cfgMinAtr"), maxCostPct: num("cfgMaxCost"),
+    pb1: $("pb1").checked, pb2: $("pb2").checked, useConf: $("cfgConf4h").checked,
+    allowRange: $("cfgRange").checked, allowParabola: $("cfgParabola").checked
+  };
+  const msBase = MS[cfg.baseTF];
+  cfg.timeStop = Math.max(2, Math.round(num("cfgTimeH") * 3600000 / msBase));
+  // прогрев: EMA200 на контекстном ТФ, пересчитанная в бары базового ТФ
+  const ctxRatio = MS[cfg.ctxTF] / msBase;
+  cfg.warm = Math.max(250, Math.ceil(210 * ctxRatio));
+
+  if (!cfg.pb1 && !cfg.pb2) { showError("Нечего тестировать", "Включи хотя бы один плейбук."); reset(); return; }
+
+  const barsBase = Math.ceil(cfg.days * 86400000 / msBase) + cfg.warm;
+  const barsCtx = Math.ceil(barsBase / ctxRatio) + 260;
+
+  try {
+    setStatus("Получаю список монет…");
+    const tk = await apiGet(`${BASE}/fapi/v1/ticker/24hr`, 40);
+    const universe = tk.filter(t => t.symbol.endsWith("USDT") && !t.symbol.includes("_") && +t.quoteVolume >= cfg.minVol)
+      .sort((a, b) => +b.quoteVolume - +a.quoteVolume).slice(0, cfg.top).map(t => t.symbol);
+    if (!universe.length) { showError("Пусто", "Ни одна монета не прошла фильтр по обороту."); reset(); return; }
+
+    let done = 0, ok = 0;
+    for (const sym of universe) {
+      if (STOP) break;
+      setStatus(`Считаю <b>${sym}</b> · ${done + 1} из ${universe.length} · сделок: <b>${TRADES.length}</b>`);
+      try {
+        const [rb, rc] = await Promise.all([
+          fetchKlines(sym, cfg.baseTF, barsBase),
+          fetchKlines(sym, cfg.ctxTF, barsCtx)
+        ]);
+        // ПРАВИЛО 3: последний бар ещё формируется — отбрасываем
+        const base = toSeries(rb.slice(0, -1)), ctxS = toSeries(rc.slice(0, -1));
+        const conf = aggregate(ctxS, MS[cfg.confTF]);
+        if (base.c.length >= cfg.warm + 60 && ctxS.c.length >= 260) {
+          TRADES.push(...backtestSymbol(sym, base, ctxS, conf, cfg)); ok++;
+        }
+      } catch (e) { console.warn("пропуск " + sym, e); }
+      done++; setProg(done / universe.length * 100);
+      await sleep(0);
+    }
+
+    const cfgLine = `ТФ входа ${cfg.baseTF} · контекст ${cfg.ctxTF} · подтверждение ${cfg.confTF} · глубина ${cfg.days} дн. · `
+      + `цель ${cfg.rr}R · тайм-стоп ${num("cfgTimeH")}ч · мин.стоп ${cfg.minStopPct}% · мин.ATR ${cfg.minAtrPct}% · `
+      + `потолок издержек ${cfg.maxCostPct}% · комиссия ${cfg.fee}% · проскальзывание ${cfg.slip}% · `
+      + `диапазон ${cfg.allowRange ? "вкл" : "выкл"} · парабола ${cfg.allowParabola ? "вкл" : "выкл"}`;
+    render(TRADES, { symbols: ok, days: cfg.days, rr: cfg.rr, cfgLine });
+    $("btnCsv").disabled = !TRADES.length;
+    setStatus(STOP ? `Остановлено. Монет: <b>${ok}</b>, сделок: <b>${TRADES.length}</b>.`
+      : `Готово. Монет: <b>${ok}</b> · сделок: <b>${TRADES.length}</b> · глубина: <b>${cfg.days} дн.</b>`);
+  } catch (e) {
+    showError("Не удалось получить данные", `${e.message}.<br><br>
+      Проверь, открывается ли <a href="${BASE}/fapi/v1/ping" target="_blank">${BASE}/fapi/v1/ping</a> в соседней вкладке.
+      Если нет — Binance недоступен из твоей сети или запрос заблокирован браузером (открывай страницу по https, а не как локальный файл).`);
+  }
+  reset();
+}
+function reset() { $("btnRun").disabled = false; $("btnStop").disabled = true; }
+
+function toCsv() {
+  const head = ["symbol", "playbook", "dir", "tier", "regime", "entry_time", "exit_time", "entry", "sl", "tp", "exit",
+    "reason", "bars", "R", "mae_R", "stop_pct", "cost_R_pct", "adx_ctx", "vol_ratio", "rsi", "atr_pct"];
+  const rows = [...TRADES].sort((a, b) => a.tEntry - b.tEntry).map(t => [
+    t.sym, t.playbook, t.dir, t.tier, t.regime,
+    new Date(t.tEntry).toISOString(), new Date(t.tExit).toISOString(),
+    t.entry, t.sl, t.tp, t.exit, t.reason, t.bars,
+    t.R.toFixed(4), t.mae.toFixed(4), t.stopPct.toFixed(3), (t.costR * 100).toFixed(2),
+    (t.adx || 0).toFixed(1), t.volRatio.toFixed(2), t.rsi.toFixed(1), t.atrPct.toFixed(3)
+  ].join(","));
+  const blob = new Blob([head.join(",") + "\n" + rows.join("\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `RK_LAB_v2_trades_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+$("btnRun").addEventListener("click", run);
+$("btnStop").addEventListener("click", () => { STOP = true; setStatus("Останавливаю после текущей монеты…"); });
+$("btnCsv").addEventListener("click", toCsv);
+</script>
+</body>
+</html>

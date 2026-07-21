@@ -1,0 +1,2030 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>RK SCANNER v22.5 (Pin-Trade)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sora:wght@400;500;600;700&display=swap');
+:root{
+  --bg:#04070d;--bg1:#080c16;--bg2:#0c1220;--bg3:#101828;--bd:#182035;
+  --t1:#d4e2f4;--t2:#4e6a84;--t3:#8aa8c5;
+  --up:#00e5a0;--dn:#ff3a5e;--warn:#ffb700;--blue:#38bdf8;--pu:#a78bfa;
+  --up-bg:rgba(0,229,160,.08);--dn-bg:rgba(255,58,94,.08);
+  --warn-bg:rgba(255,183,0,.07);--pu-bg:rgba(167,139,250,.08);
+  --fm:'JetBrains Mono',monospace;--fs:'Sora',sans-serif;
+  --sub:#4e6a84; --dim:#4e6a84; --brand:#38bdf8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--fs);font-size:14px;overflow:hidden}
+body{display:flex;flex-direction:column}
+
+header{background:rgba(4,7,13,.98);border-bottom:1px solid var(--bd);padding:9px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:0;z-index:200;flex-shrink:0}
+.logo{font-family:var(--fm);font-weight:700;font-size:14px;color:var(--blue);letter-spacing:2px;white-space:nowrap}
+.logo em{color:var(--t2);font-style:normal;font-size:11px}
+.lbl{font-size:10px;color:var(--t2);font-family:var(--fm);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap}
+.inp{background:var(--bg2);border:1px solid var(--bd);color:#fff;padding:6px 10px;border-radius:5px;font-family:var(--fm);font-size:13px;outline:none;transition:.15s}
+.inp:focus{border-color:var(--blue)}
+.btn{background:var(--bg2);border:1px solid var(--bd);color:var(--t1);padding:6px 14px;border-radius:5px;font-family:var(--fm);font-size:12px;font-weight:700;cursor:pointer;transition:.15s;white-space:nowrap;text-transform:uppercase}
+.btn:hover{border-color:var(--blue);color:var(--blue)}
+.btn-go{background:linear-gradient(135deg,#0c4a8a,#1d40af);border:none;padding:7px 18px}
+.btn-go:disabled{opacity:.35;cursor:default}
+.btn-live{border-color:var(--t2);color:var(--t2)}
+.btn-live.on{background:rgba(0,229,160,.1);border-color:var(--up);color:var(--up);animation:lpulse 2s infinite}
+.btn-sound{border-color:var(--t2);color:var(--t2);font-size:14px;padding:6px 10px}
+.btn-sound.on{border-color:var(--warn);color:var(--warn)}
+@keyframes lpulse{0%,100%{box-shadow:0 0 0 rgba(0,229,160,0)}50%{box-shadow:0 0 10px rgba(0,229,160,.4)}}
+
+.hstat{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:200px}
+.hstat-main{font-family:var(--fm);font-size:12px;color:var(--blue);font-weight:700}
+.hstat-sub{font-family:var(--fm);font-size:10px;color:var(--t2)}
+.hstat-ws{font-family:var(--fm);font-size:10px}
+.hstat-row2{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.hstat-timer{font-family:var(--fm);font-size:10px;color:var(--pu);font-weight:700}
+.hstat-chg{font-family:var(--fm);font-size:10px;color:var(--blue)}
+.hstat-wr{font-family:var(--fm);font-size:10px;color:var(--up)}
+.ws-ok{color:var(--up)}.ws-err{color:var(--dn)}.ws-off{color:var(--t2)}
+.inp-search{background:var(--bg2);border:1px solid var(--bd);color:#fff;padding:5px 9px;border-radius:5px;font-family:var(--fm);font-size:12px;outline:none;width:108px;transition:.15s}
+.inp-search:focus{border-color:var(--blue)}
+.inp-search::placeholder{color:var(--t2)}
+
+.wmeter{display:flex;align-items:center;gap:6px;padding:0 16px;height:20px;background:var(--bg1);border-bottom:1px solid var(--bd);flex-shrink:0}
+.wm-lbl{font-family:var(--fm);font-size:10px;color:var(--t2);white-space:nowrap}
+.wm-bar-wrap{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;max-width:220px}
+.wm-bar{height:100%;border-radius:3px;transition:width .4s}
+.wm-val{font-family:var(--fm);font-size:10px;font-weight:700;min-width:70px;text-align:right}
+.wm-pause{font-family:var(--fm);font-size:10px;color:var(--dn);display:none;margin-left:4px}
+
+.cors-banner{display:none;align-items:center;gap:10px;padding:8px 16px;background:rgba(255,183,0,.07);border-bottom:1px solid rgba(255,183,0,.25);flex-shrink:0;flex-wrap:wrap}
+.cors-banner.show{display:flex}
+.cors-lbl{font-family:var(--fm);font-size:11px;color:var(--warn);flex:1;min-width:200px}
+.cors-lbl a{color:var(--blue);text-decoration:none}
+.cors-close{background:transparent;border:1px solid var(--bd);color:var(--t2);padding:3px 8px;border-radius:4px;font-family:var(--fm);font-size:10px;cursor:pointer}
+
+.prog-wrap-sc{height:2px;background:var(--bd);flex-shrink:0}
+.prog-fill-sc{height:100%;background:linear-gradient(90deg,var(--blue),var(--pu));width:0%;transition:width .2s}
+
+.fbar{display:none;align-items:center;gap:5px;padding:6px 16px;border-bottom:1px solid var(--bd);background:var(--bg1);flex-wrap:wrap;flex-shrink:0}
+.pbtn{padding:4px 12px;border-radius:14px;border:1px solid var(--bd);background:transparent;color:var(--t2);font-family:var(--fm);font-size:10px;font-weight:700;cursor:pointer;transition:.12s;text-transform:uppercase}
+.pbtn:hover{border-color:var(--t3);color:var(--t3)}
+.pbtn.a-all{background:rgba(56,189,248,.1);border-color:var(--blue);color:var(--blue)}
+.pbtn.a-start{background:var(--warn-bg);border-color:var(--warn);color:var(--warn)}
+.pbtn.a-trend{background:var(--up-bg);border-color:var(--up);color:var(--up)}
+.pbtn.a-rev{background:var(--pu-bg);border-color:var(--pu);color:var(--pu)}
+.nbadge{font-size:10px;padding:1px 5px;border-radius:7px;background:var(--bg3);color:var(--t2);margin-left:2px}
+.fsep{width:1px;height:16px;background:var(--bd);flex-shrink:0}
+.afbtn{padding:3px 9px;border-radius:11px;border:1px solid var(--bd);background:transparent;color:var(--t2);font-family:var(--fm);font-size:10px;font-weight:700;cursor:pointer;transition:.12s;text-transform:uppercase}
+.afbtn:hover{border-color:var(--t3);color:var(--t3)}
+.afbtn.a-long{background:rgba(0,229,160,.1);border-color:var(--up);color:var(--up)}
+.afbtn.a-short{background:var(--dn-bg);border-color:var(--dn);color:var(--dn)}
+.afbtn.a-watch{background:var(--pu-bg);border-color:var(--pu);color:var(--pu)}
+.afbtn.a-wait{background:var(--warn-bg);border-color:var(--warn);color:var(--warn)}
+.fbar-r{margin-left:auto;font-size:10px;color:var(--t2);font-family:var(--fm)}
+
+.tw{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;min-width:850px}
+thead{position:sticky;top:0;z-index:100}
+th{padding:8px 10px;color:var(--t2);font-family:var(--fm);font-size:10px;text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid var(--bd);background:var(--bg1);font-weight:600;white-space:nowrap}
+th:first-child{padding-left:16px}
+td{padding:11px 10px;border-bottom:1px solid rgba(24,32,53,.4);vertical-align:top}
+td:first-child{padding-left:12px}
+tr.row-start>td:first-child{border-left:3px solid var(--warn)}
+tr.row-trup>td:first-child{border-left:3px solid var(--up)}
+tr.row-trdn>td:first-child{border-left:3px solid var(--dn)}
+tr.row-rev>td:first-child{border-left:3px solid var(--pu)}
+tr.row-prerev>td:first-child{border-left:3px solid rgba(167,139,250,.5)}
+tr.glow-new{animation:rowglow 4s ease-out forwards}
+tr.row-pinned td{background:rgba(255,183,0,.04)}
+@keyframes rowglow{0%{background:rgba(255,183,0,.2)}100%{background:transparent}}
+tr:hover td{background:rgba(56,189,248,.02)}
+.ghdr td{padding:6px 16px;background:var(--bg2);border-bottom:1px solid var(--bd);font-family:var(--fm);font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:700}
+.empty{text-align:center;padding:60px;color:var(--t2);font-family:var(--fm);font-size:13px;line-height:2.4}
+
+tr.live-changed td{animation:rowflash .8s ease-in-out infinite}
+tr.live-changed{outline:2px solid var(--warn);outline-offset:-2px}
+@keyframes rowflash{0%,100%{box-shadow:inset 0 0 0 2px var(--warn);background:rgba(255,183,0,.13)}50%{box-shadow:inset 0 0 0 2px var(--warn);background:rgba(255,183,0,.04)}}
+@keyframes liqblink{0%,100%{opacity:1}50%{opacity:.3}}
+.liq-marker{display:inline-block;font-family:var(--fm);font-size:9px;padding:1px 5px;border-radius:3px;margin-top:3px;animation:liqblink 1.4s ease-in-out infinite}
+.liq-long{background:rgba(0,229,160,.12);color:var(--up);border:1px solid rgba(0,229,160,.3)}
+.liq-short{background:rgba(255,58,94,.12);color:var(--dn);border:1px solid rgba(255,58,94,.3)}
+
+.coin-top{display:flex;align-items:flex-start;gap:3px}
+.dismiss-btn{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:3px;background:transparent;border:1px solid var(--bd);color:var(--t2);font-size:9px;cursor:pointer;transition:.12s;flex-shrink:0;margin-top:1px}
+.dismiss-btn:hover{border-color:var(--dn);color:var(--dn);background:rgba(255,58,94,.1)}
+.btn-pin{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:3px;background:transparent;border:1px solid var(--bd);color:var(--t2);font-size:9px;cursor:pointer;transition:.12s;flex-shrink:0;margin-top:1px;margin-left:3px;}
+.btn-pin.active{background:rgba(255,183,0,.15);border-color:var(--warn);color:var(--warn);}
+.cn{font-family:var(--fm);font-size:13px;font-weight:700;color:#fff;cursor:pointer;user-select:all}
+.cn:hover{color:var(--blue)}
+.cp{font-family:var(--fm);font-size:12px;color:var(--t2);margin-top:2px;transition:color .3s}
+.cc{font-family:var(--fm);font-size:10px;font-weight:700;margin-top:2px}
+.trend-badge{display:inline-block;padding:2px 8px;border-radius:3px;font-family:var(--fm);font-size:10px;font-weight:700;margin-top:3px;letter-spacing:.3px}
+.trend-badge.up{background:rgba(0,229,160,.12);color:var(--up);border:1px solid rgba(0,229,160,.28)}
+.trend-badge.dn{background:rgba(255,58,94,.1);color:var(--dn);border:1px solid rgba(255,58,94,.28)}
+.mf-tag{font-family:var(--fm);font-size:9px;padding:2px 6px;border-radius:3px;margin-top:3px;display:inline-block}
+.mf-in{background:rgba(0,229,160,.1);color:var(--up);border:1px solid rgba(0,229,160,.2)}
+.mf-out{background:rgba(255,58,94,.1);color:var(--dn);border:1px solid rgba(255,58,94,.2)}
+
+.btn-inline-snip{font-family:var(--fm);font-size:9px;font-weight:700;color:var(--blue);background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.3);padding:4px 8px;border-radius:4px;cursor:pointer;margin-top:6px;transition:.15s;text-transform:uppercase;width:100%;text-align:center;}
+.btn-inline-snip:hover{background:var(--blue);color:#fff;}
+.snip-panel-row{background:var(--bg1); border-left: 3px solid var(--blue); box-shadow: inset 0 3px 6px rgba(0,0,0,0.3);}
+.snip-panel-content{padding:14px; animation: slideDown 0.3s ease-out;}
+@keyframes slideDown{from{opacity:0; transform:translateY(-10px)} to{opacity:1; transform:translateY(0)}}
+.snip-spinner{width:20px;height:20px;border:2px solid var(--bd);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.snip-grid{display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px;}
+.snip-block{background:var(--bg2); border:1px solid var(--bd); border-radius:8px; padding:12px;}
+.snip-btitle{font-family:var(--fm); font-size:10px; color:var(--sub); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; border-bottom:1px solid var(--bd); padding-bottom:6px;}
+.snip-flex-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:11px;}
+.snip-flex-val{font-family:var(--fm); font-weight:700;}
+.snip-advice-box{padding:12px; border-radius:6px; border:1px solid; margin-bottom:12px;}
+.snip-advice-box.up{background:var(--up-bg); border-color:rgba(0,229,160,.3);}
+.snip-advice-box.dn{background:var(--dn-bg); border-color:rgba(255,58,94,.3);}
+.snip-advice-box.warn{background:var(--warn-bg); border-color:rgba(255,183,0,.3);}
+.snip-advice-box.dim{background:var(--bg3); border-color:var(--bd);}
+.snip-adv-title{font-family:var(--fm); font-size:12px; font-weight:700; margin-bottom:4px;}
+.snip-adv-text{font-size:11px; color:var(--sub); line-height:1.4;}
+
+.oi-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.oi-tag{font-family:var(--fm);font-size:9px;padding:2px 6px;border-radius:3px;border:1px solid var(--bd);color:var(--t3);background:var(--bg3)}
+.oi-tag.oi-up{color:var(--up);border-color:rgba(0,229,160,.2);background:rgba(0,229,160,.06)}
+.oi-tag.oi-dn{color:var(--dn);border-color:rgba(255,58,94,.2);background:rgba(255,58,94,.06)}
+.oi-tag.fr-neg{color:var(--up);border-color:rgba(0,229,160,.2);background:rgba(0,229,160,.06)}
+.oi-tag.fr-pos{color:var(--warn);border-color:rgba(255,183,0,.2);background:rgba(255,183,0,.06)}
+.oi-tag.fr-ext{color:var(--dn);border-color:rgba(255,58,94,.2);background:rgba(255,58,94,.08)}
+.spark-wrap{margin-top:4px;display:block}
+.ph{display:inline-flex;align-items:center;padding:3px 8px;border-radius:4px;font-family:var(--fm);font-size:10px;font-weight:700}
+.ph-start{background:var(--warn-bg);border:1px solid rgba(255,183,0,.3);color:var(--warn)}
+.ph-trup{background:var(--up-bg);border:1px solid rgba(0,229,160,.3);color:var(--up)}
+.ph-trdn{background:var(--dn-bg);border:1px solid rgba(255,58,94,.3);color:var(--dn)}
+.ph-rev{background:var(--pu-bg);border:1px solid rgba(167,139,250,.3);color:var(--pu)}
+.ph-prerev{background:rgba(167,139,250,.05);border:1px solid rgba(167,139,250,.2);color:rgba(167,139,250,.8)}
+.ph-sub{font-size:10px;color:var(--t3);margin-top:3px;white-space:normal;max-width:130px;line-height:1.4}
+.at{display:inline-block;padding:3px 10px;border-radius:4px;font-family:var(--fm);font-size:11px;font-weight:700;margin-top:6px}
+.at-l{background:rgba(0,229,160,.1);color:var(--up);border:1px solid rgba(0,229,160,.25)}
+.at-s{background:var(--dn-bg);color:var(--dn);border:1px solid rgba(255,58,94,.25)}
+.at-w{background:var(--warn-bg);color:var(--warn);border:1px solid rgba(255,183,0,.2)}
+.at-o{background:var(--pu-bg);color:var(--pu);border:1px solid rgba(167,139,250,.2)}
+.ah{font-size:10px;color:var(--t3);margin-top:3px;white-space:normal;max-width:140px;line-height:1.4}
+.ready-wrap{margin-top:6px}
+.ready-lbl{font-size:10px;color:var(--t2);margin-bottom:3px;display:flex;justify-content:space-between}
+.ready-track{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.ready-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--warn),var(--pu))}
+.mx{border:1px solid var(--bd);border-radius:6px;background:var(--bg2);padding:8px 10px;min-width:260px}
+.mx-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.mx-sc{font-family:var(--fm);font-size:12px;font-weight:700}
+.mx-sc.bull{color:var(--up)}.mx-sc.bear{color:var(--dn)}.mx-sc.neut{color:var(--warn)}
+.mx-lbl-top{font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--t2)}
+.mx-g{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.mxi{background:var(--bg3);border-radius:3px;padding:5px 7px;border:1px solid transparent;position:relative}
+.mxi.gb{border-color:rgba(0,229,160,.3);background:rgba(0,229,160,.05)}
+.mxi.rb{border-color:rgba(255,58,94,.3);background:rgba(255,58,94,.05)}
+.mxi-l{font-family:var(--fm);font-size:8px;color:var(--t2);text-transform:uppercase;letter-spacing:.3px}
+.mxi-v{font-family:var(--fm);font-size:11px;font-weight:700;margin-top:2px}
+.mxi-d{width:5px;height:5px;border-radius:50%;position:absolute;top:5px;right:6px}
+.mxi-d.g{background:var(--up)}.mxi-d.r{background:var(--dn)}.mxi-d.y{background:var(--warn)}
+.mx-bar-w{margin-top:6px;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.mx-bar{height:100%;border-radius:2px}
+.pp{font-family:var(--fm);font-size:12px;font-weight:700}
+.pb-w{height:5px;background:var(--bg3);border-radius:3px;margin:5px 0;overflow:hidden}
+.pb-f{height:100%;border-radius:3px}
+.pr{font-size:10px;color:var(--t2)}
+.tfs{display:flex;gap:3px;flex-wrap:wrap}
+.tf{padding:2px 6px;border-radius:3px;font-family:var(--fm);font-size:9px;font-weight:700;border:1px solid}
+.tf.up{background:rgba(0,229,160,.07);border-color:rgba(0,229,160,.2);color:var(--up)}
+.tf.dn{background:rgba(255,58,94,.07);border-color:rgba(255,58,94,.2);color:var(--dn)}
+.adx-badge{font-family:var(--fm);font-size:10px;margin-top:4px}
+.rw{font-family:var(--fm);font-size:11px;display:flex;flex-direction:column;gap:4px}
+.rsl{color:var(--dn);font-size:10px}
+.rtps{display:flex;flex-direction:column;gap:3px}
+.rtp{padding:2px 6px;border-radius:3px;font-size:10px;display:flex;justify-content:space-between;gap:6px}
+.rl{color:var(--t2);font-size:9px}
+.tp1c{background:rgba(0,229,160,.07);color:var(--up)}
+.tp2c{background:rgba(56,189,248,.07);color:var(--blue)}
+.tp3c{background:rgba(167,139,250,.07);color:var(--pu)}
+.stack-note{font-size:9px;color:var(--blue);margin-top:3px}
+.fib-src{font-size:8px;color:var(--t2);margin-top:2px}
+
+.hist-toggle{font-family:var(--fm);font-size:10px;color:var(--t2);cursor:pointer;padding:4px 8px;border-radius:4px;border:1px solid var(--bd);background:transparent;transition:.15s}
+.hist-toggle:hover{border-color:var(--blue);color:var(--blue)}
+.hist-panel{display:none;position:fixed;right:0;top:0;width:320px;height:100%;background:var(--bg1);border-left:1px solid var(--bd);z-index:300;flex-direction:column;overflow:hidden}
+.hist-panel.open{display:flex}
+.hist-hd{padding:12px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.hist-hd-ttl{font-family:var(--fm);font-size:12px;font-weight:700;color:var(--blue)}
+.hist-hd-sub{font-family:var(--fm);font-size:10px;color:var(--t2);margin-top:2px}
+.hist-close{background:transparent;border:1px solid var(--bd);color:var(--t2);padding:4px 10px;border-radius:4px;font-family:var(--fm);font-size:10px;cursor:pointer}
+.hist-close:hover{border-color:var(--dn);color:var(--dn)}
+.hist-body{flex:1;overflow-y:auto;padding:8px}
+.hist-item{border:1px solid var(--bd);border-radius:5px;padding:8px 10px;margin-bottom:6px;background:var(--bg2)}
+.hist-item-hd{display:flex;justify-content:space-between;align-items:center}
+.hist-sym{font-family:var(--fm);font-size:12px;font-weight:700;color:#fff}
+.hist-action{font-family:var(--fm);font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px}
+.hist-action.LONG{background:rgba(0,229,160,.1);color:var(--up);border:1px solid rgba(0,229,160,.25)}
+.hist-action.SHORT{background:rgba(255,58,94,.1);color:var(--dn);border:1px solid rgba(255,58,94,.25)}
+.hist-action.WATCH{background:var(--pu-bg);color:var(--pu);border:1px solid rgba(167,139,250,.2)}
+.hist-action.WAIT{background:var(--warn-bg);color:var(--warn);border:1px solid rgba(255,183,0,.2)}
+.hist-meta{font-family:var(--fm);font-size:10px;color:var(--t2);margin-top:4px}
+.hist-hint{font-family:var(--fm);font-size:10px;color:var(--t3);margin-top:3px;line-height:1.4}
+.hist-empty{text-align:center;padding:40px 20px;font-family:var(--fm);font-size:11px;color:var(--t2);line-height:2}
+.hist-footer{padding:10px 16px;border-top:1px solid var(--bd);display:flex;gap:8px;flex-shrink:0}
+.hist-clear{background:transparent;border:1px solid var(--bd);color:var(--t2);padding:5px 12px;border-radius:4px;font-family:var(--fm);font-size:10px;cursor:pointer;flex:1}
+.hist-clear:hover{border-color:var(--dn);color:var(--dn)}
+
+/* Paper Trading — узкая горизонтальная лента под Header (вместо угловой панели) */
+.sim-strip{display:none;align-items:center;gap:12px;padding:6px 16px;background:var(--bg1);border-bottom:1px solid var(--bd);flex-shrink:0;flex-wrap:wrap;font-family:var(--fm);font-size:11px}
+.sim-strip.on{display:flex}
+.sim-strip-item{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.sim-strip-lbl{color:var(--t2);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.sim-strip-val{font-weight:700}
+.sim-strip-sep{width:1px;height:15px;background:var(--bd);flex-shrink:0}
+.sim-strip-positions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:120px}
+.sim-pos-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;background:var(--bg3);border:1px solid var(--bd);font-size:10px}
+.sim-pos-sym{color:#fff;font-weight:700}
+.sim-pos-lvl{font-family:var(--fm);font-size:9px;display:inline-flex;align-items:center;gap:2px;white-space:nowrap}
+.sim-pos-pct{font-size:8px;opacity:.7}
+.sim-pos-empty{color:var(--t2);font-size:10px}
+.sim-strip-csv{margin-left:auto;background:var(--pu-bg);color:var(--pu);border:1px solid var(--pu);padding:4px 10px;border-radius:4px;cursor:pointer;font-family:var(--fm);font-size:10px;font-weight:700;white-space:nowrap;transition:.15s}
+.sim-strip-csv:hover{background:var(--pu);color:#fff}
+
+@media(max-width:960px){.hide-m{display:none!important}.mx-g{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){header{padding:7px 10px;gap:5px}.logo{font-size:12px}th,td{padding:8px 6px}td:first-child,th:first-child{padding-left:10px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">RK <em>// SCANNER</em> <em style="color:var(--pu)"> v22.5 (Pin)</em></div>
+  <span class="lbl hide-m">Топ</span>
+  <input class="inp" type="number" id="limInp" value="140" min="30" max="300" style="width:62px" title="Монет для предфильтра">
+  <button class="btn btn-go" id="scanBtn" onclick="manualScan()">▶ СКАН</button>
+  <button class="btn btn-live" id="liveBtn" onclick="toggleLive()">⚡ ЛАЙВ</button>
+  <button class="btn btn-sound" id="soundBtn" onclick="toggleSound()" title="Звуковой сигнал">🔇</button>
+  <button class="hist-toggle" id="histToggle" onclick="toggleHist()">📋 История</button>
+  
+  <div style="display:flex; gap:5px; align-items:center; margin-left:10px;">
+    <input class="inp-search" type="text" id="searchInp" placeholder="🔍 тикер..." oninput="renderFiltered()" title="Поиск по монете">
+    <button id="btnTargetScan" class="btn" style="display:none; background:var(--up-bg); color:var(--up); border-color:var(--up);" onclick="runTargetScan()">🔍 СКАН</button>
+  </div>
+  
+  <div class="hstat">
+    <span class="hstat-main" id="hMain">Готов к запуску</span>
+    <span class="hstat-sub" id="hSub">Скан: —</span>
+    <div class="hstat-row2">
+      <span class="hstat-timer" id="hTimer"></span>
+      <span class="hstat-chg" id="hChg"></span>
+      <span class="hstat-wr" id="hWR"></span>
+      <span class="hstat-ws" id="hWs"><span class="ws-off">● WS выкл</span></span>
+    </div>
+  </div>
+</header>
+
+<div id="simStrip" class="sim-strip">
+  <div class="sim-strip-item"><span class="sim-strip-lbl">🤖 Баланс</span><span class="sim-strip-val" id="simBal" style="color:var(--brand)">$10000.00</span></div>
+  <div class="sim-strip-sep"></div>
+  <div class="sim-strip-item"><span class="sim-strip-lbl">Реализ. PNL</span><span class="sim-strip-val" id="simPnl">$0.00</span></div>
+  <div class="sim-strip-sep"></div>
+  <div class="sim-strip-item"><span class="sim-strip-lbl">ROI</span><span class="sim-strip-val" id="simRoi">0.00%</span></div>
+  <div class="sim-strip-sep"></div>
+  <div class="sim-strip-item"><span class="sim-strip-lbl">Поз</span><span class="sim-strip-val" id="simActiveCnt">0/5</span></div>
+  <div class="sim-strip-sep"></div>
+  <div class="sim-strip-positions" id="simActiveList"><span class="sim-pos-empty">◎ Нет сделок</span></div>
+  <button class="sim-strip-csv" onclick="simExportCSV()">💾 CSV</button>
+  <button class="sim-strip-csv" onclick="simReset()" style="background:var(--warn-bg); color:var(--warn); border-color:var(--warn); margin-right: 10px;">🗑 СБРОС</button>
+</div>
+
+<div class="cors-banner" id="corsBanner">
+  <span class="cors-lbl">⚠ CORS: Binance API заблокирован браузером. Установите расширение
+    <a href="https://chrome.google.com/webstore/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf" target="_blank" style="color:var(--blue)">Allow CORS</a>.
+  </span>
+  <button class="cors-close" onclick="dismissCorsBanner()">✕ Не показывать</button>
+</div>
+
+<div class="wmeter">
+  <span class="wm-lbl">API вес/мин:</span>
+  <div class="wm-bar-wrap"><div class="wm-bar" id="wmBar" style="width:0%;background:var(--up)"></div></div>
+  <span class="wm-val" id="wmVal">0 / 2400</span>
+  <span class="wm-pause" id="wmPause">⛔ Пауза 60с</span>
+</div>
+<div class="prog-wrap-sc"><div class="prog-fill-sc" id="pf"></div></div>
+
+<div class="fbar" id="fbar">
+  <button class="pbtn a-all" data-ph="ALL" onclick="setF('ALL',this)">Все <span class="nbadge" id="nAll">0</span></button>
+  <button class="pbtn" data-ph="START" onclick="setF('START',this)">🟡 Старт <span class="nbadge" id="nStart">0</span></button>
+  <button class="pbtn" data-ph="TREND" onclick="setF('TREND',this)">🟢 Тренд <span class="nbadge" id="nTrend">0</span></button>
+  <button class="pbtn" data-ph="REV" onclick="setF('REV',this)">🔮 Разворот <span class="nbadge" id="nRev">0</span></button>
+  <div class="fsep"></div>
+  <button class="afbtn" data-af="ALL" onclick="setAF('ALL',this)">Все</button>
+  <button class="afbtn" data-af="LONG" onclick="setAF('LONG',this)">▲ ЛОНГ</button>
+  <button class="afbtn" data-af="SHORT" onclick="setAF('SHORT',this)">▼ ШОРТ</button>
+  <button class="afbtn" data-af="WATCH" onclick="setAF('WATCH',this)">◉ СЛЕДИТЬ</button>
+  <button class="afbtn" data-af="WAIT" onclick="setAF('WAIT',this)">⏸ ЖДАТЬ</button>
+  <span class="fbar-r" id="fInfo"></span>
+</div>
+
+<div class="hist-panel" id="histPanel">
+  <div class="hist-hd">
+    <div>
+      <div class="hist-hd-ttl">📋 История сигналов</div>
+      <div class="hist-hd-sub" id="histCount">Загрузка...</div>
+    </div>
+    <button class="hist-close" onclick="toggleHist()">✕</button>
+  </div>
+  <div class="hist-body" id="histBody"></div>
+  <div class="hist-footer">
+    <button class="hist-clear" onclick="clearHistory()">🗑 Очистить историю</button>
+  </div>
+</div>
+
+<div class="tw">
+<table id="tbl">
+  <thead><tr>
+    <th style="width:140px">Монета</th>
+    <th style="width:150px">Фаза · Действие</th>
+    <th style="width:110px" class="hide-m">Путь</th>
+    <th style="width:90px">ТФ · ADX</th>
+    <th>▣ Матрица сигналов</th>
+    <th style="width:148px">SL · TP (Fib 4H)</th>
+  </tr></thead>
+  <tbody id="tb">
+    <tr><td colspan="6" class="empty">⬡ Нажмите СКАН</td></tr>
+  </tbody>
+</table>
+</div>
+
+
+<script>
+const BASE='https://fapi.binance.com';
+const WS_MINI='wss://fstream.binance.com/ws/!miniTicker@arr';
+const WS_BOOK='wss://fstream.binance.com/ws/!bookTicker@arr';
+const WS_LIQ='wss://fstream.binance.com/ws/!forceOrder@arr';
+const WEIGHT_LIMIT=2400; // Updated limit
+const TOP_N=48; /* Fix22: воронка расширена 20→48 — запас API огромен (0-33/2400), три дорожки отбора см. levelOne */
+const VOL_ANOMALY_X=3;
+const VOL_WINDOW_MS=3*60*1000;
+const LIVE_FULL_SCAN_INTERVAL=5*60*1000;
+const ADX_FLAT=20, ADX_TREND=25;
+// Потолок дистанции стоп-лосса (в ATR 1H). Раньше был только пол (minSL=0.4·ATR), из-за чего Fib-уровень
+// или сдвиг за стену стакана могли поставить стоп на 8-15% от входа — и симулятор честно сидел в минусе часами.
+// SL_MAX_ATR_MULT ограничивает это сверху. Масштабируется тем же slMult, что и остальные дистанции (слабый сигнал → ещё ближе).
+// Подбери под себя: 1.5 — жёстко (стоп ≈ дистанции до TP1), 2.0 — сбалансировано, 3.0 — широко.
+const SL_MAX_ATR_MULT = 2.0;
+const SL_MAX_PCT = 0.08; // Fix1: потолок стопа в % от цены (поверх ATR-потолка) — не дальше 8% от входа, чтобы ATR пампнутой монеты не давал 15%-стоп
+// Precomputed & clamped (>=0) offset thresholds used throughout determinePhase, so retuning ADX_FLAT later can't push any of these negative (which would make an ADX>X check trivially always-true, since ADX is never negative)
+const ADX_TRAP_MAX = ADX_FLAT+5;
+const ADX_SQUEEZE_MAX = ADX_FLAT+3;
+const ADX_TREND_ALIGN_MIN = Math.max(0, ADX_FLAT-2);
+const ADX_PULLBACK_MIN = Math.max(0, ADX_FLAT-6);
+// === Параметры внедрённых улучшений (обсуждённый план) ===
+const ECHELON_4H_BARS = 42;      // P3: окно эшелона по 4h — ~1 неделя вместо месячного max/min (180 свечей)
+const SCORE_GATE = 70;           // P3: гейт силы — в «середине движения» (эшелон 50–72%) вход разрешён при балле ≥ этого
+const EXHAUST_ADX_MAX = 40;      // P4: истинное истощение не срабатывает на параболе (ADX 1H ≥ этого — не шортим/лонгуем разворот)
+const WALL_VOL_PCT = 0.005;      // P6: порог стены стакана масштабируется как max(500k, WALL_VOL_PCT × суточного объёма)
+const USE_SIM_WR = true;         // P9: винрейт считается по факту TP/SL из симулятора, а не по эвристике «цена дёрнулась >0.5%»
+// === v22-фиксы (настраиваемые параметры новых улучшений) ===
+const L1_CHG_PEAK = 10;          // Fix9: |chg%|, при котором привлекательность отбора кандидатов максимальна; выше — затухание («уже поздно»). Ловит старты вместо уже-ушедших монет.
+const RR_MIN = 1.2, RR_MAX = 3.0;// Fix5: коридор риск/прибыль для TP1 — не ближе RR_MIN×SL (не берём сделки с TP ближе стопа) и не дальше RR_MAX×SL (нет недостижимых TP типа +42%).
+const EXH_VETO_HEAT = 4;         // Fix8: при таком «перегреве» (мультиТФ-конфлюэнция против входа) боевой сигнал переводится в WATCH, а не открывается.
+const SIM_SL_FLOOR = 0.006;      // Fix14: пол ширины стопа для сайзинга (0.6%) — не раздуваем номинал под шумовые микро-стопы.
+const SIM_NOTIONAL_CAP_X = 1.5;  // Fix14: потолок номинала = баланс × этот множитель (вместо старого $2000, который ломал равенство риска).
+const BE_TRIGGER_R = 0.6;        // Fix15: при ходе +0.6R в нашу пользу стоп переносится в безубыток (вход ± комиссия round-trip).
+const MOM_LONG_RSI = 40, MOM_LONG_K = 12;   // Fix17: LONG запрещён при RSI15<40 или StochK<12 — не ловим падающий нож («конец отката» на дне слива).
+const MOM_SHORT_RSI = 35, MOM_SHORT_K = 20; // Fix17: SHORT запрещён при RSI15<35 или StochK<20 — не шортим перепроданное 15м (отскок неминуем).
+const ARM_CONFIRM_PCT = 0.002;   // Fix18: подтверждение взведённого сигнала — ход +0.2% в сторону сделки.
+const ARM_TTL_MS = 25 * 60000;   // Fix18: время жизни взведённого сигнала (25 мин) — не подтвердился, гаснет без сделки.
+const ARM_INVALID_PCT = 0.003;   // Fix18: ход -0.3% против — мгновенная отмена взведения (сигнал был ложным).
+const PULLBACK_ADX_MIN = 25;     // Fix19: вход по фазе ОТКАТ только при ADX≥25 — «откат» во флэте это болтанка, а не откат.
+const ARM_CONFIRM_ATR = 0.4;     // Fix23: подтверждение взведения = ход 0.4×ATR15м в сторону сделки (порог дышит с волатильностью монеты).
+const ARM_INVALID_ATR = 0.8;     // Fix23: инвалидация = 0.8×ATR15м против — ШИРЕ подтверждения (раньше было наоборот, и шум косил взведения).
+const DAILY_CTX_TTL = 60*60000;  // Fix21: дневной контекст (30 свечей 1d) обновляется раз в час — меняется медленно, кэш дешёвый.
+
+// === МАКРО-КЭШ (1D/4H) — Пункты 1–3 ===
+let macroCache = {};                 // macroCache[sym] = {stoch4h, stoch1d, trend1d, atr1d, dayOpen, ts}
+const MACRO_TTL = 45*60*1000;        // обновление инертных 1D/4H (снижено с 90 до 45 мин — точнее ловит дрейф StochRSI/EMA незакрытой свечи, по API почти бесплатно)
+const MACRO_WICK_ATR = 0.5;          // порог «дневной тени»: |цена − Open(1D)| < MACRO_WICK_ATR × ATR(1D) ⇒ возврат к среднему
+
+let ALL=[], SIGS={}, CF='ALL', CAF='ALL';
+let liveOn=false, wsMini=null, wsBook=null, wsLiq=null;
+let liveFullScanTimer=null, liveTimerInterval=null, simCheckTimer=null;
+let prevSignals={}, prevPhaseAction={};
+let signalStreak={};  // P8: {sym:{action,n}} — сколько сканов подряд держится один и тот же боевой сигнал (антидребезг)
+let soundOn=false, audioCtx=null;
+let weightUsed=0, weightPaused=false, weightResetTimer=null;
+let volBuffer={}, wsLastPrices={}, wsBestBook={}, _volAnomalyLock={};
+// Fix11: РАДАР РАННИХ ИМПУЛЬСОВ. Копит скользящую историю цен всех монет из бесплатного WS !miniTicker@arr
+// (сэмпл ~раз в 25с, окно 35 мин, ноль веса API) и меряет короткий импульс за ~15 мин.
+// Зачем: отбор кандидатов раньше опирался на 24ч-статистику — монета, стартующая ПРЯМО СЕЙЧАС, имела chg24≈0 и проигрывала отбор,
+// а к моменту заметного chg24 полпути уже пройдено. Радар видит рывок за минуты и проталкивает монету в TOP_N до того, как «станет поздно».
+let radarHist = {};
+function radarSample(sym, price, now){
+    const rh = radarHist[sym] || (radarHist[sym] = []);
+    if (!rh.length || now - rh[rh.length-1][0] >= 25000) {
+        rh.push([now, price]);
+        while (rh.length && now - rh[0][0] > 35*60000) rh.shift();
+    }
+}
+function radarImpulse(sym){
+    // % изменения цены за ~15 минут (берём ближайший сэмпл в окне 12–18 мин назад). 0 — если истории мало (радар только прогрелся).
+    const rh = radarHist[sym]; if (!rh || rh.length < 3) return 0;
+    const now = rh[rh.length-1][0], target = now - 15*60000;
+    let best = null, bestD = Infinity;
+    for (const s of rh) { const d = Math.abs(s[0] - target); if (d < bestD) { bestD = d; best = s; } }
+    if (!best || bestD > 3*60000) return 0; // нет сэмпла в окне 12–18 мин — импульс не считаем
+    return best[1] > 0 ? (rh[rh.length-1][1] - best[1]) / best[1] * 100 : 0;
+}
+let reqQueue=[], reqRunning=0;
+const REQ_CONCURRENCY=3;
+let dismissedSyms=new Set(), pinnedSyms=new Set(), liveChangeCount=0, lastFullScanTime=null;
+let sparkData={}, oiCache={}, frCache={}, liqData={};
+let wrStats={START:{ok:0,fail:0},TREND:{ok:0,fail:0},REV:{ok:0,fail:0}};
+let scanInProgress=false; 
+let liveStarting = false;
+let currentSniper = null; // {sym, controller} активной вкладки ДОП.СКАН — для правила «Аккордеона» и обрыва запросов
+let histCache = null;
+let wsReconnectDelay = 5000;
+const safeGt = (a, b) => (a != null && b != null) ? a > b : false;
+const getDecimals = (p) => p < 1 ? 5 : p < 10 ? 4 : p < 100 ? 3 : 2;
+const escAttr = s => s.replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+const LS_DISMISSED='rk_dismissed_v2';
+const LS_HISTORY='rk_history_v2';
+const LS_CORS_BANNER='rk_cors_dismissed_v2';
+const HISTORY_MAX=200;
+
+// === PAPER TRADING SIMULATOR ===
+const SIM = { bal: 10000, margin: 100, lev: 10, riskPct: 0.01, maxTrades: 20, feeRate: 0.001, ttl: 6*60*60*1000, cooldown: 45*60*1000, active: [], history: [], locks: {}, ui: null };
+function simInit() { SIM.ui = { panel: document.getElementById('simStrip'), bal: document.getElementById('simBal'), pnl: document.getElementById('simPnl'), roi: document.getElementById('simRoi'), cnt: document.getElementById('simActiveCnt'), list: document.getElementById('simActiveList') }; }
+// Fix18: двухступенчатый вход ВЗВЕДЁН→ПОДТВЕРЖДЁН. Данные MFE бимодальны: рабочие сделки идут в плюс сразу, мёртвые — никогда.
+// Поэтому сигнал больше не входит мгновенно: он взводится, и вход происходит только если цена за ARM_TTL_MS подтвердит
+// ход на +ARM_CONFIRM_PCT в сторону сделки. Ход на ARM_INVALID_PCT против — мгновенная отмена (сигнал был ложным).
+// Ловит класс «мертва с первой минуты» (ORCL, O из лога 10.07), который индикаторные гейты не видят. Цена: вход чуть хуже по цене.
+let armedSignals = {};
+// Fix20: телеметрия воронки — считаем, где именно гибнут сигналы. Сбрасывается каждый скан (funnel) / копится за сессию (armStats).
+let funnel = {born:0, vMacro:0, vExh:0, vMom:0, vPull:0};
+let armStats = {armed:0, confirmed:0, invalidated:0, expired:0};
+function armSignal(r) {
+    if (!liveOn || (r.action !== 'LONG' && r.action !== 'SHORT')) return;
+    if (SIM.active.some(t => t.sym === r.sym)) return;
+    if (SIM.locks[r.sym] && Date.now() < SIM.locks[r.sym]) return;
+    const a = armedSignals[r.sym];
+    if (a && a.action === r.action) return; // уже взведён в эту сторону — не перезаряжаем (refPrice остаётся исходным)
+    // Fix23: пороги подтверждения/инвалидации — в долях ATR15м монеты (клэмп на разумные пределы), фолбэк на старые фикс-проценты
+    const _ap = r.atrPct || null;
+    const confPct = _ap ? Math.min(Math.max(_ap*ARM_CONFIRM_ATR, 0.0015), 0.012) : ARM_CONFIRM_PCT;
+    const invPct  = _ap ? Math.min(Math.max(_ap*ARM_INVALID_ATR, 0.003), 0.024) : ARM_INVALID_PCT;
+    armedSignals[r.sym] = { action: r.action, ts: Date.now(), refPrice: r.price, confPct, invPct };
+    armStats.armed++; /* Fix20 */
+}
+function checkArmedSignals() {
+    const now = Date.now();
+    for (const sym of Object.keys(armedSignals)) {
+        const a = armedSignals[sym];
+        const cur = (wsLastPrices[sym] && wsLastPrices[sym].price) || (ALL.find(x => x.sym === sym)?.price);
+        if (now - a.ts > ARM_TTL_MS) { delete armedSignals[sym]; armStats.expired++; continue; } // не подтвердился за 25 мин — гаснет
+        if (!cur) continue;
+        const move = (cur - a.refPrice) / a.refPrice;
+        const _inv = a.invPct || ARM_INVALID_PCT, _conf = a.confPct || ARM_CONFIRM_PCT; /* Fix23 */
+        if (a.action === 'LONG' ? move <= -_inv : move >= _inv) { delete armedSignals[sym]; armStats.invalidated++; continue; }
+        if (a.action === 'LONG' ? move >= _conf : move <= -_conf) {
+            armStats.confirmed++; /* Fix20 */
+            const row = ALL.find(x => x.sym === sym);
+            if (row && row.action === a.action) simTryEnterTrade(row); // сигнал ещё жив в таблице → входим по свежим уровням
+            delete armedSignals[sym];
+        }
+    }
+}
+function simTryEnterTrade(r, manual = false) { /* Fix25 */
+    // Fix25: manual=true — сделка открыта закреплением (выбор пользователя): обходит liveOn, кулдаун и гейт балла,
+    // но уважает лимит слотов и дубликаты. В CSV помечается «РУЧНАЯ» — статистика ручных и авто-входов разделима.
+    if (!manual && (!liveOn || (SIM.locks[r.sym] && Date.now() < SIM.locks[r.sym]))) return;
+    if (SIM.active.length >= SIM.maxTrades) return;
+    if (r.action !== 'LONG' && r.action !== 'SHORT') return; 
+    if (!r.sl || !r.tp1) return;
+    if (SIM.active.some(t => t.sym === r.sym)) return; // Prevent duplicate symbol entry
+
+    // Fix3: фильтр качества — не входим в слабые/мусорные сигналы. REV требует более высокого балла, чем трендовые.
+    const _score = r.score?.score || 0;
+    const _minScore = (r.phase === 'REV') ? 45 : 35; /* Fix24: «сила» трижды показала себя анти-предиктором — гейт снижен, качество входа держат Fix8/17/18/19 */
+    if (!manual && _score < _minScore) return;
+
+    const entryPrice = r.action === 'LONG' ? r.price * 1.0005 : r.price * 0.9995; // Slippage penalty
+
+    // Fix1: риск-ориентированный сайзинг — каждая сделка рискует фиксированным % депозита, а не фиксированным номиналом.
+    // Широкий стоп → меньшая позиция; узкий стоп ограничен потолком номинала (не раздуваем плечо).
+    // Fix14: починка сайзинга. Риск-нормировка была и раньше, но потолок номинала ($2000 фикс.) её ломал:
+    // узкий стоп 0.76% обрезался до риска ~$15, а широкий 6.4% рисковал полными ~$100 (в логе 09.07: -22 vs -128, три широких стопа = 69% потерь).
+    // Теперь: пол ширины стопа для расчёта (SIM_SL_FLOOR) + потолок номинала от БАЛАНСА — риск на сделку выровнен ≈ $90-100.
+    const slFrac = Math.abs((entryPrice - r.sl) / entryPrice);
+    const riskUsd = SIM.bal * SIM.riskPct;
+    let volUsd = riskUsd / Math.max(slFrac, SIM_SL_FLOOR);
+    volUsd = Math.min(volUsd, SIM.bal * SIM_NOTIONAL_CAP_X);
+
+    // Получаем точные данные индикаторов из глобальной матрицы SIGS
+    const sigsR = SIGS[r.sym]?._r || {};
+    
+    const trade = {
+        id: Date.now() + Math.floor(Math.random()*1000), sym: r.sym, action: r.action, entryPrice, sl: r.sl, tp: r.tp1, ts: Date.now(),
+        volUsd: volUsd, phase: r.phase, score: r.score?.score || 0, adx: r.adxVal || 0, 
+        // Подставляем данные из sigsR вместо r._r
+        rsi15: sigsR.rsi15 || 0, rsi1h: sigsR.rsi1h || 0, mfi15: sigsR.mf15 || 0, stochK: sigsR.stochK || 0, vr: sigsR.vr || 0,
+        sl0: r.sl, beMoved: false, mfeR: 0, maeR: 0, manual: !!manual /* Fix15/16/25 */
+    };
+    SIM.active.push(trade); simRender(); simSaveState(); beep(2); // вход в сделку — двойной сигнал; Fix10: состояние сохраняется
+}
+function simCheckTradesInterval() {
+    if (!liveOn) return;
+    checkArmedSignals(); /* Fix18: подтверждение взведённых сигналов проверяется каждым тиком, даже без открытых позиций */
+    if (SIM.active.length === 0) return;
+    const now = Date.now();
+    for (let i = SIM.active.length - 1; i >= 0; i--) {
+        const t = SIM.active[i];
+        
+        // Берем цену из живого WS, а если он "спит" — из таблицы сканера
+        const currentPrice = (wsLastPrices[t.sym] && wsLastPrices[t.sym].price) || (ALL.find(r => r.sym === t.sym)?.price);
+        
+        if (!currentPrice) continue; // Защита от пустых данных
+
+        // Fix16: экскурсии сделки в R (риск = дистанция до ИСХОДНОГО стопа). MFE — максимум в нашу пользу, MAE — максимум против.
+        // Пишутся в CSV: по ним видно сделки «ходила +1.5R в плюс, закрылась стопом» — данные для настройки безубытка/частичек.
+        const _sl0 = t.sl0 ?? t.sl;
+        const _risk0 = t.action === 'LONG' ? (t.entryPrice - _sl0) : (_sl0 - t.entryPrice);
+        if (_risk0 > 0) {
+            const favR = (t.action === 'LONG' ? (currentPrice - t.entryPrice) : (t.entryPrice - currentPrice)) / _risk0;
+            if (favR > (t.mfeR || 0)) t.mfeR = favR;
+            if (-favR > (t.maeR || 0)) t.maeR = -favR;
+            // Fix15: перевод в безубыток — прошли +BE_TRIGGER_R в нашу пользу → стоп на вход±комиссия (round-trip).
+            // Лечит паттерн из лога 09.07: «час в плюсе → разворот → полный стоп» превращается из -1R в ~0.
+            if (!t.beMoved && favR >= BE_TRIGGER_R) {
+                t.beMoved = true;
+                t.sl = t.action === 'LONG' ? t.entryPrice * (1 + SIM.feeRate * 2) : t.entryPrice * (1 - SIM.feeRate * 2);
+            }
+        }
+
+        if (now - t.ts > SIM.ttl) {
+            const timeoutPx = t.action === 'LONG' ? currentPrice * 0.9995 : currentPrice * 1.0005;
+            simCloseTrade(i, timeoutPx, 'TIMEOUT (6h)'); continue;
+        }
+
+        if (t.action === 'LONG') {
+            if (currentPrice <= t.sl) simCloseTrade(i, Math.min(currentPrice, t.sl), t.beMoved ? 'BE-STOP (безубыток)' : 'STOP-LOSS');
+            else if (currentPrice >= t.tp) simCloseTrade(i, Math.max(currentPrice, t.tp), 'TAKE-PROFIT');
+        } else {
+            if (currentPrice >= t.sl) simCloseTrade(i, Math.max(currentPrice, t.sl), t.beMoved ? 'BE-STOP (безубыток)' : 'STOP-LOSS');
+            else if (currentPrice <= t.tp) simCloseTrade(i, Math.min(currentPrice, t.tp), 'TAKE-PROFIT');
+        }
+    }
+    simRender();
+    if (now % 30000 < 2100) simSaveState(); // Fix10: страховочное сохранение ~раз в 30с (вход/выход и так сохраняют сразу)
+}
+function simCloseTrade(idx, exitPrice, reason) {
+    const t = SIM.active[idx]; SIM.active.splice(idx, 1);
+    const grossPnlRatio = t.action === 'LONG' ? (exitPrice - t.entryPrice) / t.entryPrice : (t.entryPrice - exitPrice) / t.entryPrice;
+    const grossPnlUsd = t.volUsd * grossPnlRatio;
+    const feeUsd = t.volUsd * SIM.feeRate * 2; // Double fee for round trip
+    const netPnlUsd = grossPnlUsd - feeUsd;
+    SIM.bal += netPnlUsd; t.exitPrice = exitPrice; t.reason = reason; t.netPnl = netPnlUsd; t.exitTs = Date.now();
+    // Fix6: проскальзывание стопа — насколько фактический филл хуже запланированного SL (в % от SL). Не меняет поведение, только измеряет.
+    // Нужен, чтобы в логах отделять «стратегия ошиблась» от «стоп гэпнул на неликвиде» (кейс TAIKO: план -8%, факт -19%).
+    t.slipPct = 0;
+    if (reason && reason.indexOf('STOP') !== -1 && t.sl > 0) {
+        t.slipPct = (t.action === 'LONG') ? Math.max(0, (t.sl - exitPrice) / t.sl * 100) : Math.max(0, (exitPrice - t.sl) / t.sl * 100);
+    }
+    SIM.history.push(t); SIM.locks[t.sym] = Date.now() + SIM.cooldown; simSaveState(); /* Fix10: состояние сохраняется при закрытии сделки */
+    // P9: винрейт по факту закрытия сделки (TP/SL), а не по эвристике движения цены
+    if (USE_SIM_WR) {
+        const ph = (t.phase && t.phase.startsWith('TREND')) ? 'TREND' : (t.phase && t.phase.startsWith('START')) ? 'START' : t.phase; /* Fix13 */
+        if (wrStats[ph]) { (netPnlUsd > 0 ? wrStats[ph].ok++ : wrStats[ph].fail++); }
+        const tot = Object.values(wrStats).reduce((a,s)=>a+s.ok+s.fail,0);
+        if (tot > 0) { const totalOk = Object.values(wrStats).reduce((a,s)=>a+s.ok,0); const el = document.getElementById('hWR'); if (el) el.textContent = `WR ${Math.round(totalOk/tot*100)}% (${totalOk}/${tot})`; }
+    }
+    beep(1); // выход из сделки — одинарный сигнал
+}
+function simRender() {
+    if (!SIM.ui || !SIM.ui.panel) return; /* Fix10: защита, если рендер вызван до simInit */
+    SIM.ui.panel.classList.toggle('on', liveOn);
+    SIM.ui.bal.textContent = '$' + SIM.bal.toFixed(2);
+    const closedPnl = SIM.bal - 10000;
+    SIM.ui.pnl.textContent = (closedPnl >= 0 ? '+$' : '-$') + Math.abs(closedPnl).toFixed(2);
+    SIM.ui.pnl.style.color = closedPnl >= 0 ? 'var(--up)' : 'var(--dn)';
+    const roi = (closedPnl / 10000) * 100;
+    SIM.ui.roi.textContent = (roi >= 0 ? '+' : '') + roi.toFixed(2) + '%';
+    SIM.ui.roi.style.color = roi >= 0 ? 'var(--up)' : 'var(--dn)';
+    SIM.ui.cnt.textContent = `${SIM.active.length}/${SIM.maxTrades}`;
+    if (SIM.active.length === 0) { SIM.ui.list.innerHTML = '<span class="sim-pos-empty">◎ Нет сделок</span>'; return; }
+    SIM.ui.list.innerHTML = SIM.active.map(t => {
+        const currentP = (wsLastPrices[t.sym] && wsLastPrices[t.sym].price) || (ALL.find(r => r.sym === t.sym)?.price) || t.entryPrice;
+        const grossRatio = t.action === 'LONG' ? (currentP - t.entryPrice)/t.entryPrice : (t.entryPrice - currentP)/t.entryPrice;
+        const pnl = (t.volUsd * grossRatio) - (t.volUsd * SIM.feeRate * 2);
+        const col = pnl >= 0 ? 'var(--up)' : 'var(--dn)';
+        const d = getDecimals(t.entryPrice);
+        const slPct = Math.abs((t.sl - t.entryPrice) / t.entryPrice * 100);
+        const tpPct = Math.abs((t.tp - t.entryPrice) / t.entryPrice * 100);
+        const dirCol = t.action === 'LONG' ? 'var(--up)' : 'var(--dn)';
+        const tip = `${t.sym} ${t.action} | Вход ${t.entryPrice.toFixed(d)} | SL ${t.sl.toFixed(d)} (-${slPct.toFixed(2)}%) | TP ${t.tp.toFixed(d)} (+${tpPct.toFixed(2)}%)`;
+        return `<span class="sim-pos-chip" title="${tip}">`
+            + `<span class="sim-pos-sym" onclick="scrollToCoin('${t.sym}')" style="cursor:pointer; transition:0.2s;" onmouseover="this.style.color='var(--blue)'" onmouseout="this.style.color='#fff'">${t.sym}</span>`
+            + `<span style="color:${dirCol};font-weight:700">${t.action==='LONG'?'Л':'Ш'}</span>`
+            + `<span class="sim-pos-lvl" style="color:var(--t3)">@${t.entryPrice.toFixed(d)}</span>`
+            + `<span class="sim-pos-lvl" style="color:var(--dn)">SL ${t.sl.toFixed(d)}<span class="sim-pos-pct">−${slPct.toFixed(1)}%</span></span>`
+            + `<span class="sim-pos-lvl" style="color:var(--up)">TP ${t.tp.toFixed(d)}<span class="sim-pos-pct">+${tpPct.toFixed(1)}%</span></span>`
+            + `<span style="color:${col};font-weight:700">${pnl>0?'+':''}${pnl.toFixed(2)}</span>`
+            + `</span>`;
+    }).join('');
+}
+
+function simReset() {
+    if(!confirm('Обнулить все данные симулятора?')) return;
+    SIM.active = []; 
+    SIM.history = []; 
+    SIM.bal = 10000; 
+    SIM.locks = {};
+    try{ sessionStorage.removeItem(SIM_SS_KEY); }catch(e){} /* Fix10: сброс чистит и сохранённое состояние */
+    simRender();
+}
+
+function simExportCSV() {
+    if (SIM.history.length === 0 && SIM.active.length === 0) { alert('Нет сделок (ни закрытых, ни открытых)!'); return; }
+    // Fix10: колонка «Статус» + снапшоты ОТКРЫТЫХ сделок. Теперь лог можно собирать, не дожидаясь закрытия позиций:
+    // для открытых пишется текущая цена (WS/таблица) и плавающий PnL по той же формуле, что и при закрытии (с комиссией round-trip),
+    // чтобы строки были напрямую сопоставимы с закрытыми. «Выход» для них = момент выгрузки CSV.
+    let csv = '\uFEFFID,Статус,Вход,Выход,Монета,Направление,Фаза,Причина,Цена Входа,Цена Выхода,SL,TP,Чистый PNL ($),Комиссия ($),Сила Сигнала (%),ADX 1H,RSI 15m,RSI 1H,MFI 15m,Stoch K,Всплеск Объема (x),Проскальзывание SL (%),MFE (R),MAE (R),Режим\n';
+    SIM.history.forEach(t => {
+        const dIn = new Date(t.ts).toLocaleString('ru-RU').replace(',', ''); const dOut = new Date(t.exitTs).toLocaleString('ru-RU').replace(',', '');
+        const fee = (t.volUsd * SIM.feeRate * 2).toFixed(2);
+        csv += `"${t.id}","ЗАКРЫТА","${dIn}","${dOut}","${t.sym}","${t.action}","${t.phase}","${t.reason}",${t.entryPrice},${t.exitPrice},${t.sl},${t.tp},${t.netPnl.toFixed(2)},-${fee},${t.score},${t.adx.toFixed(1)},${t.rsi15.toFixed(1)},${t.rsi1h.toFixed(1)},${t.mfi15.toFixed(1)},${t.stochK.toFixed(1)},${t.vr.toFixed(1)},${(t.slipPct||0).toFixed(2)},${(t.mfeR||0).toFixed(2)},${(t.maeR||0).toFixed(2)},${t.manual?'РУЧНАЯ':'АВТО'}\n`; /* Fix6/16/25 */
+    });
+    SIM.active.forEach(t => {
+        const dIn = new Date(t.ts).toLocaleString('ru-RU').replace(',', ''); const dNow = new Date().toLocaleString('ru-RU').replace(',', '');
+        const cur = (wsLastPrices[t.sym] && wsLastPrices[t.sym].price) || (ALL.find(r => r.sym === t.sym)?.price) || t.entryPrice;
+        const grossRatio = t.action === 'LONG' ? (cur - t.entryPrice) / t.entryPrice : (t.entryPrice - cur) / t.entryPrice;
+        const fee = t.volUsd * SIM.feeRate * 2;
+        const floatPnl = t.volUsd * grossRatio - fee;
+        csv += `"${t.id}","ОТКРЫТА","${dIn}","${dNow}","${t.sym}","${t.action}","${t.phase}","${t.beMoved ? 'СНИМОК·БУ' : 'СНИМОК'}",${t.entryPrice},${cur},${t.sl},${t.tp},${floatPnl.toFixed(2)},-${fee.toFixed(2)},${t.score},${t.adx.toFixed(1)},${t.rsi15.toFixed(1)},${t.rsi1h.toFixed(1)},${t.mfi15.toFixed(1)},${t.stochK.toFixed(1)},${t.vr.toFixed(1)},0.00,${(t.mfeR||0).toFixed(2)},${(t.maeR||0).toFixed(2)},${t.manual?'РУЧНАЯ':'АВТО'}\n`; /* Fix16/25 */
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `RK_Sim_Log_${new Date().toISOString().slice(0,10)}.csv`; link.click();
+}
+
+function scrollToCoin(sym) {
+    let row = document.querySelector(`tr[data-sym="${sym}"]`);
+    
+    // Если монета не найдена (скрыта фильтрами), сбрасываем фильтры на "Все"
+    if (!row) {
+        document.getElementById('searchInp').value = '';
+        const btnAllPh = document.querySelector('[data-ph="ALL"]');
+        if(btnAllPh) setF('ALL', btnAllPh);
+        const btnAllAf = document.querySelector('[data-af="ALL"]');
+        if(btnAllAf) setAF('ALL', btnAllAf);
+        
+        row = document.querySelector(`tr[data-sym="${sym}"]`);
+    }
+    
+    // Плавная прокрутка и визуальная подсветка строки
+    if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const origBg = row.style.backgroundColor;
+        row.style.backgroundColor = 'rgba(56,189,248,0.2)'; // Подсветка цветом var(--blue)
+        setTimeout(() => { row.style.backgroundColor = origBg; }, 1500);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => { lsLoad(); setTimeout(initCorsBanner, 1500); simInit(); simRestoreState(); });
+
+// Fix10: персистентность симулятора. Открытые сделки, баланс и история переживают ПЕРЕЗАГРУЗКУ страницы и СТОП/СТАРТ,
+// но очищаются при закрытии браузера — ровно это даёт sessionStorage (в отличие от localStorage, он живёт только в рамках сессии вкладки).
+// Кнопка СТОП и раньше не удаляла сделки (только пауза мониторинга) — теперь их не убивает и перезагрузка страницы.
+const SIM_SS_KEY = 'rk_sim_state_v22';
+function simSaveState(){
+    try{ sessionStorage.setItem(SIM_SS_KEY, JSON.stringify({ bal: SIM.bal, active: SIM.active, history: SIM.history, locks: SIM.locks, ts: Date.now() })); }
+    catch(e){ console.error('simSaveState', e); }
+}
+function simRestoreState(){
+    try{
+        const d = sessionStorage.getItem(SIM_SS_KEY); if(!d) return;
+        const s = JSON.parse(d); if(!s || !Array.isArray(s.active)) return;
+        SIM.bal = (typeof s.bal === 'number') ? s.bal : SIM.bal;
+        SIM.active = s.active; SIM.history = Array.isArray(s.history) ? s.history : []; SIM.locks = s.locks || {};
+        // Восстановленный винрейт из истории (wrStats живёт в памяти и тоже терялся при перезагрузке)
+        if (USE_SIM_WR) { for (const t of SIM.history) { const ph = (t.phase && t.phase.startsWith('TREND')) ? 'TREND' : (t.phase && t.phase.startsWith('START')) ? 'START' : t.phase; if (wrStats[ph]) { (t.netPnl > 0 ? wrStats[ph].ok++ : wrStats[ph].fail++); } }
+            const tot = Object.values(wrStats).reduce((a,s)=>a+s.ok+s.fail,0);
+            if (tot > 0) { const totalOk = Object.values(wrStats).reduce((a,s)=>a+s.ok,0); const el = document.getElementById('hWR'); if (el) el.textContent = `WR ${Math.round(totalOk/tot*100)}% (${totalOk}/${tot})`; } }
+        simRender();
+        if (SIM.active.length) setStatus(`♻ Восстановлено сделок: ${SIM.active.length} (продолжатся при СТАРТе)`, '');
+    }catch(e){ console.error('simRestoreState', e); }
+}
+
+function toggleSound() { soundOn = !soundOn; const btn = document.getElementById('soundBtn'); btn.textContent = soundOn ? '🔊' : '🔇'; btn.className = 'btn btn-sound' + (soundOn ? ' on' : ''); }
+function beep(times=2) {
+    if(!soundOn) return;
+    try {
+        if(!audioCtx) audioCtx = new(window.AudioContext||window.webkitAudioContext)();
+        const play=(delay)=>{ const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.connect(g);g.connect(audioCtx.destination); o.type='sine'; o.frequency.setValueAtTime(880, audioCtx.currentTime+delay); o.frequency.setValueAtTime(1100, audioCtx.currentTime+delay+.08); g.gain.setValueAtTime(.3, audioCtx.currentTime+delay); g.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime+delay+.35); o.start(audioCtx.currentTime+delay); o.stop(audioCtx.currentTime+delay+.35); };
+        play(0); if(times>1) play(0.55);
+    } catch(e){ console.error('Ошибка в beep (audio)', e); }
+}
+
+let weightPauseClearTimer=null;
+function clearWeightPause() {
+    if(weightPauseClearTimer){ clearTimeout(weightPauseClearTimer); weightPauseClearTimer=null; }
+    weightPaused=false; const el=document.getElementById('wmPause'); if(el) el.style.display='none';
+}
+function schedulePauseClear(ms) {
+    if(weightPauseClearTimer) clearTimeout(weightPauseClearTimer); // cancel any earlier pending clear so only the latest pause governs
+    weightPauseClearTimer=setTimeout(clearWeightPause, ms);
+}
+function addWeight(w) {
+    weightUsed += w; updateWeightUI();
+    if(!weightResetTimer){
+        weightResetTimer=setInterval(()=>{
+            weightUsed = 0; if(weightPaused) clearWeightPause(); updateWeightUI();
+        }, 60000);
+    }
+    if(weightUsed>=WEIGHT_LIMIT&&!weightPaused){
+        weightPaused=true; document.getElementById('wmPause').style.display='inline'; setStatus('⛔ Лимит API — пауза 60с','');
+        schedulePauseClear(60000);
+    }
+}
+function updateWeightUI() { const pct = Math.min(100, (weightUsed/WEIGHT_LIMIT)*100); const bar = document.getElementById('wmBar'); bar.style.width = pct+'%'; bar.style.background = pct>80 ? 'var(--dn)' : pct>55 ? 'var(--warn)' : 'var(--up)'; document.getElementById('wmVal').textContent = `${weightUsed} / ${WEIGHT_LIMIT}`; }
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+async function waitIfPaused() { while(weightPaused) await sleep(1000); }
+function jitter(base=50) { return sleep(base+Math.random()*50); }
+async function fetchBo(url, weight=1, retries=4, signal) {
+    if(signal && signal.aborted) throw new DOMException('Aborted','AbortError');
+    await waitIfPaused(); let delay=1000;
+    for(let i=0; i<retries; i++) {
+        try {
+            await jitter(40); const res = await fetch(url, signal ? {signal} : undefined);
+            if(res.status===429 || res.status===418) {
+                const ra=parseInt(res.headers.get('Retry-After')||'60'); weightPaused=true; setStatus(`⚠ Rate limit — ждём ${ra}с`,'');
+                if(weightPauseClearTimer) clearTimeout(weightPauseClearTimer); weightPauseClearTimer=null; // this is an explicit synchronous wait below, not the managed timer
+                await sleep(ra*1000+2000); clearWeightPause(); continue;
+            }
+            if(!res.ok) throw new Error(`HTTP ${res.status}`);
+            addWeight(weight); return await res.json();
+        } catch(e) { if(e.name==='AbortError' || (signal && signal.aborted)) throw e; if(i<retries-1) { await sleep(delay); delay=Math.min(delay*2,30000); } else throw e; }
+    }
+}
+const fetchSafe = async (url, w, signal) => { try { return await fetchBo(url, w, 4, signal); } catch(e) { return null; } };
+function enq(fn){ return new Promise((res,rej)=>{reqQueue.push({fn,res,rej}); drain();}); }
+async function drain() { if(reqRunning>=REQ_CONCURRENCY || reqQueue.length===0) return; reqRunning++; const {fn,res,rej} = reqQueue.shift(); try { res(await fn()); } catch(e) { rej(e); } finally { reqRunning--; drain(); } }
+let sniperQueue=[], sniperRunning=0; const SNIPER_CONCURRENCY=2, SNIPER_TIMEOUT=15000;
+function enqSniper(fn){ return new Promise((res,rej)=>{ sniperQueue.push({fn,res,rej}); drainSniper(); }); }
+async function drainSniper(){ if(sniperRunning>=SNIPER_CONCURRENCY||sniperQueue.length===0)return; sniperRunning++; const{fn,res,rej}=sniperQueue.shift(); try{ res(await Promise.race([fn(), new Promise((_,r)=>setTimeout(()=>r(new Error('Sniper timeout')),SNIPER_TIMEOUT))])); }catch(e){ rej(e); } finally{ sniperRunning--; drainSniper(); } }
+
+function lsLoad(){ try{ const d=localStorage.getItem(LS_DISMISSED); if(d)dismissedSyms=new Set(JSON.parse(d)); }catch(e){ console.error('Ошибка в lsLoad (localStorage)', e); } }
+function lsSaveDismissed(){ try{localStorage.setItem(LS_DISMISSED,JSON.stringify([...dismissedSyms]));}catch(e){ console.error('Ошибка в lsSaveDismissed (localStorage)', e); } }
+function histLoad(){ try{const d=localStorage.getItem(LS_HISTORY);return d?JSON.parse(d):[];}catch(e){return [];} }
+function histSave(arr){ try{localStorage.setItem(LS_HISTORY,JSON.stringify(arr));}catch(e){ console.error('Ошибка в histSave (localStorage)', e); } }
+function histPush(r){
+    if (!histCache) histCache = histLoad();
+    const recent = histCache.find(h => h.sym === r.sym && h.action === r.action && Date.now() - h.ts < 300000);
+    if (recent) return;
+    histCache.unshift({sym: r.sym, price: r.price, chg24: r.chg24, phase: r.phase, action: r.action, hint: r.hint, score: r.score?.score, dir: r.dir, ts: Date.now()});
+    if (histCache.length > HISTORY_MAX) histCache.length = HISTORY_MAX; histSave(histCache);
+    if (document.getElementById('histPanel').classList.contains('open')) renderHistPanel();
+}
+function renderHistPanel(){
+    const arr=histLoad(), body=document.getElementById('histBody'), cnt=document.getElementById('histCount');
+    cnt.textContent=`${arr.length} записей`;
+    if(!arr.length){body.innerHTML=`<div class="hist-empty">◎ История пуста<br><span>Сигналы появятся<br>после первого скана</span></div>`;return;}
+    body.innerHTML=arr.map(h=>{
+        const t=new Date(h.ts).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}), d=new Date(h.ts).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'});
+        const phaseLabel={START:'⬡ СТАРТ',START_BREAK:h.dir==='UP'?'🚀 ПРОБОЙ ↑':'🚀 ПРОБОЙ ↓',TREND:h.dir==='UP'?'▲ ТРЕНД ↑':'▼ ТРЕНД ↓',TREND_RESUME:'🔥 ВОЗОБНОВЛЕНИЕ',TREND_BREAK:h.dir==='UP'?'⚡ СЛОМ ↑':'⚡ СЛОМ ↓',TREND_PULLBACK:'⏳ ОТКАТ',REV:'◈ РАЗВОРОТ'}[h.phase]||h.phase;
+        const pDec = getDecimals(h.price);
+        return`<div class="hist-item"><div class="hist-item-hd"><span class="hist-sym">${h.sym}</span><span class="hist-action ${h.action}">${h.action}</span></div><div class="hist-meta">${d} ${t} · $${h.price?.toFixed(pDec)||'—'} · ${phaseLabel}${h.score!=null?' · Сила: '+h.score+'%':''}</div>${h.hint?`<div class="hist-hint">${h.hint}</div>`:''}</div>`;
+    }).join('');
+}
+function toggleHist(){ const p=document.getElementById('histPanel'); p.classList.toggle('open'); if(p.classList.contains('open')) renderHistPanel(); }
+function clearHistory(){ if(confirm('Очистить всю историю?')) { histSave([]); renderHistPanel(); } }
+function initCorsBanner(){ if(!localStorage.getItem(LS_CORS_BANNER)) fetch('https://fapi.binance.com/fapi/v1/time',{mode:'cors'}).catch(()=>{ if(navigator.onLine) document.getElementById('corsBanner').classList.add('show'); }); }
+function dismissCorsBanner(){ try{localStorage.setItem(LS_CORS_BANNER,'1');}catch(e){ console.error('Ошибка в dismissCorsBanner (localStorage)', e); } document.getElementById('corsBanner').classList.remove('show'); }
+
+const ema=(a,p)=>{if(a.length<p)return null;let k=2/(p+1),v=a.slice(0,p).reduce((x,y)=>x+y)/p;for(let i=p;i<a.length;i++)v=a[i]*k+v*(1-k);return v;};
+const rsiArr=(c,p=14)=>{
+    if(c.length<p+1)return Array(c.length).fill(50);
+    let r=Array(p).fill(50),g=0,l=0;
+    for(let i=1;i<=p;i++){let d=c[i]-c[i-1];d>0?g+=d:l-=d;}
+    let ag=g/p,al=l/p;r.push(al===0?100:100-100/(1+ag/al));
+    for(let i=p+1;i<c.length;i++){let d=c[i]-c[i-1];ag=(ag*(p-1)+Math.max(0,d))/p;al=(al*(p-1)+Math.max(0,-d))/p;r.push(al===0?100:100-100/(1+ag/al));}
+    return r;
+};
+const mfi=(h,l,c,v,p=14)=>{
+    if(c.length < p + 1) return 50;
+    let tp=c.map((x,i)=>(h[i]+l[i]+x)/3),pos=0,neg=0;
+    for(let i=c.length-p;i<c.length;i++){let f=tp[i]*v[i]; if(i>0 && tp[i]>tp[i-1]) pos+=f; else if(i>0) neg+=f;}
+    return neg===0?100:100-100/(1+pos/neg);
+};
+const stochRSI=(c,rp=14,sp=14,kp=3,dp=3)=>{
+    if(c.length < rp + sp + kp + dp - 3) return {k: null, d: null};
+    const ra=rsiArr(c,rp); let st=[];
+    for(let i=sp-1;i<ra.length;i++){const sl=ra.slice(i-sp+1,i+1),lo=Math.min(...sl),hi=Math.max(...sl);st.push(hi===lo?50:((ra[i]-lo)/(hi-lo))*100);}
+    const sm=(a,p)=>{let r=[];for(let i=p-1;i<a.length;i++)r.push(a.slice(i-p+1,i+1).reduce((a,b)=>a+b)/p);return r;};
+    const ka=sm(st,kp),da=sm(ka,dp); return{k:ka.length?ka[ka.length-1]:50,d:da.length?da[da.length-1]:50};
+};
+const calcStochRSISniper = (c) => stochRSI(c);
+const calcATR=(h,l,c,p=14)=>{let tr=[];for(let i=1;i<c.length;i++)tr.push(Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1])));return tr.slice(-p).reduce((a,b)=>a+b)/p;};
+const calcADX=(h,l,c,p=14)=>{
+    if(c.length<p*2)return{adx:0,pdi:0,ndi:0};
+    let tr=[],pdm=[],ndm=[];
+    for(let i=1;i<c.length;i++){let u=h[i]-h[i-1],d=l[i-1]-l[i];tr.push(Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1])));pdm.push(u>d&&u>0?u:0);ndm.push(d>u&&d>0?d:0);}
+    const rma=(a,p)=>{let r=[a.slice(0,p).reduce((x,y)=>x+y)/p];for(let i=p;i<a.length;i++)r.push((r[r.length-1]*(p-1)+a[i])/p);return r;};
+    let at=rma(tr,p),pd=rma(pdm,p).map((v,i)=>(v/at[i])*100),nd=rma(ndm,p).map((v,i)=>(v/at[i])*100);
+    let dx=pd.map((pv,i)=>{let s=pv+nd[i];return s===0?0:Math.abs(pv-nd[i])/s*100;}); let ax=rma(dx,p);
+    return{adx:ax[ax.length-1]||0,pdi:pd[pd.length-1]||0,ndi:nd[nd.length-1]||0};
+};
+const calcBB=(c,p=20,m=2)=>{ let b=c.slice(-p).reduce((a,x)=>a+x)/p; let std=Math.sqrt(c.slice(-p).reduce((a,x)=>a+Math.pow(x-b,2),0)/p); return{upper:b+std*m,lower:b-std*m,basis:b,width:(std*m*2/b)*100}; };
+const calcVWAP=(h,l,c,v,tOrP=50)=>{
+    // P1: обратная совместимость. Если 5-й аргумент — массив времён открытия свечей (совпадает по длине с c),
+    // VWAP заякоривается на начало текущих суток UTC (истинный VWAP как уровень). Если это число (или опущено) —
+    // прежнее поведение: скользящее окно из tOrP свечей. У начала суток (мало баров) — откат на скользящее-50 ради стабильности.
+    const anchored = Array.isArray(tOrP) && tOrP.length === c.length;
+    if (anchored) {
+        const t = tOrP, lastT = t[t.length-1], dayStart = Math.floor(lastT/86400000)*86400000;
+        let pv=0, sv=0, n=0;
+        for(let i=0;i<c.length;i++){ if(t[i] >= dayStart){ const tp=(h[i]+l[i]+c[i])/3; pv+=tp*v[i]; sv+=v[i]; n++; } }
+        if(n >= 10 && sv > 0 && !isNaN(sv)) return pv/sv; // достаточно внутридневной истории → заякоренный VWAP
+        // иначе (сессия только началась) — падаем в скользящее окно ниже
+    }
+    const p = anchored ? 50 : tOrP;
+    const start = Math.max(0, c.length - p); let pv=0,sv=0;
+    for(let i=start;i<c.length;i++){let tp=(h[i]+l[i]+c[i])/3;pv+=tp*v[i];sv+=v[i];}
+    return (sv === 0 || isNaN(sv)) ? c[c.length-1] : pv/sv;
+};
+
+const divCheck=(prices,rs,lb=20)=>{
+    if(prices.length<lb)return'NONE';
+    const cp=prices[prices.length-1],cr=rs[rs.length-1]; let swingsHigh = [], swingsLow = [];
+    for(let i=prices.length-lb+2; i<prices.length-2; i++){
+        if(prices[i]>prices[i-1]&&prices[i]>prices[i-2]&&prices[i]>prices[i+1]&&prices[i]>prices[i+2]) swingsHigh.push(i);
+        if(prices[i]<prices[i-1]&&prices[i]<prices[i-2]&&prices[i]<prices[i+1]&&prices[i]<prices[i+2]) swingsLow.push(i);
+    }
+    if(swingsLow.length>0) { const mxi = swingsLow[swingsLow.length-1]; if(cp<prices[mxi] && cr>rs[mxi]+5) return 'BULL'; }
+    if(swingsHigh.length>0) { const mxi = swingsHigh[swingsHigh.length-1]; if(cp>prices[mxi] && cr<rs[mxi]-5) return 'BEAR'; }
+    return 'NONE';
+};
+
+const calcFib=(hArr,lArr,cArr,atr)=>{ 
+    let h=Math.max(...hArr), l=Math.min(...lArr);
+    // Filter out extreme wicks > 3*ATR
+    const maxIdx = hArr.indexOf(h), minIdx = lArr.indexOf(l);
+    if(h - Math.max(cArr[maxIdx], hArr[Math.max(0,maxIdx-1)]) > 3*atr) h = Math.max(...cArr);
+    if(Math.min(cArr[minIdx], lArr[Math.max(0,minIdx-1)]) - l > 3*atr) l = Math.min(...cArr);
+    const d=h-l; return{r786:l+d*.786,r618:l+d*.618,r500:l+d*.500,r382:l+d*.382,r236:l+d*.236,s236:h-d*.236,s382:h-d*.382,s500:h-d*.500,s618:h-d*.618,s786:h-d*.786}; 
+};
+function nearestFib(fib,price,dir){
+    if(dir==='UP'){
+        // r786*1.272 added as a structural extension level (common Fib extension ratio) to give TP3 a real reference point before falling back to plain ATR cascading
+        const tps=[fib.r236,fib.r382,fib.r500,fib.r618,fib.r786,fib.r786*1.1,fib.r786*1.272].filter(v=>v>price).sort((a,b)=>a-b);
+        const sls=[fib.s236,fib.s382,fib.s500,fib.s618,fib.s786].filter(v=>v<price).sort((a,b)=>b-a);
+        return{sl:sls[0]||null,tp1:tps[0]||null,tp2:tps[1]||null,tp3:tps[2]||null};
+    }else{
+        const tps=[fib.s236,fib.s382,fib.s500,fib.s618,fib.s786,fib.s786*0.9,fib.s786*0.786].filter(v=>v<price).sort((a,b)=>b-a);
+        const sls=[fib.r236,fib.r382,fib.r500,fib.r618,fib.r786].filter(v=>v>price).sort((a,b)=>a-b);
+        return{sl:sls[0]||null,tp1:tps[0]||null,tp2:tps[1]||null,tp3:tps[2]||null};
+    }
+}
+function safeLevels(fibL,price,atr1h,dir,stack,scorePct=50){
+    // Signal strength now scales risk distances: weak signals (~score 40%) get a tighter SL/TP1 (lower confidence -> cut losses sooner, take profit sooner);
+    // strong signals (~score 90%+) get the original wider ATR multiples (more room to run). scorePct is clamped to keep multipliers within a sane 0.7x-1.0x / 1.0x-1.0x range.
+    const strength = Math.max(0, Math.min(1, (scorePct - 40) / 50)); // 0 at score<=40%, 1 at score>=90%
+    const slMult = 0.75 + strength * 0.25; // 0.75x..1.0x of base SL distance
+    const tpMult = 0.8 + strength * 0.2;   // 0.8x..1.0x of base TP distance
+    const minTP=atr1h*1.2*tpMult, minSL=atr1h*0.4*slMult, maxSL=atr1h*SL_MAX_ATR_MULT*slMult;
+    const maxSLeff=Math.min(maxSL, price*SL_MAX_PCT); // Fix1: берём более тесный из двух потолков — ATR и процент
+    let {sl,tp1,tp2,tp3}=fibL;
+    if(dir==='UP'){
+        if(!sl||price-sl<minSL) sl=price-atr1h*0.8*slMult;
+        if(stack.nearBid && sl > stack.nearBid) sl = stack.nearBid * 0.999; // shift SL behind bid wall
+        if(price-sl>maxSLeff) sl=price-maxSLeff; // ПОТОЛОК: не дальше maxSLeff от входа (последним, после всех сдвигов)
+        if(!tp1||tp1-price<minTP) tp1=price+atr1h*1.5*tpMult;
+        // Fix5: RR-коридор для TP1 (после финализации SL). Потолок RR_MAX лечит недостижимые TP (в логе TAIKO имел TP +42% / RR 5.3);
+        // пол RR_MIN убирает сделки, где TP ближе стопа (RR<1). tp2/tp3 ниже пересоберутся от нового tp1, если схлопнутся.
+        { const slD = price - sl; if(slD > 0){ if(tp1 - price > slD*RR_MAX) tp1 = price + slD*RR_MAX; else if(tp1 - price < slD*RR_MIN) tp1 = price + slD*RR_MIN; } }
+        if(!tp2||tp2<=tp1) tp2=tp1+atr1h*1.5;
+        if(!tp3||tp3<=tp2) tp3=tp2+atr1h*1.5;
+    }else{
+        if(!sl||sl-price<minSL) sl=price+atr1h*0.8*slMult;
+        if(stack.nearAsk && sl < stack.nearAsk) sl = stack.nearAsk * 1.001; // shift SL behind ask wall
+        if(sl-price>maxSLeff) sl=price+maxSLeff; // ПОТОЛОК: не дальше maxSLeff от входа (последним, после всех сдвигов)
+        if(!tp1||price-tp1<minTP) tp1=price-atr1h*1.5*tpMult;
+        // Fix5: RR-коридор для TP1 (зеркально для шорта).
+        { const slD = sl - price; if(slD > 0){ if(price - tp1 > slD*RR_MAX) tp1 = price - slD*RR_MAX; else if(price - tp1 < slD*RR_MIN) tp1 = price - slD*RR_MIN; } }
+        if(!tp2||tp2>=tp1) tp2=tp1-atr1h*1.5;
+        if(!tp3||tp3>=tp2) tp3=tp2-atr1h*1.5;
+    }
+    return{sl,tp1,tp2,tp3};
+}
+function stackLevels(bids,asks,price){
+    const bins={},step=price*0.004;
+    for(const[p,q,side]of[...(bids||[]).map(([p,q])=>[+p,+q,'bid']),...(asks||[]).map(([p,q])=>[+p,+q,'ask'])]){
+        if(Math.abs(p-price)/price>0.08)continue;
+        const b=Math.round(p/step)*step; // numeric bin key (not string-truncated) preserves precision for low-price coins while still aggregating nearby price levels into one wall
+        if(!bins[b])bins[b]={p:b,v:0,side:p<price?'bid':'ask'}; bins[b].v+=p*q;
+    }
+    const walls=Object.values(bins).filter(w=>w.v>150000).sort((a,b)=>b.v-a.v);
+    const nearAsk=walls.filter(w=>w.side==='ask'&&w.p>price).sort((a,b)=>a.p-b.p)[0];
+    const nearBid=walls.filter(w=>w.side==='bid'&&w.p<price).sort((a,b)=>b.p-a.p)[0];
+    return{nearAsk:nearAsk?.p||null,askVol:nearAsk?.v||0,nearBid:nearBid?.p||null,bidVol:nearBid?.v||0};
+}
+function getSmartWalls(orders, currentPrice, isBid) {
+    let bins = {}, step = currentPrice * 0.005;
+    for (let i = 0; i < orders.length; i++) {
+        let p = +orders[i][0], q = +orders[i][1];
+        if (isBid && p > currentPrice) continue;
+        if (!isBid && p < currentPrice) continue;
+        if (Math.abs(p - currentPrice) / currentPrice > 0.10) continue;
+        let b = Math.round(p / step) * step; // numeric bin key preserves precision while aggregating nearby orders into one wall (e.g. for coins priced < $0.0001)
+        if (!bins[b]) bins[b] = { price: b, vol: 0, exactPrices: [] };
+        bins[b].vol += p * q; bins[b].exactPrices.push(p);
+    }
+    let topWalls = Object.values(bins).filter(b => b.vol > 150000).sort((a, b) => b.vol - a.vol).slice(0, 3);
+    if (!isBid) topWalls.sort((a, b) => a.price - b.price); 
+    if (isBid) topWalls.sort((a, b) => b.price - a.price);
+    return topWalls.map(w => ({ price: isBid ? Math.max(...w.exactPrices) : Math.min(...w.exactPrices), vol: w.vol }));
+}
+const calcKDJ = (h, l, c, p = 9) => {
+    let k = 50, d = 50;
+    for (let i = Math.max(p, 0); i < c.length; i++) {
+        let hi = -Infinity, lo = Infinity;
+        for (let j = Math.max(0, i - p + 1); j <= i; j++) { if(h[j]>hi)hi=h[j]; if(l[j]<lo)lo=l[j]; }
+        const rsv = hi === lo ? 50 : ((c[i] - lo) / (hi - lo)) * 100;
+        k = k * 2 / 3 + rsv / 3; d = d * 2 / 3 + k / 3;
+    }
+    return { k, d, j: 3 * k - 2 * d };
+};
+const calcCVD = (k) => { let cvd = 0; for (let i = Math.max(0, k.c.length - 20); i < k.c.length; i++) { cvd += k.takerBuyBase[i] - (k.v[i] - k.takerBuyBase[i]); } return cvd; };
+const calcOrderFlow = (k, n = 20) => {
+    let buyVol = 0, sellVol = 0;
+    for (let i = Math.max(0, k.c.length - n); i < k.c.length; i++) { buyVol += k.takerBuyBase[i]; sellVol += (k.v[i] - k.takerBuyBase[i]); }
+    const total = buyVol + sellVol; return { buyPct: total > 0 ? (buyVol / total) * 100 : 50, sellPct: total > 0 ? (sellVol / total) * 100 : 50, delta: buyVol - sellVol };
+};
+const calcPOC = (c, v, lookback = 20) => {
+    if (c.length < lookback) lookback = c.length;
+    const bins = {}; let maxV = 0, poc = c[c.length - 1]; const step = poc * 0.003;
+    for (let i = c.length - lookback; i < c.length; i++) {
+        const b = (Math.round(c[i] / step) * step).toFixed(5);
+        bins[b] = (bins[b] || 0) + v[i]; if (bins[b] > maxV) { maxV = bins[b]; poc = +b; }
+    }
+    return poc;
+};
+
+async function fetchOIScanner(sym){
+    const now=Date.now(); if(oiCache[sym]&&now-oiCache[sym].fetchedAt<300000)return oiCache[sym];
+    try{
+        const[cur,hist]=await Promise.all([ enq(()=>fetchBo(`${BASE}/fapi/v1/openInterest?symbol=${sym}`,1)), enq(()=>fetchBo(`${BASE}/futures/data/openInterestHist?symbol=${sym}&period=1h&limit=6`,1)) ]);
+        const oiUsd = hist && hist.length > 0 ? +hist[hist.length-1].sumOpenInterestValue : 0;
+        const oiPrevUsd = hist && hist.length > 1 ? +hist[0].sumOpenInterestValue : oiUsd;
+        oiCache[sym]={oi: oiUsd, oiPrev: oiPrevUsd, fetchedAt:now}; return oiCache[sym];
+    }catch(e){return null;}
+}
+async function fetchFRScanner(sym){
+    const now=Date.now(); if(frCache[sym]&&now-frCache[sym].fetchedAt<300000)return frCache[sym];
+    try{
+        const d=await enq(()=>fetchBo(`${BASE}/fapi/v1/fundingRate?symbol=${sym}&limit=1`,1));
+        const fr=d&&d.length?+d[0].fundingRate:null; // Storing raw value
+        frCache[sym]={fr, nextTime: d&&d.length?+d[0].nextFundingTime:null, fetchedAt:now}; return frCache[sym];
+    }catch(e){return null;}
+}
+function calcAllSignalsScanner(k5,k15,k1h,k4h,depth){
+    const price=k15.c[k15.c.length-1];const sig={};
+    // P2: серии по ЗАКРЫТЫМ свечам для триггеров импульса (без внутрисвечного репейнта). Цена (price) остаётся живой.
+    const cc15=k15.c.slice(0,-1), ch15=k15.h.slice(0,-1), cl15=k15.l.slice(0,-1), cv15=k15.v.slice(0,-1);
+    const cc1h=k1h.c.slice(0,-1);
+    const e9_5=ema(k5.c,9),e21_5=ema(k5.c,21); sig.ema5={val:e9_5&&e21_5?(e9_5>e21_5?'▲':'▼'):'N/A',bull:e9_5&&e21_5?e9_5>e21_5:null,label:'EMA·5m'};
+    const e9_15=ema(k15.c,9),e21_15=ema(k15.c,21); sig.ema15={val:e9_15&&e21_15?(e9_15>e21_15?'▲':'▼'):'N/A',bull:e9_15&&e21_15?e9_15>e21_15:null,label:'EMA·15m'};
+    const e50=ema(k1h.c,50),e200=ema(k1h.c,200); sig.cross={val:e50&&e200?(e50>e200?'50>200 ▲':'50<200 ▼'):'N/A',bull:e50&&e200?e50>e200:null,label:'EMA 1H'};
+    // P7: контекст тренда (15m EMA9/21 + 1H EMA50/200). В подтверждённом тренде высокий RSI/MFI = подтверждение, а не контр-сигнал; вне тренда — прежняя mean-reversion логика.
+    const tCtx=(e9_15!=null&&e21_15!=null&&e50!=null&&e200!=null)?((e9_15>e21_15&&e50>e200)?'UP':(e9_15<e21_15&&e50<e200)?'DN':'NONE'):'NONE';
+    const ra15=rsiArr(cc15), rsi15=ra15[ra15.length-1]; sig.rsi15={val:rsi15.toFixed(0),bull:tCtx==='UP'?(rsi15>=50?true:rsi15<30?false:null):tCtx==='DN'?(rsi15<=50?false:rsi15>70?true:null):(rsi15<50&&rsi15>25?true:rsi15>50&&rsi15<75?false:null),zone:rsi15>70?'HOT':rsi15<30?'COLD':'OK',label:'RSI·15m'};
+    const ra1h=rsiArr(cc1h), rsi1h=ra1h[ra1h.length-1]; sig.rsi1h={val:rsi1h.toFixed(0),bull:tCtx==='UP'?(rsi1h>=50?true:rsi1h<35?false:null):tCtx==='DN'?(rsi1h<=50?false:rsi1h>65?true:null):(rsi1h<45?true:rsi1h>55?false:null),zone:rsi1h>70?'HOT':rsi1h<30?'COLD':'OK',label:'RSI·1H'};
+    const mf15=mfi(ch15,cl15,cc15,cv15); const mf15_prev=mfi(ch15.slice(0,-1),cl15.slice(0,-1),cc15.slice(0,-1),cv15.slice(0,-1)); const mf15_prev2=mfi(ch15.slice(0,-2),cl15.slice(0,-2),cc15.slice(0,-2),cv15.slice(0,-2));
+    sig.mfi={val:mf15.toFixed(0),bull:tCtx==='UP'?(mf15>=50?true:mf15<25?false:null):tCtx==='DN'?(mf15<=50?false:mf15>75?true:null):(mf15<50?true:mf15>50?false:null),zone:mf15>78?'HOT':mf15<22?'COLD':'OK',label:'MFI·15m'};
+    const sr=stochRSI(cc15); sig.stoch={val:sr.k?`K${sr.k.toFixed(0)}`:'N/A',bull:sr.k?(sr.k<20&&sr.k>sr.d?true:sr.k>80&&sr.k<sr.d?false:null):null,zone:sr.k>80?'HOT':sr.k<20?'COLD':'OK',label:'StochRSI',stochK:sr.k,stochD:sr.d};
+    const sr1h=stochRSI(k1h.c);
+    const adxD=calcADX(k1h.h,k1h.l,k1h.c); sig.adx={val:adxD.adx.toFixed(0),bull:adxD.pdi>adxD.ndi,label:'ADX·1H',strong:adxD.adx>ADX_TREND,adxVal:adxD.adx,pdi:adxD.pdi,ndi:adxD.ndi};
+    const bb15=calcBB(k15.c), bb15p=calcBB(k15.c.slice(0,-1)), squeeze=bb15.width<3.0&&bb15.width<=bb15p.width*1.06;
+    sig.bb={val:squeeze?'СЖАТ':price>bb15.upper?'ВЕРХ':price<bb15.lower?'НИЗ':'MID',bull:squeeze?null:price>bb15.basis?false:true,squeeze,label:'BB·15m'};
+    const vw=calcVWAP(k15.h,k15.l,k15.c,k15.v,k15.t); sig.vwap={val:price>vw?'↑VWAP':'↓VWAP',bull:price>vw,label:'VWAP'};
+    
+    // Extrapolate current open candle volume (time passed explicitly via k15.lastCandleTime to avoid race conditions on parallel coin processing)
+    const cv=k15.v[k15.v.length-1], cTime=k15.lastCandleTime||Date.now(); const elMin = Math.max(1, (Date.now() - cTime) / 60000);
+    // Анти-флэт: первые <4 мин свечи не экстраполируем вообще (×15 на сырой минуте давало ложные всплески объёма)
+    const projV = elMin < 4 ? cv : (elMin < 15 ? cv * (15 / elMin) : cv);
+    const avgV=k15.v.slice(-21,-1).reduce((a,b)=>a+b)/20, vr=projV/avgV; sig.vol={val:'×'+vr.toFixed(1),bull:vr>1.5?true:null,spike:vr>2,label:'Объём'};
+    
+    const dv=divCheck(cc15,ra15); sig.div={val:dv==='BULL'?'BULL↑':dv==='BEAR'?'BEAR↓':'—',bull:dv==='BULL'?true:dv==='BEAR'?false:null,label:'RSI Div'};
+    const livePrice = depth && depth.bids.length ? (+depth.bids[0][0] + +depth.asks[0][0])/2 : price;
+    let stack={nearAsk:null,nearBid:null,askVol:0,bidVol:0}; if(depth){try{stack=stackLevels(depth.bids,depth.asks,livePrice);}catch(e){ console.error('Ошибка в stackLevels (стакан) ' + (k15.sym || ''), e); }}
+    const buyVol=(k1h.tb||[]).slice(-4).reduce((a,b)=>a+b,0), totVol=(k1h.v||[]).slice(-4).reduce((a,b)=>a+b,0);
+    const moneyFlow=totVol>0?{buy:(buyVol/totVol)*100,net:buyVol/totVol>0.5?'IN':'OUT'}:null;
+    
+    const atr1h=calcATR(k1h.h,k1h.l,k1h.c);
+    const fib=calcFib(k4h.h,k4h.l,k4h.c,atr1h);
+
+    const upperWick = (o,h,l,c) => { const body=Math.abs(c-o), rng=h-l; return rng>0 && (h-Math.max(o,c)) >= body*1.5 && (h-Math.max(o,c)) >= rng*0.4; };
+    const lowerWick = (o,h,l,c) => { const body=Math.abs(c-o), rng=h-l; return rng>0 && (Math.min(o,c)-l) >= body*1.5 && (Math.min(o,c)-l) >= rng*0.4; };
+    const bullTrap = (h,c,o) => { const n=c.length-1; if(n<12)return false; const lh=Math.max(...h.slice(-12,-1)); return h[n]>lh && c[n]<o[n] && c[n]<c[n-1]; };
+    const bearTrap = (l,c,o) => { const n=c.length-1; if(n<12)return false; const ll=Math.min(...l.slice(-12,-1)); return l[n]<ll && c[n]>o[n] && c[n]>c[n-1]; };
+    const patterns = { trapBull: bullTrap(k1h.h, k1h.c, k1h.o) || bullTrap(k15.h, k15.c, k15.o), trapBear: bearTrap(k1h.l, k1h.c, k1h.o) || bearTrap(k15.l, k15.c, k15.o), wickUp: upperWick(k1h.o[k1h.o.length-1], k1h.h[k1h.h.length-1], k1h.l[k1h.l.length-1], k1h.c[k1h.c.length-1]), wickDn: lowerWick(k1h.o[k1h.o.length-1], k1h.h[k1h.h.length-1], k1h.l[k1h.l.length-1], k1h.c[k1h.c.length-1]) };
+    const poc15 = calcPOC(k15.c, k15.v, 20);
+
+    let cvd15 = 0;
+    let buyVol15 = 0;
+    let sellVol15 = 0;
+    const lookback = Math.max(0, k15.c.length - 20);
+    for (let i = lookback; i < k15.c.length; i++) {
+        const takerBuy = k15.tb[i] || 0;
+        const totalVol = k15.v[i] || 0;
+        const takerSell = totalVol - takerBuy;
+        cvd15 += (takerBuy - takerSell);
+        buyVol15 += takerBuy;
+        sellVol15 += takerSell;
+    }
+    const totalFlow = buyVol15 + sellVol15;
+    const buyPct = totalFlow > 0 ? (buyVol15 / totalFlow) * 100 : 50;
+    sig.cvdInfo = { val: cvd15, buyPct: buyPct };
+
+    // P3: окно эшелона — последние ECHELON_4H_BARS свечей 4h (≈1 неделя), а не весь месячный массив
+    const k4hH=k4h.h.slice(-ECHELON_4H_BARS), k4hL=k4h.l.slice(-ECHELON_4H_BARS);
+    sig._r={price,e9_5,e21_5,e9_15,e21_15,e50,e200,rsi15,rsi1h,mf15,mf15_prev,mf15_prev2,stoch1h:sr1h,stochK:sr.k,stochD:sr.d,adxVal:adxD.adx,pdi:adxD.pdi,ndi:adxD.ndi,bb15,vw,vr,dv,squeeze,atr15:calcATR(k15.h,k15.l,k15.c),atr1h,h4High:Math.max(...k4hH),h4Low:Math.min(...k4hL),e50_4h:ema(k4h.c,50),fib,stack,moneyFlow,patterns,poc15,cvd15:cvd15,buyPct:buyPct,vol24:0}; /* Fix19: e50_4h для HTF-подтверждения */
+    return sig;
+}
+function scoreFor(sig,dir){
+    const KEYS=['ema5','ema15','cross','rsi15','rsi1h','mfi','stoch','adx','vwap','div']; let b=0,be=0,t=0;
+    for(const k of KEYS){if(sig[k]&&sig[k].bull===true){b++;t++;}else if(sig[k]&&sig[k].bull===false){be++;t++;}}
+    return{bull:b,bear:be,total:t,score:dir==='UP'?Math.round(b/Math.max(t,1)*100):Math.round(be/Math.max(t,1)*100)};
+}
+function calcRevReadiness(r){
+    let score=0; const rsiExtreme=r.rsi15<40?Math.min(100,(40-r.rsi15)*4):r.rsi15>60?Math.min(100,(r.rsi15-60)*4):0; score+=rsiExtreme*0.3;
+    if(r.dv==='BULL'||r.dv==='BEAR')score+=35; if(r.stochK&& (r.stochK<25||r.stochK>75))score+=20; if(r.adxVal<ADX_FLAT)score+=15; return Math.min(100,Math.round(score));
+}
+
+// Fix8: мультитаймфреймовый фильтр истощения/распределения.
+// Проблема, которую он лечит: раньше перекупленность проверялась ТОЛЬКО по 15m RSI/MFI, а 15m в тренде живёт на 70-80 часами —
+// гейт снимался на микро-откате, и сканер снова лил сигналы продолжения, пока монета по 1h/4h всё ещё истощена.
+// Здесь 15m — это тайминг, а решение «перегрето/раздача» берётся со СТАРШИХ ТФ (1h RSI, StochRSI 4h/1d из macroCache) + CVD/ордер-флоу.
+// Все поля уже посчитаны в _r и macro — новых запросов к API нет. Возвращает штраф к баллу и veto (боевой сигнал → WATCH при сильной конфлюэнции).
+function exhaustionFilter(r, macro, dir){
+    if(dir!=='UP' && dir!=='DN') return {penalty:0, veto:false, note:''};
+    const up = dir==='UP';
+    let heat = 0; const flags = [];
+    // 1H RSI — тот самый старший ТФ, которого не хватало
+    if(up ? r.rsi1h > 72 : r.rsi1h < 28){ heat += 2; flags.push(`RSI1h ${r.rsi1h?.toFixed(0)}`); }
+    else if(up ? r.rsi1h > 68 : r.rsi1h < 32){ heat += 1; }
+    // Микро-тайминг 15m StochRSI (только как усилитель, не как самостоятельный стоп — иначе резал бы здоровые тренды)
+    if(r.stochK!=null && (up ? r.stochK > 88 : r.stochK < 12)){ heat += 1; flags.push(`StochK ${r.stochK.toFixed(0)}`); }
+    // Высшие ТФ из макро-кэша: StochRSI 4h/1d в экстремуме — реальное истощение
+    if(macro){
+        if(macro.stoch4h!=null && (up ? macro.stoch4h > 80 : macro.stoch4h < 20)){ heat += 2; flags.push('StochRSI4h экстрим'); }
+        if(macro.stoch1d!=null && (up ? macro.stoch1d > 80 : macro.stoch1d < 20)){ heat += 1; flags.push('StochRSI1d экстрим'); }
+    }
+    // Скрытое распределение/аккумуляция: цена идёт в сторону сделки, а CVD/ордер-флоу тянет против (то, что раньше видел только «Снайпер»)
+    if(r.cvd15!=null && r.buyPct!=null){
+        if(up && r.cvd15 < 0 && r.buyPct < 48){ heat += 2; flags.push('CVD распределение'); }
+        else if(!up && r.cvd15 > 0 && r.buyPct > 52){ heat += 2; flags.push('CVD аккумуляция'); }
+    }
+    // MFI 15m как вторичное подтверждение перегрева
+    if(up ? r.mf15 > 82 : r.mf15 < 18){ heat += 1; }
+    const penalty = Math.min(30, heat * 6);   // до -30 к баллу (штраф за зрелость/перегрев — частично закрывает и находку №4)
+    const veto = heat >= EXH_VETO_HEAT;        // сильная мультиТФ-конфлюэнция против входа → в WATCH
+    const note = flags.length ? `⚠ Перегрев/распределение (${flags.join(', ')})` : '';
+    return {penalty, veto, note};
+}
+
+function determinePhase(sig, forceSearch = false, macro = null){
+    // PRIORITY ORDER (each step only runs if no earlier step has already set `phase`):
+    //   1. Exhaustion (RSI15 extreme >75/<25)        — strongest, most specific signal: overrides everything else
+    //   2. Traps / squeeze (peak & bottom patterns)   — next most specific: requires multiple confirming conditions
+    //   3. Aligned multi-timeframe trend (5m/15m/1h)  — broad trend-following, only when nothing more specific fired
+    //   4. Trend resume / pullback                    — even broader, catches continuation patterns
+    //   5. Early 5m stoch curl on extremes (WATCH)     — speculative early-warning, lowest specificity
+    //   6. Generic RSI/MFI/divergence reversal search — fallback catch-all
+    // This ordering is intentional: more specific & higher-confidence setups are checked first so they are never
+    // shadowed by a broader, weaker pattern that happens to also match. Do not reorder steps without re-validating
+    // against historical signals, as later steps assume earlier ones have already ruled out their own conditions.
+    const r=sig._r; const p=r.price; let phase=null,dir='NONE',action='WAIT',hint='',pathPct=0,revReadiness=0,macroVeto=false,startKind=null; /* Fix12 */
+    const getEmaTrend = (fast, slow) => {
+        if (!fast || !slow) return 'NONE';
+        const diffPct = Math.abs(fast - slow) / slow * 100;
+        if (diffPct < 0.15) return 'NONE';
+        return fast > slow ? 'UP' : 'DN';
+    };
+    const sc_t5 = getEmaTrend(r.e9_5, r.e21_5);
+    const sc_t15 = getEmaTrend(r.e9_15, r.e21_15);
+    const sc_t1h = r.e50 && r.e200 ? ((p > r.e50 && r.e50 > r.e200) ? 'UP' : (p < r.e50 && r.e50 < r.e200) ? 'DN' : 'NONE') : (r.e50 ? (p > r.e50 ? 'UP' : 'DN') : 'NONE');
+    const tGlob = r.e50 && r.e200 ? (r.e50 > r.e200 ? 'UP' : 'DN') : 'NONE';
+    const range4h = r.h4High - r.h4Low;
+    
+    // Bounds check to avoid naive 4H range outliers
+    let echelon = range4h > 0 ? ((p - r.h4Low) / range4h) * 100 : 50;
+    echelon = Math.max(0, Math.min(100, echelon));
+    // Dampen echelon toward "earlier" when the broader 1H trend (EMA50 vs EMA200) confirms direction with strong ADX:
+    // a narrow 4H high/low window alone can flag a move as "late" even when it's just the start of a fresh leg inside
+    // a much longer-running trend. Correction is intentionally mild (max ~15pp) so it nudges pathPct-based WAIT/LONG/
+    // SHORT decisions without overriding genuinely late/extended moves (it can only pull echelon down, never push it up).
+    if (tGlob !== 'NONE' && r.adxVal > ADX_TREND) {
+        const pull = Math.min(15, (r.adxVal - ADX_TREND) * 0.6);
+        // For uptrends pathPct=echelon (lower echelon = earlier), for downtrends pathPct=100-echelon (higher echelon = earlier) — so the correction direction differs by trend.
+        if (tGlob === 'UP' && p > r.e50) echelon = Math.max(0, echelon - pull);
+        else if (tGlob === 'DN' && p < r.e50) echelon = Math.min(100, echelon + pull);
+    }
+    const fib50 = r.h4Low + (range4h * 0.5);
+
+    let wallBlock = false, wallWarn = false, wallNotes = [];
+    // P6: порог «настоящей» стены масштабируется от суточного объёма. На ликвиде (>100M$) спуфинг $0.5M больше не блокирует сигнал.
+    const wallMin = Math.max(500000, (r.vol24 || 0) * WALL_VOL_PCT);
+    if (r.stack.nearAsk) {
+        const dist = (r.stack.nearAsk - p) / p * 100;
+        if (dist < 0.6) { if (r.stack.askVol >= wallMin) { wallBlock = true; wallNotes.push(`Стена Ask $${(r.stack.askVol/1e6).toFixed(1)}M`); } else { wallWarn = true; wallNotes.push(`Ask $${(r.stack.askVol/1e6).toFixed(1)}M`); } }
+    }
+    if (r.stack.nearBid) {
+        const dist = (p - r.stack.nearBid) / p * 100;
+        if (dist < 0.6) { if (r.stack.bidVol >= wallMin) { wallBlock = true; wallNotes.push(`Стена Bid $${(r.stack.bidVol/1e6).toFixed(1)}M`); } else { wallWarn = true; wallNotes.push(`Bid $${(r.stack.bidVol/1e6).toFixed(1)}M`); } }
+    }
+    const wallNote = wallNotes.join(' + '); // both ask and bid walls are now reported together instead of the second one silently overwriting the first
+
+    // P4: наклон MFI по ДВУМ закрытым свечам, а не по одному тику. Убирает развороты от однокадрового шума MFI.
+    const isMfiFalling = (r.mf15 < r.mf15_prev) && (r.mf15_prev < r.mf15_prev2);
+    const isMfiRising  = (r.mf15 > r.mf15_prev) && (r.mf15_prev > r.mf15_prev2);
+    if (r.rsi15 > 75) {
+        // Истинное истощение вверх: реальная потеря импульса (падение MFI 2 свечи) ИЛИ медвежья дивергенция, И не парабола (ADX < EXHAUST_ADX_MAX)
+        if ((isMfiFalling || r.dv === 'BEAR') && r.adxVal < EXHAUST_ADX_MAX) { dir = 'DN'; phase = 'REV'; action = 'SHORT'; hint = '🚨 Истинное истощение (RSI > 75 + потеря импульса/дивергенция). Тренд окончен.'; pathPct = 5; revReadiness = 90; } 
+        else if (!wallBlock) { dir = 'UP'; phase = 'TREND'; action = 'WAIT'; hint = 'Передышка (RSI высок, но импульс держится). Жди микро-отката.'; pathPct = echelon; }
+        else { dir = 'UP'; phase = 'TREND'; action = 'WAIT'; hint = `Блок: ${wallNote} + Перегрев. Пауза.`; pathPct = echelon; }
+    } else if (r.rsi15 < 25) {
+        // Симметрично: истощение продавцов — реальный приток (рост MFI 2 свечи) ИЛИ бычья дивергенция, И не парабола вниз
+        if ((isMfiRising || r.dv === 'BULL') && r.adxVal < EXHAUST_ADX_MAX) { dir = 'UP'; phase = 'REV'; action = 'LONG'; hint = '🚨 Истинное истощение продавцов (RSI < 25 + приток/дивергенция).'; pathPct = 5; revReadiness = 90; } 
+        else if (!wallBlock) { dir = 'DN'; phase = 'TREND'; action = 'WAIT'; hint = 'Передышка медведей. Жди отскока для шорта.'; pathPct = 100 - echelon; }
+        else { dir = 'DN'; phase = 'TREND'; action = 'WAIT'; hint = `Блок: ${wallNote} + Перепроданность. Пауза.`; pathPct = 100 - echelon; }
+    }
+
+    if (!phase) {
+        const nearPeak = echelon >= 98.8 && r.vr > 1.5; const nearBottom = echelon <= 1.2 && r.vr > 1.5;
+        const macroHot = r.rsi1h > 68 || (r.stoch1h.k && r.stoch1h.k > 80); const macroCold = r.rsi1h < 32 || (r.stoch1h.k && r.stoch1h.k < 20);
+        const hasBullTrap = r.patterns.trapBull || (r.patterns.wickUp && r.rsi15 > 60);
+        const hasBearTrap = r.patterns.trapBear || (r.patterns.wickDn && r.rsi15 < 40);
+        const pocAboveMid = r.poc15 > fib50;
+
+        if ((nearPeak || macroHot) && hasBullTrap && r.adxVal <= ADX_TRAP_MAX) {
+            dir = 'DN'; phase = 'REV'; action = 'SHORT'; pathPct = 5; revReadiness = 95; hint = '🚨 Бычья ловушка на пике! Ранний шорт';
+        } else if ((nearBottom || macroCold) && hasBearTrap && r.adxVal <= ADX_TRAP_MAX) {
+            dir = 'UP'; phase = 'REV'; action = 'LONG'; pathPct = 5; revReadiness = 95; hint = '🚨 Медвежья ловушка на дне! Ранний лонг';
+        } else if (r.squeeze && r.adxVal < ADX_SQUEEZE_MAX) {
+            dir = tGlob; phase = 'START';
+            // Fix12: честный ярлык. Сжатие у ДНА месячного диапазона (180 баров 4h) — настоящий СТАРТ (аккумуляция);
+            // сжатие ПОСЛЕ пройденного пути — это ФЛАГ (пауза/продолжение), а не зарождение. Раньше оба звались «Старт движения».
+            const _dc = dailyCtx[sig.sym]; /* Fix21: настоящий 30-дневный диапазон вместо недельного эшелона (закрывает недочёт Fix12) */
+            const _hi = _dc ? _dc.hi30 : r.h4High, _lo = _dc ? _dc.lo30 : r.h4Low;
+            const mRange = _hi - _lo, mPos = mRange > 0 ? (p - _lo) / mRange : 0.5;
+            startKind = (dir === 'UP') ? (mPos <= 0.40 ? 'BASE' : 'FLAG') : (mPos >= 0.60 ? 'BASE' : 'FLAG');
+            // Fix13 (ЭКСПЕРИМЕНТ): вход по пробою границы сжатия теперь требует объёма (vr≥1.4) и получает СВОЮ фазу START_BREAK,
+            // чтобы её винрейт был виден в CSV изолированно. Без объёма пробой не торгуется — ждём подтверждения.
+            // Вход автоматически проходит мультиТФ-фильтр перегрева (Fix8) на этапе сборки сигнала.
+            if (dir === 'UP' && p > r.bb15.upper) {
+                if (r.vr >= 1.4) { phase = 'START_BREAK'; action = 'LONG'; hint = `Пробой сжатия вверх с объёмом ×${r.vr.toFixed(1)} (эксперимент)`; }
+                else { action = 'WAIT'; hint = 'Пробой BB вверх БЕЗ объёма (vr<1.4) — возможен ложный. Жди подтверждения.'; }
+            } else if (dir === 'DN' && p < r.bb15.lower) {
+                if (r.vr >= 1.4) { phase = 'START_BREAK'; action = 'SHORT'; hint = `Пробой сжатия вниз с объёмом ×${r.vr.toFixed(1)} (эксперимент)`; }
+                else { action = 'WAIT'; hint = 'Пробой BB вниз БЕЗ объёма (vr<1.4) — возможен ложный. Жди подтверждения.'; }
+            } else { action = 'WAIT'; hint = startKind === 'BASE' ? 'Сжатие у основания. Жди пробой границ BB' : 'Флаг: сжатие после движения. Жди пробой (продолжение)'; }
+            pathPct = Math.min(20, (1 - r.bb15.width / 3) * 20);
+            if (startKind === 'FLAG') pathPct = Math.max(pathPct, Math.round(mPos * 100 * 0.6)); // Fix12: у флага «путь» честно выше, чем у старта с нуля
+        }
+        
+        if (!phase) {
+            // Fix2: MSB — агрессивный вход по слому структуры — теперь дополнительно сверяется со старшим ТФ (1H RSI):
+            // не шортим слом вниз в перепроданность 1H (r.rsi1h>30) и не лонгуем слом вверх в перекупленность 1H (r.rsi1h<70).
+            // Это отсекает встречные входы в истощение (в логах: RIF msbUp при rsi1h 79, ARX msbDown при rsi1h 27 — оба в минус).
+            const msbDown = tGlob === 'DN' && p < r.vw && p < r.e21_15 && r.vr > 1.2 && r.rsi15 < 60 && r.rsi15 > 28 && r.stochK > 15 && r.mf15 > 18 && r.rsi1h > 30;
+            const msbUp = tGlob === 'UP' && p > r.vw && p > r.e21_15 && r.vr > 1.2 && r.rsi15 > 40 && r.rsi15 < 72 && r.stochK < 85 && r.mf15 < 82 && r.rsi1h < 70;
+            
+            if (msbDown && r.adxVal > ADX_FLAT) {
+                // Fix1: MSB — это продолжение тренда по слому структуры, а НЕ разворот. Отдельная фаза TREND_BREAK:
+                // (а) не загрязняет статистику REV; (б) startsWith('TREND') → корректный трендовый бакет винрейта и гейт балла 50; (в) в логе различима для анализа.
+                dir = 'DN'; phase = 'TREND_BREAK'; action = 'SHORT'; hint = 'Слом структуры вниз по тренду 1H (MSB). Агрессивный шорт.'; pathPct = 10; revReadiness = 85;
+            } else if (msbUp && r.adxVal > ADX_FLAT) {
+                dir = 'UP'; phase = 'TREND_BREAK'; action = 'LONG'; hint = 'Слом структуры вверх по тренду 1H (MSB). Агрессивный лонг.'; pathPct = 10; revReadiness = 85;
+            }
+        }
+
+        if(!phase){
+            const aligned = sc_t5 === sc_t15 && sc_t15 === sc_t1h && sc_t5 !== 'NONE';
+            if (aligned && r.adxVal > ADX_TREND_ALIGN_MIN) {
+                dir = sc_t15; phase = 'TREND';
+                // P3: локальный балл силы для гейта «середины движения» (считаем здесь, до общего sc ниже — тот вычисляется позже)
+                const alignScore = scoreFor(sig, dir).score;
+                if (dir === 'UP') {
+                    pathPct = echelon;
+                    if (!pocAboveMid && p < fib50) { action = 'WAIT'; hint = 'Блок лонга: узел и цена ниже Fib 0.5 (сдача позиций)'; }
+                    else if (pathPct < 50) { action = 'LONG'; hint = 'Ранний тренд. Стоп под VWAP'; }
+                    else if (pathPct < 72) { if (alignScore >= SCORE_GATE) { action = 'LONG'; hint = `Середина движения, но сильный сигнал (${alignScore}%) — вход по тренду`; } else { action = 'WAIT'; hint = 'Середина движения — жди коррекцию'; } }
+                    else { action = 'WAIT'; hint = 'Поздний вход — жди откат 15-25%'; }
+                } else {
+                    pathPct = 100 - echelon;
+                    if (pocAboveMid && p > fib50) { action = 'WAIT'; hint = 'Блок шорта: узел и цена выше Fib 0.5 (коррекция, а не дамп)'; }
+                    else if (pathPct < 50) { action = 'SHORT'; hint = 'Ранний нисходящий тренд. Стоп над VWAP'; }
+                    else if (pathPct < 72) { if (alignScore >= SCORE_GATE) { action = 'SHORT'; hint = `Середина падения, но сильный сигнал (${alignScore}%) — шорт по тренду`; } else { action = 'WAIT'; hint = 'Середина падения — осторожно'; } }
+                    else { action = 'WAIT'; hint = 'Поздно для шорта — жди отскок'; }
+                }
+            }
+
+            if(!phase){
+                if (tGlob === 'UP' && sc_t15 === 'DN' && sc_t5 === 'UP' && p > r.e9_5 && r.rsi15 > 45 && r.adxVal >= ADX_TREND) {
+                    dir = 'UP'; phase = 'TREND_RESUME'; pathPct = echelon;
+                    if (echelon > 85) { if (r.vr > 0.8 && r.mf15 > 50 && !isMfiFalling) { action = 'LONG'; hint = 'Конец коррекции на хаях. Подтверждено объемом (Пробой)'; } else { action = 'WAIT'; hint = '⚠ Риск ложной "Г" на хаях (нет объема/MFI). Ждать.'; } } 
+                    else { if (pocAboveMid && r.vr > 0.8) { action = 'LONG'; hint = 'Конец коррекции. 5m возобновление аптренда'; } else if (pocAboveMid) { action = 'WAIT'; hint = 'Возобновление роста без объёма (vr низкий) — жди подтверждения.'; } else { action = 'WAIT'; hint = 'Цена возобновляет рост, но узел ниже Fib 0.5. Опасно.'; } } /* Fix3: добавлен объёмный гейт vr>0.8 на низком эшелоне */
+                } else if (tGlob === 'DN' && sc_t15 === 'UP' && sc_t5 === 'DN' && p < r.e9_5 && r.rsi15 < 55 && r.adxVal >= ADX_TREND) {
+                    dir = 'DN'; phase = 'TREND_RESUME'; pathPct = 100 - echelon;
+                    if ((100 - echelon) > 85) { if (r.vr > 0.8 && r.mf15 < 50 && isMfiFalling) { action = 'SHORT'; hint = 'Конец отскока на лоях. Подтверждено объемом'; } else { action = 'WAIT'; hint = '⚠ Риск ложной "Г" на дне. Ждать.'; } } 
+                    else { if (!pocAboveMid && r.vr > 0.8) { action = 'SHORT'; hint = 'Конец отскока. 5m возобновление даунтренда'; } else if (!pocAboveMid) { action = 'WAIT'; hint = 'Возобновление падения без объёма (vr низкий) — жди подтверждения.'; } else { action = 'WAIT'; hint = 'Возобновление падения, но узел выше Fib 0.5. Опасно.'; } } /* Fix3: добавлен объёмный гейт vr>0.8 на низком эшелоне */
+                } else if (tGlob !== sc_t15 && r.adxVal > ADX_PULLBACK_MIN && tGlob !== 'NONE') {
+                    dir = tGlob; phase = 'TREND_PULLBACK';
+                    // Fix19: откат — худшая фаза двух дней подряд (-172, -58). Вход теперь требует НАСТОЯЩЕГО тренда:
+                    // ADX≥25 (иначе «откат» — это флэтовая болтанка) + согласие 4h (цена по нужную сторону EMA50 4h). Иначе — WAIT с причиной.
+                    const htfOkUp = !r.e50_4h || p > r.e50_4h, htfOkDn = !r.e50_4h || p < r.e50_4h;
+                    const adxOk = r.adxVal >= PULLBACK_ADX_MIN;
+                    if (dir === 'UP') { pathPct = echelon;
+                        if (r.rsi15 < 48 && pocAboveMid && adxOk && htfOkUp) { action = 'LONG'; hint = 'Откат в бычьем тренде — зона добора (ADX и 4h подтверждают)'; } /* окно [MOM_LONG_RSI..48): просадка, но не нож — согласовано с Fix17 */
+                        else { action = 'WAIT'; if(!adxOk||!htfOkUp) funnel.vPull++; hint = !adxOk ? `Откат без тренда (ADX ${r.adxVal?.toFixed(0)}<${PULLBACK_ADX_MIN}) — флэт, не добор` : !htfOkUp ? 'Цена ниже EMA50 4h — старший ТФ против лонга' : 'Коррекция ещё не завершена (или узел пробит вниз)'; } }
+                    else { pathPct = 100 - echelon;
+                        if (r.rsi15 > 58 && !pocAboveMid && adxOk && htfOkDn) { action = 'SHORT'; hint = 'Отскок в медвежьем — шорт (ADX и 4h подтверждают)'; }
+                        else { action = 'WAIT'; if(!adxOk||!htfOkDn) funnel.vPull++; hint = !adxOk ? `Отскок без тренда (ADX ${r.adxVal?.toFixed(0)}<${PULLBACK_ADX_MIN}) — флэт, не шорт` : !htfOkDn ? 'Цена выше EMA50 4h — старший ТФ против шорта' : 'Отскок ещё не завершён (или узел пробит вверх)'; } }
+                }
+            }
+        }
+    }
+
+    if (!phase && sc_t5 === 'DN' && echelon > 85 && r.stochK && r.stochK < r.stochD && r.stochK > 75 && !wallBlock) {
+        dir = 'DN'; phase = 'REV'; action = 'WATCH'; pathPct = 5; revReadiness = 80; hint = 'Загиб 5m на верхнем эшелоне. Ранний шорт зреет.';
+    } else if (!phase && sc_t5 === 'UP' && echelon < 15 && r.stochK && r.stochK > r.stochD && r.stochK < 25 && !wallBlock) {
+        dir = 'UP'; phase = 'REV'; action = 'WATCH'; pathPct = 5; revReadiness = 80; hint = 'Загиб 5m на нижнем эшелоне. Ранний лонг зреет.';
+    }
+
+    if (!phase) {
+        revReadiness = calcRevReadiness(r);
+        const revB = r.dv === 'BULL' && r.rsi15 < 30 && r.mf15 < 25 && (p < r.vw * 0.98);
+        const revS = r.dv === 'BEAR' && r.rsi15 > 70 && r.mf15 > 75 && (p > r.vw * 1.02);
+        // preB/preS now also require revReadiness >= 50 (not just a wide RSI band + divergence) so "reversal brewing"
+        // is reserved for setups with genuinely elevated readiness, cutting down on low-signal WATCH spam.
+        const preB = r.dv === 'BULL' && r.rsi15 < 35 && revReadiness >= 50;
+        const preS = r.dv === 'BEAR' && r.rsi15 > 65 && revReadiness >= 50;
+        if (revB) { dir = 'UP'; phase = 'REV'; pathPct = 3; action = 'LONG'; hint = 'Разворот подтверждён (экстремум MFI/RSI + Div)'; }
+        else if (revS) { dir = 'DN'; phase = 'REV'; pathPct = 3; action = 'SHORT'; hint = 'Разворот вниз подтверждён (экстремум MFI/RSI + Div)'; }
+        else if (preB) { dir = 'UP'; phase = 'REV'; pathPct = 0; action = 'WATCH'; hint = `Зреет разворот вверх — готовность ${revReadiness}%`; }
+        else if (preS) { dir = 'DN'; phase = 'REV'; pathPct = 0; action = 'WATCH'; hint = `Зреет разворот вниз — готовность ${revReadiness}%`; }
+    }
+
+    if (!phase && forceSearch) { phase = 'START'; dir = tGlob; action = 'WATCH'; hint = 'Вне тренда'; pathPct = 50; revReadiness = 0; }
+    if (!phase) return null;
+
+    if (wallBlock) {
+        if (dir === 'UP' && action === 'LONG') { if (r.rsi15 > 70 || r.mf15 > 75) { action = 'SHORT'; phase = 'REV'; dir = 'DN'; hint = `Блок: ${wallNote} + Перегрев. Разворот вниз!`; pathPct = 5; revReadiness = 85; } else { action = 'WATCH'; hint = `Блок: ${wallNote}. Ждем пробоя.`; } } 
+        else if (dir === 'DN' && action === 'SHORT') { if (r.rsi15 < 30 || r.mf15 < 25) { action = 'LONG'; phase = 'REV'; dir = 'UP'; hint = `Блок: ${wallNote} + Перепроданность. Отскок вверх!`; pathPct = 5; revReadiness = 85; } else { action = 'WATCH'; hint = `Блок: ${wallNote}. Ждем пробоя.`; } } 
+        else if (action === 'LONG' || action === 'SHORT') { action = 'WATCH'; hint = `Блок: ${wallNote}. Ждем пробоя или отката.`; }
+    } else if (wallWarn && (action === 'LONG' || action === 'SHORT')) { hint = `${hint} (⚠ Преграда: ${wallNote})`; }
+
+    // === МАКРО-ВЕТО (Пункты 2–3): высший предохранитель по инертным 1D/4H. Срабатывает только при наличии свежего макро-кэша. ===
+    // Базовый сигнал уже посчитан выше на младших ТФ. Боевые LONG/SHORT против макро переписываются на WAIT;
+    // ранняя разведка WATCH НЕ блокируется (иначе упустим макро-развороты) — ей лишь добавляется метка конфликта.
+    if (macro && action !== 'WAIT') {
+        const s4 = macro.stoch4h, s1 = macro.stoch1d, s4d = macro.stoch4h_d, s1d = macro.stoch1d_d;
+        // P5: не просто K>80/K<20 (в сильном тренде Stoch там живёт), а реальный ЗАГИБ — K пересёк D внутри экстремальной зоны.
+        // При отсутствии D в кэше (старая запись) условие ложно ⇒ вето не срабатывает (fail-open, как и раньше).
+        const hook4hDn = s4 != null && s4d != null && s4 > 80 && s4d > 80 && s4 < s4d;
+        const hook1dDn = s1 != null && s1d != null && s1 > 80 && s1d > 80 && s1 < s1d;
+        const hook4hUp = s4 != null && s4d != null && s4 < 20 && s4d < 20 && s4 > s4d;
+        const hook1dUp = s1 != null && s1d != null && s1 < 20 && s1d < 20 && s1 > s1d;
+        const macroSupport = hook4hUp || hook1dUp; // 4H/1D: бычий загиб на дне
+        const macroResist  = hook4hDn || hook1dDn; // 4H/1D: медвежий загиб на хаях (истощение)
+        const dailyWick = macro.trend1d === 'UP' && macro.atr1d > 0 && Math.abs(p - macro.dayOpen) < macro.atr1d * MACRO_WICK_ATR;
+        const shortSide = action === 'SHORT' || (action === 'WATCH' && dir === 'DN');
+        const longSide  = action === 'LONG'  || (action === 'WATCH' && dir === 'UP');
+        let conflict = null;
+        if (shortSide && macroSupport) conflict = 'Макро-поддержка (4H/1D на дне)';
+        else if (longSide && macroResist) conflict = 'Макро-сопротивление (4H/1D истощение)';
+        else if (shortSide && dailyWick) conflict = 'Дневная тень (возврат к Open в растущем тренде)';
+        if (conflict) {
+            if (action === 'WATCH') {
+                hint = `${hint} ⚠ Конфликт с 1D/4H: ${conflict}`; // статус СЛЕДИТЬ сохраняется, только метка
+            } else {
+                action = 'WAIT'; macroVeto = true; funnel.vMacro++; hint = `Блокировка: ${conflict}. Риск ${shortSide ? 'шорта' : 'лонга'}`;
+            }
+        }
+    }
+    
+    const sc = scoreFor(sig, dir), tfBonus = (sc_t5 === sc_t15 && sc_t15 === sc_t1h && sc_t5!=='NONE') ? -10 : 0;
+    // Fix8: применяем мультиТФ-фильтр истощения/распределения к БАЛЛУ и ДЕЙСТВИЮ (для всех фаз, кроме WATCH/WAIT).
+    // Штраф режет «силу» зрелых/перегретых входов; veto переводит боевой сигнал в WATCH (симулятор такие не открывает, но в таблице они видны).
+    // Балл понижаем ДО расчёта уровней — тогда safeLevels даст перегретому входу ещё и более тесный SL/TP (меньше места лить).
+    const exh = exhaustionFilter(r, macro, dir);
+    if (exh.penalty) sc.score = Math.max(0, sc.score - exh.penalty);
+    let overheated = exh.veto || exh.penalty >= 12;
+    if (exh.veto && (action === 'LONG' || action === 'SHORT')) { action = 'WATCH'; funnel.vExh++; hint = `${exh.note}. Вход отклонён — жди охлаждения/подтверждения.`; }
+    else if (exh.note && (action === 'LONG' || action === 'SHORT')) { hint = `${hint} ${exh.note}`; }
+    // Fix17: гейт «свободного хода» на 15м — зеркало Fix8. Тот режет вход в перегрев (сверху), этот — вход в ИСТОЩЕНИЕ (снизу):
+    // не лонгуем падающий нож (EGLD: LONG при RSI15 38/StochK 0 → -119) и не шортим перепроданное (XLM: SHORT при StochK 10 → -109; WDC, SPCX).
+    // На логе 10.07: блокирует 4/6 «мёртвых с первой минуты» и 0/12 рабочих (-498 PnL отфильтровано). REV исключён — развороты фейдят экстремумы по замыслу.
+    if ((action === 'LONG' || action === 'SHORT') && phase !== 'REV') {
+        const noRoomL = action === 'LONG' && (r.rsi15 < MOM_LONG_RSI || (r.stochK != null && r.stochK < MOM_LONG_K));
+        const noRoomS = action === 'SHORT' && (r.rsi15 < MOM_SHORT_RSI || (r.stochK != null && r.stochK < MOM_SHORT_K));
+        if (noRoomL || noRoomS) { action = 'WATCH'; funnel.vMom++; hint = `⛔ Нет хода на 15м (RSI ${r.rsi15?.toFixed(0)}, StochK ${r.stochK?.toFixed(0)}) — вход в истощение. Жди восстановления импульса.`; }
+    }
+    const fibL = nearestFib(r.fib, p, dir), levels = safeLevels(fibL, p, r.atr1h, dir, r.stack, sc.score);
+    let stackNote = '';
+    if (r.stack.nearBid && dir === 'UP' && r.stack.nearBid > levels.sl) stackNote = `📊 Bid стена: ${r.stack.nearBid.toFixed(2)} ($${(r.stack.bidVol/1e6).toFixed(1)}M)`;
+    else if (r.stack.nearAsk && dir === 'DN' && r.stack.nearAsk < levels.sl) stackNote = `📊 Ask стена: ${r.stack.nearAsk.toFixed(2)} ($${(r.stack.askVol/1e6).toFixed(1)}M)`;
+    
+    let pri = 100; if (action === 'LONG' || action === 'SHORT') pri -= 35; else if (action === 'WATCH') pri -= 15; pri -= sc.score / 3; if (r.adxVal > 28) pri -= 8; if (r.vr > 2) pri -= 5; pri += tfBonus;
+
+    if (action === 'LONG' || action === 'SHORT') funnel.born++; /* Fix20: боевой сигнал прошёл все гейты */
+    return { phase, dir, action, hint, pathPct, revReadiness, score: sc, priority: pri, atrPct: (r.atr15 && p) ? r.atr15 / p : null, /* Fix23 */ sl: levels.sl, tp1: levels.tp1, tp2: levels.tp2, tp3: levels.tp3, stackNote, moneyFlow: r.moneyFlow, t5: sc_t5, t15: sc_t15, t1h: sc_t1h, adxVal: r.adxVal, isManual: forceSearch, macroVeto, overheated, startKind };
+}
+
+async function ensureMacro(sym){
+    // Макро-Кэш (Пункт 1): 1D/4H инертны — обновляем не чаще раза в MACRO_TTL, иначе ничего не качаем и берём из памяти.
+    const c = macroCache[sym];
+    if (c && (Date.now() - c.ts) < MACRO_TTL) return; // свежо — запросов в API нет вообще
+    try {
+        const [d4h, d1d] = await Promise.all([
+            enq(()=>fetchBo(`${BASE}/fapi/v1/klines?symbol=${sym}&interval=4h&limit=100`,1)),
+            enq(()=>fetchBo(`${BASE}/fapi/v1/klines?symbol=${sym}&interval=1d&limit=100`,1)),
+        ]);
+        const c4 = d4h.map(k=>+k[4]);
+        const o1 = d1d.map(k=>+k[1]), h1 = d1d.map(k=>+k[2]), l1 = d1d.map(k=>+k[3]), c1 = d1d.map(k=>+k[4]);
+        const st4 = stochRSI(c4), st1 = stochRSI(c1);
+        const e9 = ema(c1,9), e21 = ema(c1,21);
+        macroCache[sym] = {
+            stoch4h: st4.k, stoch1d: st1.k,
+            stoch4h_d: st4.d, stoch1d_d: st1.d,   // P5: линии D нужны для детекта загиба K×D в экстремальной зоне
+            trend1d: (e9!=null && e21!=null) ? (e9>e21 ? 'UP' : 'DN') : 'NONE',
+            atr1d: calcATR(h1,l1,c1,14),
+            dayOpen: o1[o1.length-1],   // открытие текущей (формирующейся) дневной свечи
+            ts: Date.now()
+        };
+    } catch(e) { /* при ошибке оставляем прежний кэш (если был); вето просто не сработает — fail-open */ }
+}
+
+// Fix21: дневной контекст — 30 свечей 1d на монету, кэш обновляется раз в час (fire-and-forget, скан не ждёт).
+// Даёт отбору три недостающих масштаба: согласованность 24ч↔3д, позицию в недельном диапазоне, недельное истощение.
+let dailyCtx = {}, dailyCtxTs = 0, dailyCtxLoading = false;
+async function refreshDailyContext(symbols){
+    if (dailyCtxLoading || Date.now() - dailyCtxTs < DAILY_CTX_TTL) return;
+    dailyCtxLoading = true;
+    try{
+        for (const sym of symbols){
+            try{
+                const kd = await enq(()=>fetchBo(`${BASE}/fapi/v1/klines?symbol=${sym}&interval=1d&limit=30`,5));
+                if(!kd || kd.length < 8) continue;
+                const c=kd.map(k=>+k[4]), h=kd.map(k=>+k[2]), l=kd.map(k=>+k[3]), last=c[c.length-1];
+                const h7=Math.max(...h.slice(-7)), l7=Math.min(...l.slice(-7));
+                dailyCtx[sym]={ chg3d:(last-c[c.length-4])/c[c.length-4]*100, chg7d:(last-c[c.length-8])/c[c.length-8]*100,
+                    pos7d: h7>l7 ? (last-l7)/(h7-l7) : 0.5, hi30:Math.max(...h), lo30:Math.min(...l) };
+            }catch(e){}
+        }
+        dailyCtxTs = Date.now();
+        console.log(`[Fix21] Дневной контекст обновлён: ${Object.keys(dailyCtx).length} монет`);
+    } finally { dailyCtxLoading = false; }
+}
+function dailyBoost(sym, chg24){
+    const d = dailyCtx[sym]; if (!d) return 0; // кэш не прогрет — нейтрально, отбор работает как раньше
+    let b = 0;
+    if (Math.sign(chg24) === Math.sign(d.chg3d) && Math.abs(d.chg3d) > 2) b += 2;   // 24ч продолжает 3д — продолжение, не отскок
+    if (d.pos7d >= 0.25 && d.pos7d <= 0.75) b += 1.5;                                // середина недельного диапазона — есть куда идти
+    if (Math.abs(d.chg7d) > 40) b -= 4;                                              // недельное истощение — движение выработано
+    if ((chg24 > 0 && d.pos7d > 0.92 && d.chg7d > 15) || (chg24 < 0 && d.pos7d < 0.08 && d.chg7d < -15)) b -= 3; // прижата к экстремуму недели после хода
+    return b;
+}
+// Fix22: «качество хода» по бесплатной истории радара — гладкость (доля однонаправленных шагов) × величина хода за ~15-17 мин.
+// Чистый устойчивый тренд набирает высоко, рваный памп-дамп — низко. Ноль первые ~15 мин после запуска (радар греется).
+function radarQuality(sym){
+    const rh = radarHist[sym]; if (!rh || rh.length < 12) return 0;
+    const sm = rh.slice(-40); let pos=0, neg=0;
+    for (let i=1; i<sm.length; i++){ const d=sm[i][1]-sm[i-1][1]; if(d>0)pos++; else if(d<0)neg++; }
+    const n = pos+neg; if (!n) return 0;
+    const smooth = Math.abs(pos-neg)/n;
+    const move = Math.abs(sm[sm.length-1][1]-sm[0][1]) / sm[0][1] * 100;
+    return smooth * Math.min(move, 4);
+}
+async function levelOne(limit){
+    setStatus('Уровень 1: тикеры...','');
+    const tickers=await fetchBo(`${BASE}/fapi/v1/ticker/24hr`,40);
+    const cands=tickers.filter(t=>t.symbol.endsWith('USDT')&&+t.quoteVolume>10000000).sort((a,b)=>(+b.quoteVolume)-(+a.quoteVolume)).slice(0,limit);
+    refreshDailyContext(cands.map(c=>c.symbol)); /* Fix21: без await — первый скан идёт по-старому, кэш догонит */
+    const scored=[]; const pf=document.getElementById('pf');
+    for(let i=0;i<cands.length;i++){
+        const t=cands[i]; pf.style.width=((i/cands.length)*50)+'%';
+        try{
+            const k15d=await enq(()=>fetchBo(`${BASE}/fapi/v1/klines?symbol=${t.symbol}&interval=15m&limit=60`,5));
+            const localCandleTime = +k15d[k15d.length-1][0]; // local var, no global mutable state shared across parallel coins
+            const k15={c:k15d.map(k=>+k[4]),v:k15d.map(k=>+k[5])};
+            const cv=k15.v[k15.v.length-1], elMin=Math.max(1,(Date.now()-localCandleTime)/60000), projV=elMin<4?cv:(elMin<15?cv*(15/elMin):cv);
+            const avgV=k15.v.slice(-21,-1).reduce((a,b)=>a+b)/20,vr=projV/avgV;
+            const bb=calcBB(k15.c),bbP=calcBB(k15.c.slice(0,-1)); const squeeze=bb.width<3.0&&bb.width<=bbP.width*1.06;
+            // Fix9: отбор кандидатов больше НЕ награждает уже пройденный путь линейно (раньше монета +60% с |chg%|*0.3 давила старты).
+            // Теперь |chg%| даёт колоколообразный вклад: 0 в покое, пик около L1_CHG_PEAK (умеренное движение), затухание у уже-ушедших (>25%).
+            // Плюс явный бонус ранней «ижекции» — свежий всплеск объёма (vr) при ещё низком chg% — и усиленный вес сжатия. Так старты пробиваются в TOP_N.
+            const chgAbs = Math.abs(+t.priceChangePercent);
+            const chgBell = (chgAbs / L1_CHG_PEAK) * Math.exp(1 - chgAbs / L1_CHG_PEAK); // гамма-колокол: max=1 при chgAbs=L1_CHG_PEAK, →0 при больших значениях
+            const ignition = (vr > 1.5 && chgAbs < 8) ? (vr - 1.5) : 0;                  // объём пришёл, а цена ещё не убежала — самый ранний вход
+            // Fix11: буст радара — рывок ≥1.2% за ~15 мин на монете, ещё «тихой» по 24ч (chg24<12%), проталкивает её в TOP_N.
+            // Требует включённого ЛАЙВа (историю копит WS); на холодном старте радар молчит первые ~15 мин и отбор работает как раньше.
+            const imp = Math.abs(radarImpulse(t.symbol));
+            const radarBoost = (imp >= 1.2 && chgAbs < 12) ? Math.min(imp, 5) * 1.6 : 0;
+            const dBoost = dailyBoost(t.symbol, +t.priceChangePercent); /* Fix21 */
+            const quality = radarQuality(t.symbol);                       /* Fix22 */
+            const l1score=vr*0.5 + chgBell*3.0 + (squeeze?10:0)*0.3 + ignition*1.5 + radarBoost + dBoost;
+            const earlyScore=(squeeze?6:0) + ignition*2 + (chgAbs<6?2:0) + radarBoost*0.5 + Math.max(dBoost,0); /* Fix22: дорожка ранних */
+            scored.push({sym:t.symbol,chg24:+t.priceChangePercent,vol24:+t.quoteVolume,l1score,earlyScore,quality});
+        }catch(e){ console.error('Ошибка в levelOne ' + (t.symbol || ''), e); }
+    }
+    // Fix22: три дорожки вместо одного рейтинга — «громкие» больше не вытесняют «тихих» и «чистых».
+    // Дорожка 1 (TOP_N/2=24): основной рейтинг (моментум+контекст). Дорожка 2 (12): ранние — сжатие/ижекция при малом chg24.
+    // Дорожка 3 (12): качество хода — гладкие устойчивые движения по радару. Дедуп между дорожками.
+    const used=new Set();
+    const pick=(arr,n)=>{ const out=[]; for(const c of arr){ if(out.length>=n)break; if(used.has(c.sym))continue; used.add(c.sym); out.push(c);} return out; };
+    const byMain=[...scored].sort((a,b)=>b.l1score-a.l1score);
+    const byEarly=[...scored].sort((a,b)=>b.earlyScore-a.earlyScore);
+    const byQual=scored.filter(c=>c.quality>0.3).sort((a,b)=>b.quality-a.quality);
+    const sel=[...pick(byMain,TOP_N/2), ...pick(byEarly,TOP_N/4), ...pick(byQual,TOP_N/4)];
+    console.log(`[Fix22] Отбор: основных ${Math.min(TOP_N/2,byMain.length)}, ранних +${sel.length>TOP_N/2?sel.length-TOP_N/2:0} (всего ${sel.length})`);
+    return sel;
+}
+
+async function levelTwo(sym,chg24, forceSearch = false, vol24 = 0){
+    // limit=499 for 5m/15m/1h: даёт полную «прогревочную» историю для EMA200 и сглаженного RSI, при этом
+    // остаётся в корзине Binance [100,500) ⇒ вес запроса по-прежнему 2 (limit=500 уже стоил бы вес 5).
+    const[d5,d15,d1h,d4h,dep]=await Promise.all([
+        enq(()=>fetchBo(`${BASE}/fapi/v1/klines?symbol=${sym}&interval=5m&limit=499`,2)),
+        enq(()=>fetchBo(`${BASE}/fapi/v1/klines?symbol=${sym}&interval=15m&limit=499`,5)),
+        enq(()=>fetchBo(`${BASE}/fapi/v1/klines?symbol=${sym}&interval=1h&limit=499`,5)),
+        enq(()=>fetchBo(`${BASE}/fapi/v1/klines?symbol=${sym}&interval=4h&limit=180`,2)),
+        enq(()=>fetchBo(`${BASE}/fapi/v1/depth?symbol=${sym}&limit=1000`,20).catch(()=>null)),
+    ]);
+    const mk=d=>({o:d.map(k=>+k[1]),h:d.map(k=>+k[2]),l:d.map(k=>+k[3]),c:d.map(k=>+k[4]),v:d.map(k=>+k[5]),tb:d.map(k=>+k[9]),t:d.map(k=>+k[0])});
+    const k5=mk(d5),k15=mk(d15),k1h=mk(d1h),k4h=mk(d4h);
+    k15.lastCandleTime = +d15[d15.length-1][0]; // time passed explicitly via the object, not a shared global, to avoid cross-coin race conditions under parallel requests
+    const price=k15.c[k15.c.length-1]; k15.sym=sym;
+    // P0: абсолютный фильтр истории — без полной «прогревочной» истории (499 свечей) осцилляторы невалидны (щиткоины после листинга).
+    if (k15.c.length < 499) return null;
+    const sig=calcAllSignalsScanner(k5,k15,k1h,k4h,dep);
+    if (sig) sig.sym = sym; /* Fix21: determinePhase читает dailyCtx[sig.sym] для месячного диапазона */
+    if (sig && sig._r) sig._r.vol24 = vol24 || 0; // P6: суточный объём для масштабирования порога стены стакана
+    await ensureMacro(sym); // Макро-Кэш проверяется перед Уровнем 2 (свежий — из памяти, иначе разово обновляется)
+    const phase=determinePhase(sig, forceSearch, macroCache[sym]);
+    if(!phase)return null;
+    if(!forceSearch && phase.action==='WAIT'&&phase.phase.startsWith('TREND')&&phase.score.score<48&&!phase.macroVeto)return null;
+    
+    SIGS[sym]=sig; sparkData[sym]=k15.c.slice(-20);
+    fetchOIScanner(sym).then(d=>{if(d)oiCache[sym]=d;});
+    fetchFRScanner(sym).then(d=>{if(d)frCache[sym]=d;});
+    return{sym,price,chg24,...phase};
+}
+
+function sortAll(){
+    ALL.sort((a,b)=>{
+        const pinA = pinnedSyms.has(a.sym) ? 1 : 0, pinB = pinnedSyms.has(b.sym) ? 1 : 0;
+        if (pinA !== pinB) return pinB - pinA;
+        const phOrd={START:0,START_BREAK:0,TREND_RESUME:1,TREND:2,TREND_BREAK:2,TREND_PULLBACK:3,REV:4}; /* Fix13: START_BREAK зарегистрирован */ /* Fix1: TREND_BREAK зарегистрирован (иначе phOrd[phase]=undefined → NaN ломает сортировку) */
+        const pd=phOrd[a.phase]-phOrd[b.phase];if(pd!==0)return pd;
+        const sd=b.score.score-a.score.score;if(Math.abs(sd)>3)return sd;
+        const pathA=a.phase.startsWith('TREND')?a.pathPct:50,pathB=b.phase.startsWith('TREND')?b.pathPct:50;
+        const pathD=pathA-pathB;if(Math.abs(pathD)>5)return pathD;
+        const mfA=(a.moneyFlow?.net==='IN'?1:0)+(a.stackNote?1:0); const mfB=(b.moneyFlow?.net==='IN'?1:0)+(b.stackNote?1:0);
+        return mfB-mfA;
+    });
+}
+
+function trackWinRate(sym,newPhase,newAction){
+    const prev=prevPhaseAction[sym];
+    if(prev){
+        const wasActive=prev.action==='LONG'||prev.action==='SHORT', nowWait=newAction==='WAIT'||newAction==='WATCH';
+        if(wasActive&&nowWait){
+            const curPrice = wsLastPrices[sym]?.price || (ALL.find(x=>x.sym===sym)?.price) || prev.price;
+            const diffPct = Math.abs((curPrice - prev.price) / prev.price * 100);
+            const isOk=(prev.action==='LONG'&&curPrice>prev.price&&diffPct>0.5)||(prev.action==='SHORT'&&curPrice<prev.price&&diffPct>0.5), ph=prev.phase.startsWith('TREND')?'TREND':prev.phase.startsWith('START')?'START':prev.phase; /* Fix13 */
+            if(!USE_SIM_WR && wrStats[ph]){isOk?wrStats[ph].ok++:wrStats[ph].fail++;} // P9: при USE_SIM_WR инкремент даёт simCloseTrade по факту TP/SL
+            const tot=Object.values(wrStats).reduce((a,s)=>a+s.ok+s.fail,0);
+            if(tot>0){const totalOk=Object.values(wrStats).reduce((a,s)=>a+s.ok,0); document.getElementById('hWR').textContent=`WR ${Math.round(totalOk/tot*100)}% (${totalOk}/${tot})`;}
+        }
+    }
+    prevPhaseAction[sym]={phase:newPhase,action:newAction,price:wsLastPrices[sym]?.price||ALL.find(x=>x.sym===sym)?.price||0};
+}
+
+async function runFullScan(){
+    funnel = {born:0, vMacro:0, vExh:0, vMom:0, vPull:0}; /* Fix20: счётчики за скан */
+    if(scanInProgress){ setStatus('⚠ Скан уже запущен, подождите...',''); return; }
+    scanInProgress=true;
+    try{
+    const limit=parseInt(document.getElementById('limInp').value)||140, pf=document.getElementById('pf'); pf.style.width='0%';
+    let top20; try{top20=await levelOne(limit);}catch(e){setStatus('⚠ Ошибка Уровня 1: '+e.message,'');return;}
+    setStatus(`Уровень 2: ${top20.length} монет...`,'');
+    const newAll=[],newSigs={};
+    for(let i=0;i<top20.length;i++){
+        const{sym,chg24,vol24}=top20[i]; pf.style.width=(50+(i/top20.length)*50)+'%'; setStatus(`Уровень 2: ${i+1}/${top20.length} — ${sym}`,'');
+        try{
+            const result=await levelTwo(sym,chg24,false,vol24);
+            if(result){
+                const prev=prevSignals[sym], prevR=ALL.find(r=>r.sym===sym);
+                const isActive=(result.action==='LONG'||result.action==='SHORT');
+                // P8: антидребезг — боевой сигнал эмитится (beep/история/вход в симулятор) только если держится 2 скана подряд.
+                if(isActive){ signalStreak[sym]=(signalStreak[sym]&&signalStreak[sym].action===result.action)?{action:result.action,n:signalStreak[sym].n+1}:{action:result.action,n:1}; }
+                else { signalStreak[sym]=null; }
+                const confirmed=isActive&&signalStreak[sym].n>=2;
+                const isNewSignal = confirmed && prev!==result.action;
+                if(isNewSignal) { if(liveOn) { result._isNew=true; armSignal(result); } histPush(result); } /* Fix18: вход через взведение */
+                result._liveChanged=liveOn&&prevR&&(prevR.action!==result.action||prevR.phase!==result.phase);
+                if(result._liveChanged){ liveChangeCount++; document.getElementById('hChg').textContent=`↺ ${liveChangeCount}`; setTimeout(()=>{const r2=ALL.find(r=>r.sym===result.sym);if(r2){r2._liveChanged=false;renderFiltered();}},15000); }
+                trackWinRate(sym,result.phase,result.action); if(confirmed||!isActive) prevSignals[sym]=result.action; newAll.push(result); if(SIGS[sym])newSigs[sym]=SIGS[sym];
+            }
+        }catch(e){ console.error('Ошибка в levelTwo ' + (sym || ''), e); }
+    }
+    // Сливаем закрепленные руками монеты и те, по которым открыты сделки
+    const forcedSyms = new Set([...pinnedSyms, ...SIM.active.map(t => t.sym)]);
+    
+    for(const pSym of forcedSyms) {
+        if (!newAll.find(r => r.sym === pSym)) {
+            try {
+                const tData = await fetchBo(`${BASE}/fapi/v1/ticker/24hr?symbol=${pSym}`, 1);
+                const chg24 = tData ? +tData.priceChangePercent : 0;
+                const result = await levelTwo(pSym, chg24, true);
+                if (result) { newAll.push(result); if(SIGS[pSym])newSigs[pSym]=SIGS[pSym]; }
+            } catch(e) { console.error('Ошибка в levelTwo (forced) ' + (pSym || ''), e); }
+        }
+    }
+    ALL=newAll; sortAll(); updateScanTime();
+    const _fun=`🎯 боевых ${funnel.born} | вето: 15м ${funnel.vMom} · перегрев ${funnel.vExh} · макро ${funnel.vMacro} · откат ${funnel.vPull} | взвод Σ${armStats.armed}: ✓${armStats.confirmed} ✗${armStats.invalidated} ⏱${armStats.expired}`;
+    console.log('[ВОРОНКА]', _fun);
+    setStatus(`Готово · ${ALL.length} сигналов`, _fun); /* Fix20: телеметрия воронки вместо пустого сабтайтла */
+    pf.style.width='100%'; setTimeout(()=>pf.style.width='0%',2000);
+    const activePhBtn=document.querySelector(`[data-ph="${CF}"]`); if(activePhBtn)setF(CF,activePhBtn);
+    const activeAfBtn=document.querySelector(`[data-af="${CAF}"]`); if(activeAfBtn)setAF(CAF,activeAfBtn);
+    document.getElementById('fbar').style.display='flex'; renderFiltered();
+    }finally{ scanInProgress=false; }
+}
+
+async function manualScan(){
+    const btn=document.getElementById('scanBtn'); btn.disabled=true; btn.textContent='⏳';
+    document.getElementById('tb').innerHTML=`<tr><td colspan="6" class="empty">⬡ Двухуровневый скан...<br><span style="font-size:11px">140 монет → Top-20 → глубокий анализ</span></td></tr>`;
+    await runFullScan(); btn.disabled=false; btn.textContent='▶ СКАН';
+}
+
+async function runTargetScan() {
+    const btn = document.getElementById('btnTargetScan');
+    if(scanInProgress || btn.disabled){ alert('Скан уже запущен'); return; }
+    scanInProgress = true; btn.disabled = true; btn.textContent = '⏳ ...'; // disabled flag set synchronously, in the same tick as the scanInProgress check, closing the race window for rapid double-clicks
+    const sym = btn.dataset.sym; if(!sym) { scanInProgress = false; btn.disabled = false; return; }
+    try {
+        const tData = await fetchBo(`${BASE}/fapi/v1/ticker/24hr?symbol=${sym}`, 1);
+        const chg24 = tData ? +tData.priceChangePercent : 0;
+        const result = await levelTwo(sym, chg24, true);
+        if(result) {
+            result._isNew = true; if (!ALL.find(r => r.sym === sym)) { pinnedSyms.add(sym); }
+            ALL = ALL.filter(r => r.sym !== sym); ALL.unshift(result); sortAll();
+            document.getElementById('searchInp').value = ''; renderFiltered(); beep();
+        } else { alert(`Монета ${sym} не найдена или ошибка API.`); }
+    } catch (e) { alert(`Ошибка при сканировании ${sym}: ` + e.message); }
+    finally { scanInProgress = false; btn.disabled = false; btn.style.display = 'none'; }
+}
+
+// Fix25: закрепление монеты = ручной вход в симулятор. Направление: боевое действие строки, а если ЖДАТЬ/СЛЕДИТЬ — по направлению фазы.
+// Снятие закрепления сделку НЕ закрывает (она доживает своей жизнью). Если ЛАЙВ выключен — вход зафиксируется по цене последнего скана,
+// а сопровождение (BE/SL/TP/MFE) начнётся при включении ЛАЙВ.
+function simManualEnter(sym){
+    const row = ALL.find(x => x.sym === sym);
+    if (!row) { setStatus(`📌 ${sym}: нет данных строки — сделка не открыта`, ''); return; }
+    if (SIM.active.some(t => t.sym === sym)) { setStatus(`📌 ${sym}: сделка уже открыта`, ''); return; }
+    const act = (row.action === 'LONG' || row.action === 'SHORT') ? row.action : (row.dir === 'UP' ? 'LONG' : row.dir === 'DN' ? 'SHORT' : null);
+    if (!act) { setStatus(`📌 ${sym}: направление не определено — сделка не открыта`, ''); return; }
+    const before = SIM.active.length;
+    simTryEnterTrade(Object.assign({}, row, { action: act }), true);
+    if (SIM.active.length > before) setStatus(`📌 ${sym}: РУЧНАЯ сделка ${act === 'LONG' ? 'ЛОНГ' : 'ШОРТ'} открыта${liveOn ? '' : ' (ЛАЙВ выключен — сопровождение начнётся при включении)'}`, '');
+    else setStatus(`📌 ${sym}: вход не выполнен (лимит слотов или нет SL/TP)`, '');
+}
+function togglePin(sym, e) { e.stopPropagation(); if (pinnedSyms.has(sym)) { pinnedSyms.delete(sym); } else { pinnedSyms.add(sym); simManualEnter(sym); } sortAndRender(); }
+
+function connectBookWS() {
+    if(wsBook){try{wsBook.close();}catch(e){ console.error('Ошибка в wsBook.close', e); }}
+    wsBook = new WebSocket(WS_BOOK);
+    wsBook.onmessage=(e)=>{ try{ const data=JSON.parse(e.data), arr=Array.isArray(data)?data:[data]; for(const t of arr){ if(!t.s || !t.s.endsWith('USDT')) continue; wsBestBook[t.s]={bid:+t.b,ask:+t.a,bidQty:+t.B,askQty:+t.A}; } }catch(e){ console.error('Ошибка в WS book (onmessage)', e); } };
+    wsBook.onclose = () => { if(liveOn) setTimeout(connectBookWS, wsReconnectDelay); }; wsBook.onerror = () => {};
+}
+
+function startScannerWS(){
+    if(wsMini){wsMini.close();wsMini=null;}
+    wsMini=new WebSocket(WS_MINI); setWsStatus('connecting');
+    wsMini.onopen=()=>{ wsReconnectDelay = 5000; setWsStatus('ok');setStatus('⚡ Лайв активен','');};
+    wsMini.onmessage=(e)=>{
+        try{
+            const tickers=JSON.parse(e.data), now=Date.now();
+            for(const t of tickers){
+                const sym=t.s;if(!sym.endsWith('USDT'))continue;
+                const el=document.getElementById('price-'+sym);
+                if(el){ 
+                    const old=wsLastPrices[sym]?.price||0, np=+t.c, pDec = getDecimals(np);
+                    el.textContent='$'+np.toFixed(pDec); el.style.color=np>old?'var(--up)':np<old?'var(--dn)':'var(--t2)'; 
+                    if(el.dataset.tid) clearTimeout(parseInt(el.dataset.tid));
+                    el.dataset.tid = setTimeout(()=>{if(el)el.style.color='var(--t2)';},800).toString(); 
+                }
+                wsLastPrices[sym]={price:+t.c,chg:+t.P};
+                radarSample(sym, +t.c, now); /* Fix11: радар копит историю для детекта ранних импульсов */
+                if(!volBuffer[sym])volBuffer[sym]=[]; volBuffer[sym].push({ts:now,vol:+t.q}); if(volBuffer[sym].length>300) volBuffer[sym].shift();
+            }
+            // Абсолютная синхронизация: симулятор проверяет SL/TP и пересчитывает PNL тем же значением цены, что сканер только что записал в wsLastPrices — кадр в кадр, без собственного таймера
+            if(liveOn && SIM.active.length) simCheckTradesInterval();
+            if(!startScannerWS._lastCheck||now-startScannerWS._lastCheck>20000){startScannerWS._lastCheck=now;detectVolAnomalies();}
+        }catch(e){ console.error('Ошибка в WS mini (onmessage)', e); }
+    };
+    wsMini.onerror=()=>setWsStatus('err'); 
+    wsMini.onclose=()=>{ setWsStatus('off'); if(liveOn) { setTimeout(startScannerWS, wsReconnectDelay); wsReconnectDelay = Math.min(wsReconnectDelay * 1.5, 60000); } };
+    connectBookWS();
+    if(wsLiq){wsLiq.close();wsLiq=null;}
+    const connectLiqWS = () => {
+        wsLiq=new WebSocket(WS_LIQ);
+        wsLiq.onmessage=(e)=>{
+            try{ const d=JSON.parse(e.data), o=d.o||d, sym=o.s||o.symbol; if(!sym||!sym.endsWith('USDT'))return; const side=o.S||o.side, qty=+(o.q||o.origQty||0), price=+(o.ap||o.p||0), usd=qty*price; if(usd<50000)return; liqData[sym]={side:side==='SELL'?'LONG':'SHORT',usd,ts:Date.now()}; 
+            const el=document.querySelector(`[data-liq="${sym}"]`); if(el){el.className=`liq-marker liq-${liqData[sym].side.toLowerCase()}`;el.textContent=`💥 ЛИК ${liqData[sym].side} $${(usd/1000).toFixed(0)}K`;el.style.display="inline-block";} }catch(e){ console.error('Ошибка в WS liq (onmessage)', e); }
+        };
+        wsLiq.onclose=()=>{if(liveOn)setTimeout(connectLiqWS,wsReconnectDelay);};
+    };
+    connectLiqWS();
+}
+
+async function detectVolAnomalies(){
+    if(scanInProgress)return; const now=Date.now(); const activeSyms = new Set(ALL.map(r => r.sym));
+    for(const sym of Object.keys(volBuffer)){
+        if(!activeSyms.has(sym)){ const buf = volBuffer[sym]; if(buf.length === 0 || now - buf[buf.length-1].ts > 600000) delete volBuffer[sym]; continue; }
+        // Active symbols: trim stale points beyond the 10-minute analysis window so the buffer doesn't rely solely on the length cap
+        volBuffer[sym] = volBuffer[sym].filter(v => now - v.ts < 600000);
+    }
+    for(const sym of Object.keys(volBuffer)){
+        const buf=volBuffer[sym];if(buf.length<3)continue;
+        const old3m=buf.find(v=>now-v.ts>=VOL_WINDOW_MS*0.9);if(!old3m)continue;
+        const delta3m=buf[buf.length-1].vol-old3m.vol, deltas=[];
+        for(let i=1;i<buf.length;i++){if(buf[i].ts-buf[i-1].ts<VOL_WINDOW_MS*0.8)continue;deltas.push(buf[i].vol-buf[i-1].vol);}
+        if(deltas.length<2)continue; const avgD=deltas.reduce((a,b)=>a+b)/deltas.length;
+        if(delta3m>avgD*VOL_ANOMALY_X&&delta3m>300000){
+            if(_volAnomalyLock[sym]&&now-_volAnomalyLock[sym]<180000)continue;
+            _volAnomalyLock[sym]=now; setStatus(`⚡ Аномалия: ${sym} (×${(delta3m/avgD).toFixed(1)})`,`Скан: ${new Date().toLocaleTimeString('ru-RU')}`);
+            try{
+                const result=await levelTwo(sym,wsLastPrices[sym]?.chg||0);
+                if(result){ 
+                    result._isNew=true; const idx=ALL.findIndex(r=>r.sym===sym); 
+                    if(idx>=0)ALL[idx]=result;else ALL.unshift(result); 
+                    if (liveOn && (result.action==='LONG'||result.action==='SHORT')) armSignal(result); /* Fix18 */
+                    sortAll();renderFiltered();updateScanTime(); 
+                }
+            }catch(e){ console.error('Ошибка в detectVolAnomalies ' + (sym || ''), e); }
+        }
+    }
+}
+function stopScannerWS(){ 
+    if(wsMini){wsMini.close();wsMini=null;} if(wsBook){wsBook.close();wsBook=null;} if(wsLiq){wsLiq.close();wsLiq=null;} 
+    if(weightResetTimer){clearInterval(weightResetTimer);weightResetTimer=null;} setWsStatus('off'); 
+}
+function setWsStatus(s){ const el=document.getElementById('hWs'); if(s==='ok')el.innerHTML='<span class="ws-ok">● WS онлайн</span>'; else if(s==='connecting')el.innerHTML='<span class="ws-off">● WS подключение...</span>'; else if(s==='err')el.innerHTML='<span class="ws-err">● WS ошибка</span>'; else el.innerHTML='<span class="ws-off">● WS выкл</span>'; }
+
+function toggleLive(){
+    if(liveStarting) return; liveOn=!liveOn; const btn=document.getElementById('liveBtn');
+    if(liveOn){
+        liveStarting = true; btn.className='btn btn-live on';btn.textContent='⏹ СТОП'; liveChangeCount=0;document.getElementById('hChg').textContent='';
+        startScannerWS(); const sb=document.getElementById('scanBtn'); sb.disabled=true;sb.textContent='⏳';
+        simRender();
+        runFullScan().then(()=>{ liveStarting = false; sb.disabled=false;sb.textContent='▶ СКАН'; lastFullScanTime=Date.now();startCountdown(); }).catch(()=>{ liveStarting = false; });
+        liveFullScanTimer=setInterval(async()=>{ setStatus('⚡ Плановый скан (5мин)...',''); await runFullScan(); lastFullScanTime=Date.now(); },LIVE_FULL_SCAN_INTERVAL);
+        
+        simCheckTimer = setInterval(simCheckTradesInterval, 2000); // <-- ЗАПУСК СИМУЛЯТОРА
+    }else{
+        btn.className='btn btn-live';btn.textContent='⚡ ЛАЙВ'; stopScannerWS(); 
+        clearInterval(liveFullScanTimer);liveFullScanTimer=null; clearInterval(liveTimerInterval);liveTimerInterval=null;
+        
+        if(simCheckTimer) { clearInterval(simCheckTimer); simCheckTimer=null; } // <-- ОСТАНОВКА СИМУЛЯТОРА
+        
+        document.getElementById('hTimer').textContent=''; document.getElementById('hChg').textContent=''; setStatus('Лайв выключен',''); simRender();
+    }
+}
+
+function riskL(pct,overheated=false){const base=pct<35?'низкий риск':pct<60?'средний риск':pct<80?'высокий риск':'поздно'; return (overheated&&pct<60)?'перегрев':base;} /* riskL теперь учитывает истощение: не пишет «низкий/средний риск» на перегретой монете */
+function sparkSVG(closes){
+    if(!closes||closes.length<2)return'';
+    const pts=closes.slice(-20), mn=Math.min(...pts), mx=Math.max(...pts), range=mx-mn||1, W=80, H=20;
+    const xs=pts.map((_,i)=>i/(pts.length-1)*W), ys=pts.map(v=>H-(((v-mn)/range)*H)), col=pts[pts.length-1]>=pts[0]?'var(--up)':'var(--dn)';
+    const poly=xs.map((x,i)=>x.toFixed(1)+','+ys[i].toFixed(1)).join(' ');
+    return`<svg class="spark-wrap" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><polyline points="${poly}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linejoin="round"/><circle cx="${xs[xs.length-1].toFixed(1)}" cy="${ys[ys.length-1].toFixed(1)}" r="2" fill="${col}"/></svg>`;
+}
+function oiHTML(sym){ const d=oiCache[sym]; if(!d)return''; const chg=d.oi-d.oiPrev, pct=d.oiPrev>0?(chg/d.oiPrev*100):0, cls=chg>0?'oi-up':'oi-dn', arrow=chg>0?'▲':'▼'; return`<span class="oi-tag ${cls}">OI ${arrow}${Math.abs(pct).toFixed(1)}%</span>`; }
+function frHTML(sym){ const d=frCache[sym]; if(!d||d.fr===null)return''; const fr=d.fr*100, cls=fr<-0.01?'fr-neg':fr>0.05?'fr-ext':fr>0.01?'fr-pos':'oi-tag', sign=fr>0?'+':''; return`<span class="oi-tag ${cls}">FR ${sign}${fr.toFixed(4)}%</span>`; }
+function liqHTML(sym){ const d=liqData[sym]; if(!d||Date.now()-d.ts>120000)return`<span class="liq-marker" data-liq="${sym}" style="display:none"></span>`; return`<span class="liq-marker liq-${d.side.toLowerCase()}" data-liq="${sym}">💥 ЛИК ${d.side} $${(d.usd/1000).toFixed(0)}K</span>`; }
+function phaseHTML(r){
+    if(r.phase==='START_BREAK')return`<div class="ph ${r.dir==='UP'?'ph-trup':'ph-trdn'}">🚀 ПРОБОЙ ${r.dir==='UP'?'↑':'↓'}</div><div class="ph-sub">из сжатия · эксп.</div>`; /* Fix13 */
+    if(r.phase==='START')return`<div class="ph ph-start">${r.startKind==='FLAG'?'⚑ ФЛАГ':'⬡ СТАРТ'}</div><div class="ph-sub">${r.isManual?'Вне тренда':(r.startKind==='FLAG'?'пауза в движении':'Аккумуляция у дна')}</div>`; /* Fix12: честный ярлык */
+    if(r.phase==='REV'&&(r.action==='LONG'||r.action==='SHORT'))return`<div class="ph ph-rev">◈ РАЗВОРОТ</div><div class="ph-sub">Ранний вход</div>`;
+    if(r.phase==='REV'){const pct=r.revReadiness||0;return`<div class="ph ph-prerev">◎ ЗРЕЕТ РАЗВОРОТ</div><div class="ready-wrap"><div class="ready-lbl"><span>Готовность</span><span style="color:var(--pu);font-weight:700">${pct}%</span></div><div class="ready-track"><div class="ready-fill" style="width:${pct}%"></div></div></div>`;}
+    if(r.phase==='TREND_BREAK')return`<div class="ph ${r.dir==='UP'?'ph-trup':'ph-trdn'}">⚡ СЛОМ ${r.dir==='UP'?'↑':'↓'}</div><div class="ph-sub">MSB · ${riskL(r.pathPct,r.overheated)}</div>`; /* Fix1: MSB как отдельная фаза (продолжение по слому структуры) */
+    if(r.dir==='UP')return`<div class="ph ph-trup">▲ ТРЕНД</div><div class="ph-sub">${riskL(r.pathPct,r.overheated)}</div>`;
+    return`<div class="ph ph-trdn">▼ ТРЕНД</div><div class="ph-sub">${riskL(r.pathPct,r.overheated)}</div>`;
+}
+function actHTML(r){ const m={LONG:['at-l','▲ ЛОНГ'],SHORT:['at-s','▼ ШОРТ'],WAIT:['at-w','⏸ ЖДАТЬ'],WATCH:['at-o','◉ СЛЕДИТЬ']}; const[cls,txt]=m[r.action]||['at-w','—']; const _a=armedSignals[r.sym]; const armed=_a&&_a.action===r.action?`<div class="ah" style="color:var(--warn)">⏳ ВЗВЕДЁН · ждёт хода ${(_a.action==='LONG'?'+':'-')}${((_a.confPct||ARM_CONFIRM_PCT)*100).toFixed(2)}% (осталось ${Math.max(0,Math.ceil((ARM_TTL_MS-(Date.now()-_a.ts))/60000))}м)</div>`:''; return`<div class="at ${cls}">${txt}</div>${armed}<div class="ah">${r.hint}</div>`; } /* Fix18: бейдж взведения */
+function matrixHTML(sig,dir){
+    const items=['cross','adx','rsi15','mfi','stoch','div','ema15','vwap','vol'];
+    const sc=scoreFor(sig,dir), barW=dir==='UP'?(sc.bull/Math.max(sc.total,1)*100):(sc.bear/Math.max(sc.total,1)*100);
+    const barC=barW>65?'var(--up)':barW>40?'var(--warn)':'var(--dn)', scCls=barW>60?'bull':barW<40?'bear':'neut';
+    const cells=items.map(k=>{
+        const s=sig[k];if(!s)return'';
+        const agree=dir==='UP'?s.bull===true:s.bull===false, disagr=dir==='UP'?s.bull===false:s.bull===true;
+        const cls=agree?'gb':disagr?'rb':'', dot=agree?'g':disagr?'r':'y';
+        let v=s.val; if(s.zone==='HOT')v+='🔴';else if(s.zone==='COLD')v+='🔵'; if(s.spike)v='⚡'+v;
+        const vc=agree?(dir==='UP'?'var(--up)':'var(--dn)'):disagr?(dir==='UP'?'var(--dn)':'var(--up)'):'var(--t3)';
+        return`<div class="mxi ${cls}"><div class="mxi-d ${dot}"></div><div class="mxi-l">${s.label}</div><div class="mxi-v" style="color:${vc}">${v}</div></div>`;
+    }).join('');
+    const scLabel=dir==='UP'?`${sc.bull}/${sc.total} бычьих`:`${sc.bear}/${sc.total} медвеж.`;
+    return`<div class="mx"><div class="mx-hd"><span class="mx-sc ${scCls}">${barW.toFixed(0)}% · ${scLabel}</span><span class="mx-lbl-top">▣ Матрица</span></div><div class="mx-g">${cells}</div><div class="mx-bar-w"><div class="mx-bar" style="width:${barW}%;background:${barC}"></div></div></div>`;
+}
+function pathHTML(r){
+    if(r.phase==='START')return`<div class="pp" style="color:var(--warn)">${r.isManual?'—':'Не начался'}</div><div class="pr">${r.isManual?'—':'ждать пробоя'}</div>`;
+    if(r.phase==='REV')return`<div class="pp" style="color:var(--pu)">${r.pathPct.toFixed(0)}%</div><div class="pr">новое движение</div>`;
+    const pct=Math.max(0,Math.min(100,r.pathPct)), c=pct<35?'var(--up)':pct<65?'var(--warn)':'var(--dn)';
+    return`<div class="pp" style="color:${c}">${pct.toFixed(0)}%</div><div class="pb-w"><div class="pb-f" style="width:${pct}%;background:${c}"></div></div><div class="pr">${riskL(pct,r.overheated)}</div>`;
+}
+function levelsHTML(r){
+    if(!r.tp1)return`<div style="color:var(--t2);font-size:10px">нет данных</div>`;
+    const pDec = getDecimals(r.price), f=v=>v!=null?v.toFixed(pDec):'—';
+    const safeStackNote = r.stackNote ? escAttr(r.stackNote) : '';
+    return`<div class="rw"><div class="rsl">SL ${f(r.sl)}</div><div class="rtps"><div class="rtp tp1c"><span class="rl">T1</span><span>${f(r.tp1)}</span></div><div class="rtp tp2c"><span class="rl">T2</span><span>${f(r.tp2)}</span></div><div class="rtp tp3c"><span class="rl">T3</span><span>${f(r.tp3)}</span></div></div>${safeStackNote?`<div class="stack-note">${safeStackNote}</div>`:''}<div class="fib-src">Fib 4H + ATR</div></div>`;
+}
+function dismissRow(sym,e){e.stopPropagation();dismissedSyms.add(sym);lsSaveDismissed();renderFiltered();}
+
+function renderRow(r,sig){
+    const pDec = getDecimals(r.price); const chgC=r.chg24>0?'var(--up)':'var(--dn)';
+    const isPinned = pinnedSyms.has(r.sym), pinCls = isPinned ? 'active' : '', rowPinnedCls = isPinned ? 'row-pinned' : '';
+    const rowCls=r.phase.startsWith('START')?'row-start':r.phase==='REV'?(r.action==='WATCH'?'row-prerev':'row-rev'):r.dir==='UP'?'row-trup':'row-trdn';
+    const glow=r._isNew?'glow-new':'', liveChg=r._liveChanged?'live-changed':'';
+    let mfHtml=''; if(r.moneyFlow){const cl=r.moneyFlow.net==='IN'?'mf-in':'mf-out';mfHtml=`<div class="mf-tag ${cl}">${r.moneyFlow.net==='IN'?'▲':'▼'} ${r.moneyFlow.buy.toFixed(0)}% buy</div>`;}
+    const adxC=r.adxVal>ADX_TREND?'var(--up)':r.adxVal<ADX_FLAT?'var(--t2)':'var(--warn)', trendCls=r.dir==='UP'?'up':'dn', trendTxt=r.dir==='UP'?'▲ UP':'▼ DN';
+    const sym=escAttr(r.sym); 
+    // Метка «низкое качество»: активный сигнал с баллом ниже порога (REV<60, тренд<50). Не прячем — помечаем, решение за тобой.
+    const _isActiveSig = (r.action==='LONG'||r.action==='SHORT');
+    const _minQ = (r.phase==='REV') ? 60 : 50;
+    const lowQBadge = (_isActiveSig && (r.score?.score||0) < _minQ)
+        ? `<div style="margin-top:4px;display:inline-block;font-family:var(--fm);font-size:9px;font-weight:700;letter-spacing:.3px;color:#ffb020;background:rgba(255,176,32,.12);border:1px solid rgba(255,176,32,.45);border-radius:4px;padding:1px 5px" title="Балл ниже порога качества (REV<60, тренд<50) — слабый сигнал, вход на свой риск">⚠ НИЗКОЕ КАЧЕСТВО</div>`
+        : ''; 
+    
+    const mainRow = `<tr class="${rowCls} ${glow} ${liveChg} ${rowPinnedCls}" data-sym="${r.sym}">
+        <td><div class="coin-top"><button class="dismiss-btn" onclick="dismissRow('${sym}',event)" title="Скрыть">✕</button><button class="btn-pin ${pinCls}" onclick="togglePin('${sym}',event)" title="Закрепить">📌</button><div><div class="cn" onclick="navigator.clipboard?.writeText('${sym}')" title="Копировать">${r.sym}</div><div class="trend-badge ${trendCls}">${trendTxt}</div></div></div><div class="cp" id="price-${r.sym}">$${r.price.toFixed(pDec)}</div><div class="cc" style="color:${chgC}">${r.chg24>0?'+':''}${r.chg24.toFixed(2)}%</div>${mfHtml}<div class="oi-row">${oiHTML(r.sym)}${frHTML(r.sym)}</div>${liqHTML(r.sym)}${sparkSVG(sparkData[r.sym])}<button class="btn-inline-snip" onclick="toggleInlineSniper('${sym}')">▼ ДОП. СКАН</button></td>
+        <td>${phaseHTML(r)}<div style="margin-top:6px">${actHTML(r)}</div>${lowQBadge}<div style="margin-top:3px;font-family:var(--fm);font-size:10px;color:${r.score.score>60?'var(--up)':r.score.score<40?'var(--dn)':'var(--warn)'}">Сила: ${r.score.score}%</div></td>
+        <td class="hide-m">${pathHTML(r)}</td>
+        <td><div class="tfs"><span class="tf ${r.t5==='UP'?'up':r.t5==='DN'?'dn':''}">5m${r.t5==='UP'?'▲':r.t5==='DN'?'▼':'-'}</span><span class="tf ${r.t15==='UP'?'up':r.t15==='DN'?'dn':''}">15m${r.t15==='UP'?'▲':r.t15==='DN'?'▼':'-'}</span><span class="tf ${r.t1h==='UP'?'up':r.t1h==='DN'?'dn':''}">1H${r.t1h==='UP'?'▲':r.t1h==='DN'?'▼':'-'}</span></div><div class="adx-badge" style="color:${adxC}">ADX·1H: ${r.adxVal?.toFixed(0)||'—'}</div></td>
+        <td>${sig?matrixHTML(sig,r.dir):'—'}</td><td>${levelsHTML(r)}</td></tr>`;
+
+    const snipRow = `<tr id="snip-row-${r.sym}" class="snip-panel-row" style="display:none;"><td colspan="6" id="snip-content-${r.sym}" class="snip-panel-content"></td></tr>`;
+    return mainRow + snipRow;
+}
+
+function renderTable(results){
+    const tb=document.getElementById('tb');
+    if(!results.length){tb.innerHTML=`<tr><td colspan="6" class="empty">◎ Нет сигналов</td></tr>`;return;}
+
+    const openSnipers={};
+    document.querySelectorAll('.snip-panel-row').forEach(row=>{ if(row.style.display==='table-row'){ const sym=row.id.replace('snip-row-',''), cnt=document.getElementById(`snip-content-${sym}`); if(cnt)openSnipers[sym]=cnt.innerHTML; } });
+
+    const groups=[{key:'START',label:'🟡 СТАРТ ДВИЖЕНИЯ',color:'var(--warn)'},{key:'START_BREAK',label:'🚀 ПРОБОЙ СЖАТИЯ (ЭКСП.)',color:'var(--warn)'},{key:'TREND_RESUME',label:'🔥 ВОЗОБНОВЛЕНИЕ ТРЕНДА',color:'var(--blue)'},{key:'TREND',label:'🟢 ДВИЖЕНИЕ ПО ТРЕНДУ',color:'var(--up)'},{key:'TREND_BREAK',label:'⚡ СЛОМ СТРУКТУРЫ (MSB)',color:'var(--up)'},{key:'TREND_PULLBACK',label:'⏳ ОТКАТ / ЗОНА ДОБОРА',color:'var(--t3)'},{key:'REV',label:'🔮 РАЗВОРОТ / ЗРЕЕТ РАЗВОРОТ',color:'var(--pu)'}]; /* Fix1: добавлена группа TREND_BREAK */
+    let html='';
+    for(const g of groups){
+        const rows=results.filter(r=>r.phase===g.key);if(!rows.length)continue;
+        html+=`<tr class="ghdr"><td colspan="6" style="color:${g.color}">${g.label} · ${rows.length}</td></tr>`;
+        for(const r of rows){html+=renderRow(r,SIGS[r.sym]);}
+    }
+    tb.innerHTML=html;
+
+    for(const[sym,content]of Object.entries(openSnipers)){ const row=document.getElementById(`snip-row-${sym}`), cnt=document.getElementById(`snip-content-${sym}`); if(row&&cnt){row.style.display='table-row';cnt.innerHTML=content;} }
+}
+
+function sortAndRender(){sortAll();renderFiltered();}
+function renderFiltered(){
+    let search = (document.getElementById('searchInp')?.value || '').trim().toUpperCase();
+    if (search && !search.endsWith('USDT') && search.length > 2) search += 'USDT';
+
+    let filtered=CF==='ALL'?[...ALL]:ALL.filter(r=>r.phase===CF || (CF==='TREND' && r.phase.startsWith('TREND')));
+    if(CAF!=='ALL')filtered=filtered.filter(r=>r.action===CAF);
+    
+    const exactMatch = ALL.find(r => r.sym === search);
+    if(search)filtered=filtered.filter(r=>r.sym.includes(search));
+    filtered=filtered.filter(r=>!dismissedSyms.has(r.sym));
+    
+    renderTable(filtered);
+    document.getElementById('nAll').textContent=ALL.length; document.getElementById('nStart').textContent=ALL.filter(r=>r.phase.startsWith('START')).length; /* Fix13 */
+    document.getElementById('nTrend').textContent=ALL.filter(r=>r.phase.startsWith('TREND')).length; document.getElementById('nRev').textContent=ALL.filter(r=>r.phase==='REV').length;
+    document.getElementById('fInfo').textContent=`Показано: ${filtered.length}`;
+
+    const targetBtn = document.getElementById('btnTargetScan');
+    if (search && search.length > 4 && search.endsWith('USDT') && !exactMatch) { targetBtn.style.display = 'inline-block'; targetBtn.textContent = `🔍 СКАН ${search}`; targetBtn.dataset.sym = search; } else { targetBtn.style.display = 'none'; }
+}
+function setAF(af,btn){ CAF=af; document.querySelectorAll('.afbtn').forEach(b=>b.className='afbtn'); if(af!=='ALL'){const map={LONG:'a-long',SHORT:'a-short',WATCH:'a-watch',WAIT:'a-wait'};btn.className=`afbtn ${map[af]||''}`;} renderFiltered(); }
+function setF(ph,btn){ CF=ph; document.querySelectorAll('.pbtn').forEach(b=>b.className='pbtn'); btn.className=`pbtn a-${ph.toLowerCase()}`; renderFiltered(); }
+function setStatus(main,sub){ document.getElementById('hMain').textContent=main; if(sub!==undefined)document.getElementById('hSub').textContent=sub; }
+function updateScanTime(){ document.getElementById('hSub').textContent=`Скан: ${new Date().toLocaleTimeString('ru-RU')}`; }
+function startCountdown(){ clearInterval(liveTimerInterval); liveTimerInterval=setInterval(()=>{ if(!lastFullScanTime)return; const rem=Math.max(0,LIVE_FULL_SCAN_INTERVAL-(Date.now()-lastFullScanTime)), m=Math.floor(rem/60000), s=Math.floor((rem%60000)/1000).toString().padStart(2,'0'); document.getElementById('hTimer').textContent=`⏱ ${m}:${s}`; },1000); }
+
+const calcLiquidityBias = (bidWalls, askWalls) => {
+    const bidVol = bidWalls.reduce((s, w) => s + w.vol, 0), askVol = askWalls.reduce((s, w) => s + w.vol, 0), total = bidVol + askVol;
+    if (total === 0) return { bias: 'NEUTRAL', bidPct: 50, askPct: 50 };
+    const bidPct = (bidVol / total) * 100, askPct = (askVol / total) * 100; return { bias: bidPct > 60 ? 'BUY' : askPct > 60 ? 'SELL' : 'NEUTRAL', bidPct, askPct };
+};
+
+async function fetchSniperData(sym, signal, mainRow = null, matrixSig = null) {
+    // k4h removed: it was fetched but never used anywhere in this function (dead request, wasted API weight).
+    // 5m/15m/1h подняты до limit=499 (Задача 2 — расширение истории старших ТФ для точных EMA200/RSI).
+    // 499 намеренно: корзина Binance [100,500) ⇒ вес остаётся 2. limit=500 попал бы в [500,1000] и стоил бы вес 5.
+    // signal — опциональный AbortSignal: при открытии новой монеты («Аккордеон») незавершённые запросы старой монеты обрываются.
+    const [ k5R, k15R, k1hR, depthR, tickR, lsA1h, lsP1h, lsA5m, lsP5m, oiR, frR ] = await Promise.all([
+        enqSniper(()=>fetchBo(`${BASE}/fapi/v1/klines?symbol=${sym}&interval=5m&limit=499`, 2, 4, signal)),
+        enqSniper(()=>fetchBo(`${BASE}/fapi/v1/klines?symbol=${sym}&interval=15m&limit=499`, 2, 4, signal)),
+        enqSniper(()=>fetchBo(`${BASE}/fapi/v1/klines?symbol=${sym}&interval=1h&limit=499`, 2, 4, signal)),
+        enqSniper(()=>fetchBo(`${BASE}/fapi/v1/depth?symbol=${sym}&limit=1000`, 20, 4, signal)),
+        enqSniper(()=>fetchBo(`${BASE}/fapi/v1/ticker/24hr?symbol=${sym}`, 1, 4, signal)),
+        enqSniper(()=>fetchSafe(`${BASE}/futures/data/globalLongShortAccountRatio?symbol=${sym}&period=1h&limit=1`, 1, signal)),
+        enqSniper(()=>fetchSafe(`${BASE}/futures/data/topLongShortPositionRatio?symbol=${sym}&period=1h&limit=1`, 1, signal)),
+        enqSniper(()=>fetchSafe(`${BASE}/futures/data/globalLongShortAccountRatio?symbol=${sym}&period=5m&limit=1`, 1, signal)),
+        enqSniper(()=>fetchSafe(`${BASE}/futures/data/topLongShortPositionRatio?symbol=${sym}&period=5m&limit=1`, 1, signal)),
+        enqSniper(()=>fetchSafe(`${BASE}/futures/data/openInterestHist?symbol=${sym}&period=1h&limit=6`, 1, signal)),
+        enqSniper(()=>fetchSafe(`${BASE}/fapi/v1/fundingRate?symbol=${sym}&limit=1`, 1, signal))
+    ]);
+
+    const mapK = (raw) => ({ h: raw.map(k => +k[2]), l: raw.map(k => +k[3]), c: raw.map(k => +k[4]), v: raw.map(k => +k[5]), takerBuyBase: raw.map(k => +k[9]) });
+    const k15 = mapK(k15R), k1h = mapK(k1hR); const livePrice = tickR ? +tickR.lastPrice : k15.c[k15.c.length - 1]; 
+    const e9_1h=ema(k1h.c, 9), e21_1h=ema(k1h.c, 21), t1h = e9_1h&&e21_1h ? (e9_1h > e21_1h ? 'UP' : 'DN') : 'NONE';
+    const rsi1hArr = rsiArr(k1h.c), rsi1h = rsi1hArr[rsi1hArr.length - 1];
+    const mfi1h = mfi(k1h.h, k1h.l, k1h.c, k1h.v); const stochRsi1h = calcStochRSISniper(k1h.c); const kdj1h = calcKDJ(k1h.h, k1h.l, k1h.c); const adxData = calcADX(k1h.h, k1h.l, k1h.c);
+    const askWalls = getSmartWalls(depthR.asks, livePrice, false), bidWalls = getSmartWalls(depthR.bids, livePrice, true);
+    const cvd = calcCVD(k15), orderFlow15 = calcOrderFlow(k15, 20); const getRatio = (d) => d && d.length > 0 ? +d[0].longShortRatio : null;
+
+    let oiData = null; if (oiR && oiR.length >= 2) { const latest = +oiR[oiR.length - 1].sumOpenInterest, prev = +oiR[0].sumOpenInterest, latestUsdt = +oiR[oiR.length - 1].sumOpenInterestValue; oiData = { current: latestUsdt, change6h: ((latest - prev) / prev) * 100 }; }
+    const funding = (frR && frR.length > 0) ? +frR[0].fundingRate : null;
+    let nextFundingMs = null; if(frR && frR.length > 0 && frR[0].nextFundingTime) { nextFundingMs = Math.max(0, +frR[0].nextFundingTime - Date.now()); }
+
+    const resData = { price: livePrice, cvd, t1h, heat: { rsi: rsi1h, mfi: mfi1h, kdj: kdj1h.j, adx: adxData.adx }, stochRsi: stochRsi1h, walls: { askWalls, bidWalls }, orderFlow: orderFlow15, liqBias: calcLiquidityBias(bidWalls, askWalls), sentiment: { acc1h: getRatio(lsA1h), pos1h: getRatio(lsP1h), acc5m: getRatio(lsA5m), pos5m: getRatio(lsP5m) }, funding, oi: oiData, nextFundingMs };
+    resData.advice = buildInlineAdvice(resData, mainRow, matrixSig); return resData;
+}
+
+function buildInlineAdvice(d, mainRow = null, sig = null) {
+    // === Задача 1 — слияние Main → Sniper ===
+    // Форма возврата {signal,color,title,text} НЕ меняется, поэтому buildInlineSniperHTML работает без правок.
+    // mainRow (объект монеты из ALL) и sig (матрица из SIGS) опциональны: если монеты нет в основном скане,
+    // вердикт строится только на данных Снайпера (fail-safe), интерфейс не ломается.
+    const tfArrow = t => t === 'UP' ? '▲' : t === 'DN' ? '▼' : '–';
+    const fmtR = v => (v != null) ? v.toFixed(2) : '—';
+
+    // --- Консенсус матрицы основного сканера (та же логика, что в scoreFor) ---
+    let mBull = 0, mBear = 0;
+    if (sig) {
+        const KEYS = ['ema5','ema15','cross','rsi15','rsi1h','mfi','stoch','adx','vwap','div'];
+        for (const k of KEYS) { if (sig[k]) { if (sig[k].bull === true) mBull++; else if (sig[k].bull === false) mBear++; } }
+    }
+
+    // --- Фьюжн-скор: >0 — перевес в пользу лонга, <0 — в пользу шорта (ТА сканера + фундамент Снайпера) ---
+    let score = 0;
+    if (mainRow) {
+        if (mainRow.dir === 'UP') score += 1; else if (mainRow.dir === 'DN') score -= 1;
+        if (mainRow.action === 'LONG') score += 2; else if (mainRow.action === 'SHORT') score -= 2;
+        score += Math.sign(mBull - mBear);
+    }
+    if (d.t1h === 'UP') score += 1; else if (d.t1h === 'DN') score -= 1;
+    if (d.heat.rsi > 70) score -= 1; else if (d.heat.rsi < 30) score += 1;
+    if (d.heat.mfi > 75) score -= 1; else if (d.heat.mfi < 25) score += 1;
+    if (d.stochRsi.k != null) { if (d.stochRsi.k > 80) score -= 2; else if (d.stochRsi.k < 20) score += 2; }
+    if (d.cvd < 0 && d.orderFlow.sellPct > 55) score -= 2; else if (d.cvd > 0 && d.orderFlow.buyPct > 55) score += 2;
+    if (d.funding != null) { if (d.funding > 0.0005) score -= 1; else if (d.funding < -0.0005) score += 1; }
+    if (d.sentiment.pos1h != null) { if (d.sentiment.pos1h > 1.15) score += 1; else if (d.sentiment.pos1h < 0.87) score -= 1; }
+    // Fix7: экстремальный перекос ТОЛПЫ — контрарный сигнал (толпа в лонгах = топливо для снижения, и наоборот).
+    // Кейс XAGUSDT: толпа 5.23 лонг при падающей цене — раньше это вообще не учитывалось, и вердикт уходил в «вверх».
+    if (d.sentiment.acc1h != null) { if (d.sentiment.acc1h > 2.5) score -= 1; else if (d.sentiment.acc1h < 0.4) score += 1; }
+
+    const adxVal = (mainRow && mainRow.adxVal != null) ? mainRow.adxVal : d.heat.adx;
+    const flat = adxVal < ADX_FLAT;
+    const squeeze = !!(sig && sig.bb && sig.bb.squeeze) || (mainRow && mainRow.phase === 'START');
+
+    // === Структурированный абзац: ТА основного сканера ↔ фундамент Снайпера ===
+    const parts = [];
+
+    if (mainRow) {
+        const phaseLabel = {START:'Старт движения', START_BREAK:'Пробой сжатия (эксперимент)', TREND:'Движение по тренду', TREND_RESUME:'Возобновление тренда', TREND_BREAK:'Слом структуры (MSB)', TREND_PULLBACK:'Откат / зона добора', REV:'Разворот'}[mainRow.phase] || mainRow.phase;
+        const actLabel = {LONG:'ЛОНГ', SHORT:'ШОРТ', WATCH:'СЛЕДИТЬ', WAIT:'ОЖИДАНИЕ'}[mainRow.action] || mainRow.action;
+        const dirLabel = mainRow.dir === 'UP' ? 'вверх' : mainRow.dir === 'DN' ? 'вниз' : 'не определено';
+        let ta = `<b>ТА сканера:</b> фаза «${phaseLabel}», сигнал ${actLabel} (${dirLabel}), сила ${mainRow.score?.score ?? '—'}%. ТФ 5м/15м/1ч: ${tfArrow(mainRow.t5)} ${tfArrow(mainRow.t15)} ${tfArrow(mainRow.t1h)}. Матрица: ${mBull} за рост / ${mBear} за падение, ADX ${adxVal.toFixed(0)} (${flat ? 'флэт' : 'тренд'}).`;
+        if (mainRow.macroVeto) ta += ' ⚠ Активно макро-вето 1D/4H.';
+        if (mainRow.hint) ta += ` Ядро: ${mainRow.hint}`;
+        parts.push(ta);
+    } else {
+        parts.push('<b>ТА сканера:</b> данные основной таблицы недоступны (монета вне текущего скана) — вердикт построен только на данных Снайпера.');
+    }
+
+    const cvdTxt = d.cvd > 0 ? 'CVD плюсовой (скрытые покупки)' : d.cvd < 0 ? 'CVD минусовой (скрытые продажи)' : 'CVD нейтральный';
+    const fundTxt = d.funding == null ? 'фандинг —'
+        : d.funding > 0.0005 ? `фандинг +${(d.funding*100).toFixed(4)}% (перегрев лонгов)`
+        : d.funding < -0.0005 ? `фандинг ${(d.funding*100).toFixed(4)}% (давят шорты)`
+        : `фандинг ${(d.funding*100).toFixed(4)}% (нейтральный)`;
+    const stochTxt = d.stochRsi.k == null ? 'StochRSI 1ч —'
+        : `StochRSI 1ч ${d.stochRsi.k.toFixed(0)} (${d.stochRsi.k > 80 ? 'перегрет' : d.stochRsi.k < 20 ? 'перепродан' : 'в норме'})`;
+    parts.push(`<b>Снайпер:</b> ордер-флоу ${d.orderFlow.buyPct.toFixed(0)}% покупки / ${d.orderFlow.sellPct.toFixed(0)}% продажи, ${cvdTxt}, ${fundTxt}. ${stochTxt}, RSI ${d.heat.rsi.toFixed(0)} / MFI ${d.heat.mfi.toFixed(0)}. Сентимент 1ч — толпа ${fmtR(d.sentiment.acc1h)}, киты ${fmtR(d.sentiment.pos1h)}.`);
+
+    // Сопоставление направлений ТА и ордер-флоу
+    const taDir = mainRow ? (mainRow.dir === 'UP' ? 1 : mainRow.dir === 'DN' ? -1 : 0) : 0;
+    const fundDir = (d.cvd > 0 && d.orderFlow.buyPct > 55) ? 1 : (d.cvd < 0 && d.orderFlow.sellPct > 55) ? -1 : 0;
+    if (mainRow && taDir !== 0 && fundDir !== 0) {
+        parts.push(taDir === fundDir
+            ? `<b>Сопоставление:</b> ТА и ордер-флоу совпали по направлению ${taDir > 0 ? 'вверх' : 'вниз'} — сценарий усиливается.`
+            : `<b>Сопоставление:</b> ТА смотрит ${taDir > 0 ? 'вверх' : 'вниз'}, но ордер-флоу/CVD тянет в обратную сторону — высокий риск ложного движения.`);
+    } else if (fundDir !== 0) {
+        parts.push(`<b>Сопоставление:</b> ордер-флоу даёт перевес ${fundDir > 0 ? 'покупателей' : 'продавцов'}, направление от ТА не выражено.`);
+    } else {
+        parts.push(`<b>Сопоставление:</b> явного перекоса по ордер-флоу нет — рынок сбалансирован.`);
+    }
+
+    // === ИТОГОВЫЙ ВЕРДИКТ ===
+    let signal = 'NEUTRAL', color = 'dim', title = 'Нейтрально (вне сделки)', verdict = 'Баланс сил, вне сделки.';
+    const active = mainRow && (mainRow.action === 'LONG' || mainRow.action === 'SHORT');
+
+    if (flat && Math.abs(score) < 3 && !active && !squeeze) {
+        signal = 'NEUTRAL'; color = 'dim'; title = 'Игнор, мёртвая зона'; verdict = 'Игнор, мёртвая зона: тренда нет, перевеса сил нет.';
+    } else if (squeeze && Math.abs(score) < 4) {
+        // Fix7: раньше направление пробоя бралось из знака score, причём score>=0 (включая ровно 0 — полную неопределённость!)
+        // уверенно печатал «пробой вверх» — даже когда сканер показывал DN и матрица была медвежьей (кейс XAGUSDT).
+        // Теперь: фьюжн решает только при явном перевесе (|score|>=2), при ничьей направление берём у сканера,
+        // при отсутствии обоих — честно пишем «направление не определено». Конфликт фьюжна со сканером помечается.
+        const _taD = mainRow ? (mainRow.dir === 'UP' ? 1 : mainRow.dir === 'DN' ? -1 : 0) : 0;
+        const _bo = Math.abs(score) >= 2 ? Math.sign(score) : _taD;
+        if (_bo > 0) { signal = 'WARN'; color = 'warn'; title = 'Накопление · ожидание пробоя вверх'; verdict = 'Ожидание пробоя вверх, идёт накопление.'; }
+        else if (_bo < 0) { signal = 'WARN'; color = 'warn'; title = 'Распределение · ожидание пробоя вниз'; verdict = 'Ожидание пробоя вниз, идёт распределение.'; }
+        else { signal = 'NEUTRAL'; color = 'dim'; title = 'Сжатие · направление пробоя не определено'; verdict = 'Сжатие: явного перевеса сил нет — направление не угадываем, торговать только сам пробой границ.'; }
+        if (_taD !== 0 && Math.abs(score) >= 2 && Math.sign(score) !== _taD) { verdict += ` ⚠ Конфликт: фундамент тянет ${score > 0 ? 'вверх' : 'вниз'}, а ТА сканера смотрит ${_taD > 0 ? 'вверх' : 'вниз'} — надёжность сценария ниже.`; }
+    } else if (mainRow && mainRow.action === 'LONG' && score >= 4) {
+        signal = 'LONG'; color = 'up'; title = 'Подтверждённый Лонг'; verdict = 'Подтверждённый Лонг: ТА и фундамент за рост.';
+    } else if (mainRow && mainRow.action === 'SHORT' && score <= -4) {
+        signal = 'SHORT'; color = 'dn'; title = 'Подтверждённый Шорт'; verdict = 'Подтверждённый Шорт: ТА и фундамент за падение.';
+    } else if (mainRow && mainRow.action === 'LONG' && score <= 0) {
+        signal = 'WARN'; color = 'warn'; title = 'Лонг под вопросом'; verdict = 'Лонг под вопросом: сигнал ТА на покупку, но фундамент против.';
+    } else if (mainRow && mainRow.action === 'SHORT' && score >= 0) {
+        signal = 'WARN'; color = 'warn'; title = 'Шорт под вопросом'; verdict = 'Шорт под вопросом: сигнал ТА на продажу, но фундамент против.';
+    } else if (mainRow && mainRow.phase === 'REV' && score >= 3) {
+        signal = 'LONG'; color = 'up'; title = 'Зреет разворот вверх'; verdict = 'Зреет разворот вверх: экстремумы разгружаются, появляется спрос.';
+    } else if (mainRow && mainRow.phase === 'REV' && score <= -3) {
+        signal = 'SHORT'; color = 'dn'; title = 'Зреет разворот вниз'; verdict = 'Зреет разворот вниз: перегрев на излёте, спрос иссякает.';
+    } else if (score >= 4) {
+        signal = 'LONG'; color = 'up'; title = 'Перевес покупателей'; verdict = 'Перевес покупателей — ждать подтверждения ТА для входа в лонг.';
+    } else if (score <= -4) {
+        signal = 'SHORT'; color = 'dn'; title = 'Перевес продавцов'; verdict = 'Перевес продавцов — ждать подтверждения ТА для входа в шорт.';
+    } else if (score > 0) {
+        signal = 'WARN'; color = 'warn'; title = 'Лёгкий перевес вверх'; verdict = 'Лёгкий перевес вверх, чёткого сетапа пока нет.';
+    } else if (score < 0) {
+        signal = 'WARN'; color = 'warn'; title = 'Лёгкий перевес вниз'; verdict = 'Лёгкий перевес вниз, чёткого сетапа пока нет.';
+    }
+
+    parts.push(`<b>Вердикт:</b> ${verdict}`);
+    return { signal, color, title, text: parts.join(' ') };
+}
+
+function buildInlineSniperHTML(d) {
+    const pDec = getDecimals(d.price), a = d.advice, stColor = v => v === null ? 'var(--dim)' : v > 80 ? 'var(--dn)' : v < 20 ? 'var(--up)' : 'var(--sub)';
+    const renderW = (arr, cls) => arr.length ? arr.map(w => `<div class="snip-flex-row"><span style="color:${cls==='ask'?'var(--dn)':'var(--up)'}">${w.price.toFixed(pDec)}</span> <span class="snip-flex-val">$${(w.vol/1e6).toFixed(2)}M</span></div>`).join('') : '<span class="dim" style="font-size:10px;">Нет крупных стен</span>';
+    const formatRatio = (val) => { if(!val) return '<span class="dim">—</span>'; const isLong = val > 1; return `<span class="snip-flex-val" style="color:${isLong?'var(--up)':'var(--dn)'}">${val.toFixed(2)} <span style="font-size:9px;color:var(--dim);">${isLong?'Лонг':'Шорт'}</span></span>`; };
+    const fundingColor = d.funding === null ? 'var(--dim)' : d.funding > 0.0005 ? 'var(--dn)' : d.funding < -0.0005 ? 'var(--up)' : 'var(--sub)';
+    const fundingText = d.funding !== null ? ((d.funding * 100).toFixed(4) + '%') : 'нет данных';
+    const nextFunding = d.nextFundingMs ? (Math.floor(d.nextFundingMs / 3600000) + 'ч ' + Math.floor((d.nextFundingMs % 3600000) / 60000) + 'м') : '—';
+    const oiText = d.oi ? '$' + (d.oi.current / 1e9).toFixed(2) + 'B' : '—', oiChange = d.oi ? ((d.oi.change6h > 0 ? '+' : '') + d.oi.change6h.toFixed(2) + '%') : '', oiColor = d.oi ? (d.oi.change6h > 0 ? 'var(--up)' : 'var(--dn)') : 'var(--dim)';
+
+    return `<div class="snip-grid"><div class="snip-block"><div class="snip-advice-box ${a.color}"><div class="snip-adv-title">${a.title}</div><div class="snip-adv-text">${a.text}</div></div><div class="snip-btitle">СЕНТИМЕНТ (L/S RATIO)</div><div class="snip-flex-row"><span class="dim">Толпа · 1ч (Accounts)</span> ${formatRatio(d.sentiment.acc1h)}</div><div class="snip-flex-row"><span class="dim">Киты · 1ч (Positions)</span> ${formatRatio(d.sentiment.pos1h)}</div><div style="border-top:1px dashed var(--bd); margin:6px 0;"></div><div class="snip-flex-row"><span class="dim">Толпа · 5м</span> ${formatRatio(d.sentiment.acc5m)}</div><div class="snip-flex-row"><span class="dim">Киты · 5м</span> ${formatRatio(d.sentiment.pos5m)}</div></div><div class="snip-block"><div class="snip-btitle">FUNDING & OI</div><div style="display:flex;gap:10px;margin-bottom:10px;"><div style="flex:1;background:var(--bg3);padding:8px;border-radius:6px;"><div style="font-size:9px;color:var(--dim);">FUNDING RATE</div><div style="font-family:var(--fm);font-weight:700;color:${fundingColor};">${fundingText}</div><div style="font-size:9px;color:var(--dim);margin-top:2px;">след. через ${nextFunding}</div></div><div style="flex:1;background:var(--bg3);padding:8px;border-radius:6px;"><div style="font-size:9px;color:var(--dim);">OPEN INTEREST</div><div style="font-family:var(--fm);font-weight:700;color:var(--brand);">${oiText}</div><div style="font-size:9px;color:${oiColor};margin-top:2px;">${oiChange} за 6ч</div></div></div><div class="snip-btitle" style="border-bottom:none;padding-bottom:0;">ORDER FLOW (20 CB 15M)</div><div class="snip-flex-row"><span class="dim">Покупки</span> <span style="color:var(--up);font-weight:700;">${d.orderFlow.buyPct.toFixed(1)}%</span></div><div class="snip-flex-row"><span class="dim">Продажи</span> <span style="color:var(--dn);font-weight:700;">${d.orderFlow.sellPct.toFixed(1)}%</span></div><div style="display:flex; height:12px; border-radius:3px; overflow:hidden; margin-bottom:8px;"><div style="width:${d.orderFlow.buyPct}%; background:var(--up); display:flex; align-items:center; justify-content:center; font-size:9px; color:#000; font-weight:700;">${d.orderFlow.buyPct.toFixed(0)}%</div><div style="flex:1; background:var(--dn); display:flex; align-items:center; justify-content:center; font-size:9px; color:#fff; font-weight:700;">${d.orderFlow.sellPct.toFixed(0)}%</div></div><div class="snip-flex-row"><span class="dim">Liquidity Bias</span> <span class="snip-flex-val">${d.liqBias.bias==='BUY'?'Покупатели':d.liqBias.bias==='SELL'?'Продавцы':'Баланс'}</span></div><div class="snip-flex-row"><span class="dim">Покуп. / Прод.</span> <span class="snip-flex-val" style="color:var(--brand);">${d.liqBias.bidPct.toFixed(0)}% / ${d.liqBias.askPct.toFixed(0)}%</span></div></div><div class="snip-block"><div class="snip-btitle">ГЛУБОКИЙ АНАЛИЗ 1H</div><div class="snip-flex-row"><span class="dim">StochRSI %K / %D</span> <span class="snip-flex-val"><span style="color:${stColor(d.stochRsi.k)}">${d.stochRsi.k?.toFixed(1)||'—'}</span> / <span style="color:${stColor(d.stochRsi.d)}">${d.stochRsi.d?.toFixed(1)||'—'}</span></span></div><div class="snip-flex-row"><span class="dim">ADX (Сила тренда)</span> <span class="snip-flex-val" style="color:${d.heat.adx>25?'var(--brand)':'var(--dim)'}">${d.heat.adx.toFixed(1)}</span></div><div class="snip-flex-row"><span class="dim">KDJ (J)</span> <span class="snip-flex-val">${d.heat.kdj.toFixed(1)}</span></div><div class="snip-flex-row"><span class="dim">RSI / MFI</span> <span class="snip-flex-val">${d.heat.rsi.toFixed(1)} / ${d.heat.mfi.toFixed(1)}</span></div><div class="snip-btitle" style="margin-top:12px;">БЛИЖАЙШИЕ СТЕНЫ (СТАКАН)</div><div style="font-size:9px; color:var(--dn); margin-bottom:4px;">СОПРОТИВЛЕНИЕ (ASK)</div>${renderW(d.walls.askWalls, 'ask')}<div style="font-size:9px; color:var(--up); margin-top:8px; margin-bottom:4px;">ПОДДЕРЖКА (BID)</div>${renderW(d.walls.bidWalls, 'bid')}</div></div>`;
+}
+
+function cleanupSniper() {
+    // Функция-уборщик (Пункт 2): принудительно обрывает все незавершённые fetch старой монеты и сбрасывает состояние вкладки.
+    // Локальных таймеров внутри снайпера нет (лайв-обновления отключены) — но уборщик остаётся единой точкой остановки на будущее.
+    if (currentSniper && currentSniper.controller) { try { currentSniper.controller.abort(); } catch(e){} }
+    currentSniper = null;
+}
+
+async function toggleInlineSniper(sym) {
+    const row = document.getElementById(`snip-row-${sym}`), content = document.getElementById(`snip-content-${sym}`);
+    // Ручное закрытие активной вкладки — тоже через уборщик (обрыв незавершённых запросов)
+    if (row.style.display === 'table-row') { cleanupSniper(); row.style.display = 'none'; return; }
+    // Пункт 1 — глобальная блокировка: пока идёт двухуровневый скан, ДОП.СКАН отклоняется (защита лимита API)
+    if (scanInProgress) { setStatus('⏳ Идёт основной скан — ДОП. СКАН недоступен',''); return; }
+    // Пункт 2 — «Аккордеон»: сначала полностью останавливаем предыдущую вкладку, затем сворачиваем все панели и грузим новую
+    cleanupSniper();
+    document.querySelectorAll('.snip-panel-row').forEach(r => r.style.display = 'none');
+    row.style.display = 'table-row'; content.innerHTML = `<div style="text-align:center; padding:30px; color:var(--brand); font-family:var(--fm); font-size:12px;"><div class="snip-spinner"></div>Загрузка глубоких данных Снайпера...</div>`;
+    const controller = new AbortController(); currentSniper = { sym, controller };
+    // Задача 1 — обратная передача: захватываем объект монеты из ALL (по ключу sym) и матрицу SIGS,
+    // чтобы Снайпер строил итоговый вердикт buildInlineAdvice, сопоставляя ТА сканера с фундаментом.
+    // Оба опциональны: если монеты нет в ALL/SIGS — Снайпер отработает на своих данных (fail-safe).
+    const adviceRow = ALL.find(x => x.sym === sym) || null;
+    const adviceSig = SIGS[sym] || null;
+    try {
+        const d = await fetchSniperData(sym, controller.signal, adviceRow, adviceSig);
+        if (controller.signal.aborted) return; 
+        
+        content.innerHTML = buildInlineSniperHTML(d);
+    } catch(e) {
+        if (e.name === 'AbortError' || controller.signal.aborted) return; // оборвано уборщиком — это штатно, ошибку не показываем
+        content.innerHTML = `<div style="color:var(--dn); text-align:center; padding:20px; font-family:var(--fm);">Ошибка загрузки: ${e.message}</div>`;
+    }
+}
+</script>
+</body>
+</html>
