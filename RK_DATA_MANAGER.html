@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RK // DATA MANAGER — архив истории Binance</title>
+<style>
+:root{
+  --bg:#0a0c0f; --bg2:#11151a; --bg3:#161b22; --bd:#222b36; --bd2:#2e3a48;
+  --t1:#e6edf3; --t2:#8b98a8; --t3:#5c6875;
+  --amb:#ffb020; --amb-dim:rgba(255,176,32,.12);
+  --up:#26d07c; --dn:#ff4d5e; --vio:#a78bfa; --blu:#4aa8ff;
+  --fm:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --fs:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--t1);font-family:var(--fs);font-size:13px;line-height:1.5}
+a{color:var(--blu)}
+.wrap{max-width:1440px;margin:0 auto;padding:18px 16px 60px}
+.hdr{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--bd);padding-bottom:12px;margin-bottom:18px}
+.logo{font-family:var(--fm);font-size:15px;font-weight:700;letter-spacing:.5px;color:var(--amb)}
+.logo span{color:var(--t3)}
+.tag{font-family:var(--fm);font-size:11px;color:var(--t2)}
+.warnbar{margin-left:auto;font-family:var(--fm);font-size:10px;color:var(--t3);border:1px solid var(--bd);border-radius:4px;padding:3px 8px}
+.panel{background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:14px 16px;margin-bottom:14px}
+.panel-t{font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:1px;color:var(--t3);text-transform:uppercase;margin-bottom:12px}
+.panel-t b{color:var(--amb)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld label{font-family:var(--fm);font-size:10px;color:var(--t2);letter-spacing:.3px}
+.fld input,.fld select{background:var(--bg3);border:1px solid var(--bd2);color:var(--t1);border-radius:5px;padding:6px 8px;font-family:var(--fm);font-size:12px}
+.fld input:focus,.fld select:focus{outline:2px solid var(--amb);border-color:var(--amb)}
+.hint{font-family:var(--fm);font-size:9px;color:var(--t3)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+button{font-family:var(--fm);font-size:12px;font-weight:700;letter-spacing:.4px;border-radius:6px;padding:9px 18px;cursor:pointer;border:1px solid var(--bd2);background:var(--bg3);color:var(--t1);transition:.15s}
+button:hover:not(:disabled){border-color:var(--amb);color:var(--amb)}
+button:disabled{opacity:.35;cursor:not-allowed}
+button:focus-visible{outline:2px solid var(--amb);outline-offset:2px}
+.btn-run{background:var(--amb-dim);border-color:var(--amb);color:var(--amb)}
+.btn-sm{padding:6px 12px;font-size:11px}
+.prog{height:3px;background:var(--bd);border-radius:2px;overflow:hidden;margin-top:12px}
+.prog i{display:block;height:100%;width:0;background:var(--amb);transition:width .2s}
+.status{font-family:var(--fm);font-size:11px;color:var(--t2);margin-top:8px;min-height:16px}
+.status b{color:var(--amb);font-weight:700}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:10px;margin-bottom:14px}
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:12px 14px}
+.card .k{font-family:var(--fm);font-size:9px;letter-spacing:.8px;color:var(--t3);text-transform:uppercase}
+.card .v{font-family:var(--fm);font-size:21px;font-weight:700;margin-top:5px;letter-spacing:-.5px}
+.card .s{font-family:var(--fm);font-size:10px;color:var(--t3);margin-top:2px}
+.tw{overflow-x:auto;border:1px solid var(--bd);border-radius:8px;max-height:460px}
+table{width:100%;border-collapse:collapse;font-family:var(--fm);font-size:11px;min-width:640px}
+th{background:var(--bg3);color:var(--t3);font-size:9px;letter-spacing:.7px;text-transform:uppercase;text-align:right;padding:8px 10px;font-weight:700;border-bottom:1px solid var(--bd);white-space:nowrap;position:sticky;top:0;z-index:1}
+th:first-child,td:first-child{text-align:left}
+td{padding:6px 10px;text-align:right;border-bottom:1px solid rgba(34,43,54,.5);white-space:nowrap}
+tbody tr:hover{background:rgba(255,176,32,.04)}
+.up{color:var(--up)}.dn{color:var(--dn)}.mut{color:var(--t3)}.amb{color:var(--amb)}.blu{color:var(--blu)}
+.log{font-family:var(--fm);font-size:10.5px;line-height:1.65;background:#07090b;border:1px solid var(--bd);border-radius:8px;padding:10px 12px;height:210px;overflow-y:auto;color:var(--t2);white-space:pre-wrap;word-break:break-word}
+.log .e{color:var(--dn)}.log .w{color:var(--amb)}.log .o{color:var(--up)}.log .d{color:var(--t3)}
+.err{border-color:rgba(255,77,94,.5);background:rgba(255,77,94,.06)}
+.err .panel-t{color:var(--dn)}
+.note{font-family:var(--fm);font-size:10px;color:var(--t3);line-height:1.75;margin-top:10px}
+.note b{color:var(--t2);font-weight:400}
+.pill{display:inline-block;font-family:var(--fm);font-size:9px;font-weight:700;border-radius:3px;padding:1px 6px;border:1px solid}
+.p-ok{background:rgba(38,208,124,.13);color:var(--up);border-color:rgba(38,208,124,.4)}
+.p-no{background:rgba(255,77,94,.1);color:var(--dn);border-color:rgba(255,77,94,.35)}
+.p-mid{background:rgba(255,176,32,.12);color:var(--amb);border-color:rgba(255,176,32,.4)}
+.p-mut{background:rgba(92,104,117,.12);color:var(--t3);border-color:var(--bd2)}
+.dirline{font-family:var(--fm);font-size:11px;color:var(--t2);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dirline b{color:var(--amb)}
+.split{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:1000px){.split{grid-template-columns:1fr 1fr}}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--amb);color:#0a0c0f;font-family:var(--fm);font-size:11px;font-weight:700;padding:8px 16px;border-radius:6px;opacity:0;pointer-events:none;transition:.2s;z-index:9}
+.toast.on{opacity:1}
+.wm{font-family:var(--fm);font-size:10px;color:var(--t3);margin-left:auto}
+details{margin-top:10px}
+summary{font-family:var(--fm);font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:var(--t3);cursor:pointer;user-select:none}
+summary:hover{color:var(--amb)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <div class="logo">RK <span>//</span> DATA MANAGER <span>v1</span></div>
+  <div class="tag">архив истории Binance Futures на диск · один раз качаем, дальше считаем локально</div>
+  <div class="warnbar">только скачивает и складывает — ничего не тестирует</div>
+</div>
+
+<div id="unsupported" style="display:none">
+  <div class="panel err">
+    <div class="panel-t">Браузер не подходит</div>
+    <div class="note" style="font-size:11.5px;color:var(--t2)">
+      Нужен доступ к папке на диске (File System Access API). Его дают <b>Chrome</b> и <b>Edge</b> на компьютере.<br>
+      Firefox, Safari и любой браузер на телефоне — не подойдут.<br><br>
+      Ещё проверь, что страница открыта по <b>https://</b> (github.io) или <b>http://localhost</b>.
+      При открытии файла двойным щелчком (file://) доступ к папке запрещён.
+    </div>
+  </div>
+</div>
+
+<div id="app">
+
+<!-- ПАПКА -->
+<div class="panel">
+  <div class="panel-t">Шаг 1 · Папка на диске</div>
+  <div class="dirline">
+    <button class="btn-run" id="btnDir">Выбрать папку</button>
+    <span id="dirState" class="mut">папка не выбрана</span>
+    <span class="wm" id="wmBox">вес API: —</span>
+  </div>
+  <div class="note">
+    Выбери пустую папку, например <b>D:\RK_DATA</b>. Нужно не меньше <b>2 ГБ</b> свободного места.<br>
+    Не клади в OneDrive или синхронизируемые «Документы» — облако будет мешать записи.<br>
+    Chrome спросит разрешение — нажми <b>«Изменение файлов»</b>, не «Просмотр».
+  </div>
+</div>
+
+<!-- ЮНИВЕРС -->
+<div class="panel">
+  <div class="panel-t">Шаг 2 · Список монет</div>
+  <div class="grid">
+    <div class="fld">
+      <label>Мин. оборот, млн $ / сутки</label>
+      <input type="number" id="cfgMinVol" value="5" min="1" step="1">
+      <span class="hint">по данным на сегодня</span>
+    </div>
+    <div class="fld">
+      <label>Потолок монет</label>
+      <input type="number" id="cfgMaxSym" value="150" min="5" max="400" step="5">
+      <span class="hint">отсечка сверху, по обороту</span>
+    </div>
+  </div>
+  <div class="row">
+    <button id="btnUni" disabled>Обновить список монет</button>
+    <span class="status" id="uniState">—</span>
+  </div>
+  <div class="note">
+    Берутся только бессрочные контракты к USDT в статусе торгуемых. Список пишется в <b>universe.json</b>
+    вместе с оборотом на день сбора — оборот на момент каждой сделки стенд потом считает сам, из свечей.
+  </div>
+</div>
+
+<!-- СВЕЧИ -->
+<div class="panel">
+  <div class="panel-t">Шаг 3 · Свечи 5m <b>— долгая операция</b></div>
+  <div class="grid">
+    <div class="fld">
+      <label>Глубина, дней назад</label>
+      <input type="number" id="cfgDays" value="400" min="30" max="1500" step="10">
+      <span class="hint">400 = год с запасом</span>
+    </div>
+    <div class="fld">
+      <label>Потоков</label>
+      <input type="number" id="cfgPool" value="2" min="1" max="4" step="1">
+      <span class="hint">больше 2 — риск лимита</span>
+    </div>
+    <div class="fld">
+      <label>Потолок веса в минуту</label>
+      <input type="number" id="cfgCap" value="1600" min="200" max="2200" step="100">
+      <span class="hint">лимит Binance 2400</span>
+    </div>
+  </div>
+  <div class="row">
+    <button class="btn-run" id="btnK" disabled>Скачать / докачать 5m</button>
+    <button id="btnStop" disabled>■ Стоп</button>
+    <button class="btn-sm" id="btnPlan" disabled>Оценить объём</button>
+  </div>
+  <div class="prog"><i id="pbK"></i></div>
+  <div class="status" id="kState">—</div>
+  <div class="note">
+    Качается помесячно. Каждый скачанный месяц <b>сразу пишется на диск</b> — обрыв связи, зависание или
+    перезагрузка не отменяют сделанного, повторный запуск продолжит с первого недостающего месяца.
+    Текущий (незакрытый) месяц перекачивается каждый раз — это нормально.<br>
+    На время работы: <b>питание в «Никогда»</b>, вкладка на переднем плане, ноутбук в розетке.
+  </div>
+</div>
+
+<!-- ПРОИЗВОДНЫЕ -->
+<div class="panel">
+  <div class="panel-t">Шаг 4 · Сборка 1H из 5m</div>
+  <div class="row" style="margin-top:0">
+    <button id="btnAgg" disabled>Собрать часовые</button>
+    <span class="status" id="aggState">—</span>
+  </div>
+  <div class="prog"><i id="pbA"></i></div>
+  <div class="note">
+    Сеть не нужна, считается локально. Часовые файлы — это то, что читает стенд: <b>~45 МБ вместо ~600 МБ</b>,
+    грузится мгновенно. 4H и 1D стенд соберёт из часовых уже у себя.
+    Запускать заново после каждой докачки 5m.
+  </div>
+</div>
+
+<!-- ДОП ДАННЫЕ -->
+<div class="panel">
+  <div class="panel-t">Шаг 5 · Дополнительные данные</div>
+  <div class="row" style="margin-top:0">
+    <button id="btnFund" disabled>Ставка финансирования</button>
+    <button id="btnMetr" disabled>Метрики за 30 дней</button>
+    <span class="status" id="extState">—</span>
+  </div>
+  <div class="prog"><i id="pbE"></i></div>
+  <div class="note">
+    <b>Финансирование</b> — полная история с листинга, качать достаточно раз в месяц.<br>
+    <b>Метрики</b> (открытый интерес, лонг/шорт по счетам, по позициям, тейкеры) — Binance хранит
+    <b>только последние 30 дней</b>, дальше они исчезают навсегда. Каждый запуск дописывает новое к старому,
+    так постепенно накапливается собственный архив. <b>Жать раз в 2–3 недели</b>, иначе появится дыра, которую уже не закрыть.
+  </div>
+</div>
+
+<!-- СОСТОЯНИЕ -->
+<div class="panel">
+  <div class="panel-t">Состояние архива</div>
+  <div class="cards" id="cards"></div>
+  <div class="row" style="margin-top:0">
+    <button class="btn-sm" id="btnScan" disabled>Пересчитать по диску</button>
+    <button class="btn-sm" id="btnCheck" disabled>Проверка целостности</button>
+    <button class="btn-sm" id="btnForget">Забыть папку</button>
+  </div>
+  <div class="tw" style="margin-top:12px"><table id="tblSym"><tbody><tr><td class="mut">папка не выбрана</td></tr></tbody></table></div>
+</div>
+
+<!-- ЛОГ -->
+<div class="panel">
+  <div class="panel-t">Журнал</div>
+  <div class="log" id="log"></div>
+  <details>
+    <summary>Формат файлов на диске</summary>
+    <div class="note">
+RK_DATA/
+├─ manifest.json      — учёт: что скачано, до какой даты, где дыры
+├─ universe.json      — монеты и оборот на день сбора
+├─ FORMAT.txt         — описание двоичного формата
+├─ klines_5m/BTCUSDT/2026-01.bin   — сырьё, помесячно
+├─ klines_1h/BTCUSDT.bin           — производное, для стенда
+├─ funding/BTCUSDT.json
+├─ oi/BTCUSDT.json
+└─ ratios/BTCUSDT.json
+
+<b>Формат .bin (RKB1)</b> — заголовок 32 байта, дальше подряд бары по 7 чисел float64 (little-endian):
+время открытия, open, high, low, close, объём в монете, объём в долларах.
+Заголовок: 4 байта «RKB1», uint32 версия, uint32 колонок, uint32 баров, float64 первое время, float64 последнее.
+    </div>
+  </details>
+</div>
+
+</div><!-- /app -->
+<div class="toast" id="toast">готово</div>
+</div>
+
+<script>
+"use strict";
+/* ==========================================================================
+   RK // DATA MANAGER v1
+   Качает историю Binance Futures и складывает её файлами в папку на диске.
+   Ничего не тестирует, ничего не отправляет наружу, кроме запросов к Binance.
+
+   ПРИНЦИПЫ (менять с осторожностью):
+   1. Единица хранения свечей — 5m. Всё старшее (15m/1H/4H/1D) выводится из неё.
+   2. Атомарность по месяцам: скачанный месяц пишется на диск сразу, до перехода
+      к следующему. Любой обрыв стоит максимум одного месяца одной монеты.
+   3. Формирующийся бар не сохраняется никогда (closeTime должен быть в прошлом).
+   4. Незакрытый календарный месяц помечается complete:false и перекачивается.
+   5. Вес API считается локально; кроме того читается заголовок X-MBX-USED-WEIGHT-1M,
+      если Binance его отдаёт.
+   ========================================================================== */
+
+const BASE = "https://fapi.binance.com";
+const MS5  = 300000;        // 5 минут
+const MSH  = 3600000;       // час
+const KLIMIT = 1500;        // баров за запрос (вес 10)
+const KWEIGHT = 10;
+const MAGIC = 0x31424B52;   // 'RKB1' little-endian
+const COLS = 7;
+const HEAD = 32;
+
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const fmtN = n => n.toLocaleString("ru-RU");
+const fmtMB = b => b >= 1073741824 ? (b/1073741824).toFixed(2)+" ГБ" : (b/1048576).toFixed(1)+" МБ";
+const iso = t => new Date(t).toISOString().slice(0,10);
+const pad2 = n => String(n).padStart(2,"0");
+
+let DIR = null;            // корневая папка
+let MAN = null;            // manifest.json
+let UNI = null;            // universe.json
+let STOP = false;
+let BUSY = false;
+let PENDING = null;        // знакомая папка, ждущая подтверждения доступа
+
+/* ---------- журнал ---------- */
+function log(msg, cls) {
+  const el = $("log");
+  const t = new Date().toTimeString().slice(0,8);
+  const line = document.createElement("div");
+  if (cls) line.className = cls;
+  line.textContent = `${t}  ${msg}`;
+  el.appendChild(line);
+  while (el.childNodes.length > 600) el.removeChild(el.firstChild);
+  el.scrollTop = el.scrollHeight;
+}
+function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("on"); setTimeout(()=>t.classList.remove("on"),1600); }
+function setStat(id, html){ $(id).innerHTML = html; }
+function setProg(id, p){ $(id).style.width = Math.max(0,Math.min(100,p)) + "%"; }
+
+/* ==========================================================================
+   ХРАНЕНИЕ ССЫЛКИ НА ПАПКУ (IndexedDB — только сам handle, не данные)
+   ========================================================================== */
+function idb(mode, fn) {
+  return new Promise((res, rej) => {
+    const rq = indexedDB.open("rk_dm", 1);
+    rq.onupgradeneeded = () => rq.result.createObjectStore("kv");
+    rq.onerror = () => rej(rq.error);
+    rq.onsuccess = () => {
+      const db = rq.result, tx = db.transaction("kv", mode), st = tx.objectStore("kv");
+      const r = fn(st);
+      tx.oncomplete = () => { db.close(); res(r && r.result !== undefined ? r.result : undefined); };
+      tx.onerror = () => { db.close(); rej(tx.error); };
+    };
+  });
+}
+const dirSave   = h => idb("readwrite", st => st.put(h, "dir"));
+const dirLoad   = ()  => idb("readonly",  st => st.get("dir"));
+const dirForget = ()  => idb("readwrite", st => st.delete("dir"));
+
+/* ==========================================================================
+   ФАЙЛОВАЯ СИСТЕМА
+   ========================================================================== */
+async function subdir(parent, name){ return parent.getDirectoryHandle(name, {create:true}); }
+
+async function writeFile(dir, name, data) {
+  const fh = await dir.getFileHandle(name, {create:true});
+  const w  = await fh.createWritable();
+  await w.write(data);
+  await w.close();
+}
+async function readFile(dir, name) {
+  try {
+    const fh = await dir.getFileHandle(name);
+    return await fh.getFile();
+  } catch { return null; }
+}
+async function readJson(dir, name) {
+  const f = await readFile(dir, name);
+  if (!f) return null;
+  try { return JSON.parse(await f.text()); } catch { return null; }
+}
+const writeJson = (dir, name, obj) => writeFile(dir, name, JSON.stringify(obj));
+
+async function haveDir(parent, name) {
+  try { return await parent.getDirectoryHandle(name); } catch { return null; }
+}
+
+/* очередь записи манифеста: несколько потоков не должны писать одновременно */
+let manQueue = Promise.resolve(), manDirty = false;
+function saveManifest() {
+  manDirty = true;
+  manQueue = manQueue.then(async () => {
+    if (!manDirty || !DIR) return;
+    manDirty = false;
+    MAN.updated = Date.now();
+    try { await writeJson(DIR, "manifest.json", MAN); }
+    catch(e){ log("не удалось записать manifest.json: " + e.message, "e"); }
+  });
+  return manQueue;
+}
+
+/* ==========================================================================
+   ДВОИЧНЫЙ ФОРМАТ RKB1
+   ========================================================================== */
+function packBars(rows) {
+  const n = rows.length;
+  const buf = new ArrayBuffer(HEAD + n * COLS * 8);
+  const dv = new DataView(buf);
+  dv.setUint32(0, MAGIC, true);
+  dv.setUint32(4, 1, true);
+  dv.setUint32(8, COLS, true);
+  dv.setUint32(12, n, true);
+  dv.setFloat64(16, n ? rows[0][0] : 0, true);
+  dv.setFloat64(24, n ? rows[n-1][0] : 0, true);
+  const a = new Float64Array(buf, HEAD, n * COLS);
+  for (let i = 0; i < n; i++) {
+    const r = rows[i], o = i * COLS;
+    a[o]=r[0]; a[o+1]=r[1]; a[o+2]=r[2]; a[o+3]=r[3]; a[o+4]=r[4]; a[o+5]=r[5]; a[o+6]=r[6];
+  }
+  return buf;
+}
+function unpackBars(buf) {
+  if (!buf || buf.byteLength < HEAD) return null;
+  const dv = new DataView(buf);
+  if (dv.getUint32(0, true) !== MAGIC) return null;
+  const cols = dv.getUint32(8, true), n = dv.getUint32(12, true);
+  if (cols !== COLS || HEAD + n*cols*8 > buf.byteLength) return null;
+  return { n, cols, a: new Float64Array(buf, HEAD, n*cols) };
+}
+
+/* ==========================================================================
+   ЗАПРОСЫ К BINANCE + УЧЁТ ВЕСА
+   ========================================================================== */
+const LIM = {
+  cap: 1600,
+  hist: [],          // [{t, w}]
+  reported: 0,
+  reportedAt: 0,
+  used() { const cut = Date.now() - 60000; this.hist = this.hist.filter(x => x.t > cut);
+           return this.hist.reduce((s,x)=>s+x.w,0); },
+  async take(w) {
+    for (;;) {
+      const u = this.used();
+      // сообщённый биржей вес живёт минуту, иначе застарелое значение заблокирует работу навсегда
+      const rep = (Date.now() - this.reportedAt < 60000) ? this.reported : 0;
+      if (u + w <= this.cap && rep < this.cap) { this.hist.push({t:Date.now(), w}); return; }
+      const wait = this.hist.length ? Math.max(500, 60000 - (Date.now() - this.hist[0].t) + 200) : 2000;
+      setStat("wmBox", `вес API: <b>${u}</b> / ${this.cap} · жду ${Math.ceil(wait/1000)}с`);
+      await sleep(Math.min(wait, 5000));
+      if (STOP) throw new Error("остановлено");
+    }
+  }
+};
+function paintWeight(){ setStat("wmBox", `вес API: <b>${LIM.used()}</b> / ${LIM.cap}`); }
+
+async function apiGet(path, weight) {
+  let lastErr;
+  for (let a = 0; a < 5; a++) {
+    if (STOP) throw new Error("остановлено");
+    await LIM.take(weight);
+    try {
+      const r = await fetch(BASE + path, {cache:"no-store"});
+      const hw = r.headers.get("x-mbx-used-weight-1m");
+      if (hw) { LIM.reported = +hw; LIM.reportedAt = Date.now(); paintWeight(); }
+      if (r.status === 429 || r.status === 418) {
+        const ra = +(r.headers.get("retry-after") || 0);
+        const wait = ra ? ra*1000 : 15000 * (a+1);
+        log(`лимит Binance (${r.status}), пауза ${Math.round(wait/1000)}с`, "w");
+        await sleep(wait); continue;
+      }
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } catch (e) {
+      lastErr = e;
+      if (e.message === "остановлено") throw e;
+      await sleep(800 * (a + 1));
+    }
+  }
+  throw lastErr || new Error("нет ответа");
+}
+
+/* ==========================================================================
+   ВРЕМЯ И МЕСЯЦЫ (всё в UTC)
+   ========================================================================== */
+function monthKey(ms){ const d = new Date(ms); return d.getUTCFullYear() + "-" + pad2(d.getUTCMonth()+1); }
+function monthStart(ms){ const d = new Date(ms); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1); }
+function monthNext(ms){ const d = new Date(ms); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth()+1, 1); }
+function monthList(fromMs, toMs) {
+  const out = []; let m = monthStart(fromMs);
+  while (m < toMs) { const e = monthNext(m); out.push({key:monthKey(m), s:m, e:Math.min(e,toMs), full:e}); m = e; }
+  return out;
+}
+
+/* ==========================================================================
+   СКАЧИВАНИЕ СВЕЧЕЙ
+   ========================================================================== */
+/** Тянет 5m-бары в диапазоне [from, to). Возвращает массив [t,o,h,l,c,v,qv].
+ *  Формирующийся бар отбрасывается: closeTime обязан быть в прошлом. */
+async function fetchRange(sym, from, to) {
+  const now = Date.now();
+  const rows = [];
+  let cur = from;
+  let guard = 0;
+  while (cur < to) {
+    if (STOP) throw new Error("остановлено");
+    if (++guard > 400) throw new Error("зациклилось на " + sym);
+    const q = `/fapi/v1/klines?symbol=${sym}&interval=5m&startTime=${cur}&endTime=${to-1}&limit=${KLIMIT}`;
+    const d = await apiGet(q, KWEIGHT);
+    if (!Array.isArray(d) || !d.length) break;
+    for (const k of d) {
+      const ot = +k[0], ct = +k[6];
+      if (ct >= now) continue;                    // ПРАВИЛО 3: бар ещё формируется
+      if (ot < from || ot >= to) continue;
+      rows.push([ot, +k[1], +k[2], +k[3], +k[4], +k[5], +k[7]]);
+    }
+    const last = +d[d.length-1][0];
+    if (last + MS5 <= cur) break;
+    cur = last + MS5;
+    if (d.length < KLIMIT) break;
+  }
+  return rows;
+}
+
+/** Сколько 5m-слотов должно быть в месяце (с учётом того, что месяц может быть текущим) */
+function slotsIn(s, e){ const end = Math.min(e, Math.floor(Date.now()/MS5)*MS5); return end <= s ? 0 : Math.round((end - s)/MS5); }
+
+async function downloadKlines() {
+  if (!await guard()) return;
+  const days = Math.round(+$("cfgDays").value);
+  const poolN = Math.max(1, Math.min(4, Math.round(+$("cfgPool").value)));
+  LIM.cap = Math.max(200, Math.min(2200, Math.round(+$("cfgCap").value)));
+
+  const syms = UNI.symbols.map(s => s.symbol);
+  const from = monthStart(Date.now() - days*86400000);
+  const to   = Date.now();
+  const months = monthList(from, to);
+
+  // план: какие пары монета×месяц надо качать
+  const jobs = [];
+  for (const sym of syms) {
+    const rec = MAN.k5[sym] = MAN.k5[sym] || {months:{}};
+    for (const m of months) {
+      const have = rec.months[m.key];
+      if (have && have.complete) continue;        // уже закрыт — не трогаем
+      jobs.push({sym, m});
+    }
+  }
+  if (!jobs.length) { log("всё уже скачано, качать нечего", "o"); setStat("kState","Актуально — недостающих месяцев нет."); return; }
+
+  const root5 = await subdir(DIR, "klines_5m");
+  const t0 = Date.now();
+  let done = 0, bars = 0, errs = 0;
+  STOP = false; lockUI(true);
+  log(`старт: ${syms.length} монет × ${months.length} мес. → ${jobs.length} блоков к загрузке`, "o");
+
+  // разбиваем по монетам, чтобы потоки не дрались за один каталог
+  const bySym = {};
+  for (const j of jobs) (bySym[j.sym] = bySym[j.sym] || []).push(j.m);
+  const symList = Object.keys(bySym);
+
+  await pool(symList, poolN, async (sym) => {
+    if (STOP) return;
+    const dir = await subdir(root5, sym);
+    const rec = MAN.k5[sym];
+    for (const m of bySym[sym]) {
+      if (STOP) return;
+      try {
+        const rows = await fetchRange(sym, m.s, m.full);
+        const complete = m.full <= Date.now() - 2*MS5;      // месяц закрыт
+        if (rows.length) {
+          await writeFile(dir, m.key + ".bin", packBars(rows));
+          bars += rows.length;
+        }
+        rec.months[m.key] = {
+          n: rows.length,
+          first: rows.length ? rows[0][0] : null,
+          last:  rows.length ? rows[rows.length-1][0] : null,
+          exp: slotsIn(m.s, m.full),
+          complete,
+          empty: rows.length === 0
+        };
+        if (!rows.length) log(`${sym} ${m.key}: пусто (монета ещё не торговалась)`, "d");
+      } catch (e) {
+        if (e.message === "остановлено") return;
+        errs++; log(`${sym} ${m.key}: ошибка — ${e.message}`, "e");
+      }
+      done++;
+      const el = (Date.now()-t0)/1000, rate = done/Math.max(el,1);
+      const left = (jobs.length-done)/Math.max(rate,0.001);
+      setProg("pbK", done/jobs.length*100);
+      setStat("kState", `<b>${sym}</b> · блок ${done} из ${jobs.length} · баров <b>${fmtN(bars)}</b> · `
+        + `осталось ~<b>${fmtDur(left)}</b>${errs?` · ошибок ${errs}`:""}`);
+      paintWeight();
+      await saveManifest();
+    }
+  });
+
+  await saveManifest();
+  lockUI(false);
+  const el = fmtDur((Date.now()-t0)/1000);
+  log(STOP ? `остановлено: ${done} из ${jobs.length} блоков, ${fmtN(bars)} баров за ${el}`
+           : `готово: ${fmtN(bars)} баров за ${el}${errs?`, ошибок ${errs}`:""}`, STOP ? "w" : "o");
+  setStat("kState", STOP ? `Остановлено. Скачано ${done} из ${jobs.length}. Повторный запуск продолжит с места обрыва.`
+                         : `Готово. ${fmtN(bars)} баров за ${el}. Теперь шаг 4 — собрать часовые.`);
+  await scanDisk();
+  if (!STOP) toast("свечи скачаны");
+}
+
+function fmtDur(sec) {
+  sec = Math.max(0, Math.round(sec));
+  if (sec < 60) return sec + "с";
+  const m = Math.floor(sec/60), h = Math.floor(m/60);
+  return h ? `${h}ч ${m%60}м` : `${m}м ${sec%60}с`;
+}
+
+/** простой пул: n параллельных обработчиков над списком */
+async function pool(items, n, worker) {
+  let idx = 0;
+  const runners = Array.from({length: Math.min(n, items.length)}, async () => {
+    for (;;) {
+      const i = idx++;
+      if (i >= items.length || STOP) return;
+      await worker(items[i], i);
+    }
+  });
+  await Promise.all(runners);
+}
+
+/* ==========================================================================
+   ОЦЕНКА ОБЪЁМА (до запуска)
+   ========================================================================== */
+async function planKlines() {
+  if (!UNI) { log("сначала обнови список монет", "w"); return; }
+  const days = Math.round(+$("cfgDays").value);
+  const syms = UNI.symbols.length;
+  const from = monthStart(Date.now() - days*86400000);
+  const months = monthList(from, Date.now());
+  let need = 0;
+  for (const s of UNI.symbols) {
+    const rec = MAN.k5[s.symbol];
+    for (const m of months) if (!(rec && rec.months[m.key] && rec.months[m.key].complete)) need++;
+  }
+  const barsPerMonth = 8640;                       // 30 дней × 288
+  const totalBars = need * barsPerMonth;
+  const reqs = Math.ceil(totalBars / KLIMIT) + need;
+  const minutesByWeight = reqs * KWEIGHT / LIM.cap;
+  const minutesByLatency = reqs * 0.4 / 60;
+  const eta = Math.max(minutesByWeight, minutesByLatency);
+  const sizeMB = totalBars * COLS * 8 / 1048576;
+  log(`оценка: ${syms} монет, ${months.length} мес., ${need} блоков к загрузке`, "");
+  log(`≈ ${fmtN(totalBars)} баров · ${fmtN(reqs)} запросов · ~${sizeMB.toFixed(0)} МБ · ~${fmtDur(eta*60)}`, "w");
+  setStat("kState", `К загрузке <b>${need}</b> блоков ≈ <b>${fmtN(totalBars)}</b> баров ≈ <b>${sizeMB.toFixed(0)} МБ</b> ≈ <b>${fmtDur(eta*60)}</b>`);
+}
+
+/* ==========================================================================
+   ЮНИВЕРС
+   ========================================================================== */
+async function loadUniverse() {
+  if (!DIR) return;
+  BUSY = true; lockUI(true);
+  try {
+    setStat("uniState", "запрашиваю биржу…");
+    const [info, tk] = await Promise.all([
+      apiGet("/fapi/v1/exchangeInfo", 1),
+      apiGet("/fapi/v1/ticker/24hr", 40)
+    ]);
+    const good = new Set(info.symbols
+      .filter(s => s.contractType === "PERPETUAL" && s.status === "TRADING" && s.quoteAsset === "USDT")
+      .map(s => s.symbol));
+    const minVol = Math.max(1, +$("cfgMinVol").value) * 1e6;
+    const cap = Math.round(+$("cfgMaxSym").value);
+    const list = tk.filter(t => good.has(t.symbol) && +t.quoteVolume >= minVol)
+      .sort((a,b) => +b.quoteVolume - +a.quoteVolume)
+      .slice(0, cap)
+      .map((t,i) => ({symbol:t.symbol, rank:i+1, vol24h:Math.round(+t.quoteVolume)}));
+    if (!list.length) throw new Error("ни одна монета не прошла фильтр");
+
+    // монеты, которые были в прошлом списке, но выпали — не удаляем их данные,
+    // просто помечаем: история уже скачана и может пригодиться.
+    const prev = UNI ? UNI.symbols.map(s=>s.symbol) : [];
+    const dropped = prev.filter(s => !list.some(x => x.symbol === s));
+    UNI = { collected: Date.now(), minVol, list: list.length, symbols: list, dropped };
+    await writeJson(DIR, "universe.json", UNI);
+    log(`список обновлён: ${list.length} монет, оборот от ${(minVol/1e6).toFixed(0)} млн $`, "o");
+    if (dropped.length) log(`выпали из списка (данные сохранены): ${dropped.join(", ")}`, "d");
+    setStat("uniState", `<b>${list.length}</b> монет · от <b>${(minVol/1e6).toFixed(0)}</b> млн $ · собран ${iso(Date.now())}`);
+    await scanDisk();
+  } catch (e) {
+    log("список монет: " + e.message, "e");
+    setStat("uniState", `<span class="dn">ошибка: ${e.message}</span>`);
+  }
+  BUSY = false; lockUI(false);
+}
+
+/* ==========================================================================
+   СБОРКА ЧАСОВЫХ ИЗ 5m
+   ========================================================================== */
+async function buildHourly() {
+  if (!await guard()) return;
+  STOP = false; lockUI(true);
+  const root5 = await haveDir(DIR, "klines_5m");
+  if (!root5) { log("нет папки klines_5m — сначала скачай свечи", "e"); lockUI(false); return; }
+  const root1 = await subdir(DIR, "klines_1h");
+  const syms = Object.keys(MAN.k5).filter(s => Object.keys(MAN.k5[s].months||{}).length);
+  let i = 0, totalBars = 0, gapsTotal = 0;
+  const t0 = Date.now();
+
+  for (const sym of syms) {
+    if (STOP) break;
+    try {
+      const sd = await haveDir(root5, sym);
+      if (!sd) { i++; continue; }
+      const keys = Object.keys(MAN.k5[sym].months).sort();
+      const all = [];
+      for (const k of keys) {
+        const rec = MAN.k5[sym].months[k];
+        if (!rec || !rec.n) continue;
+        const f = await readFile(sd, k + ".bin");
+        if (!f) continue;
+        const u = unpackBars(await f.arrayBuffer());
+        if (!u) { log(`${sym} ${k}: файл повреждён, пропускаю`, "e"); continue; }
+        all.push(u);
+      }
+      // сборка по часам: бары уже упорядочены по месяцам и внутри месяца
+      const map = new Map();
+      for (const u of all) {
+        for (let j = 0; j < u.n; j++) {
+          const o = j * COLS, t = u.a[o];
+          const h = Math.floor(t / MSH) * MSH;
+          let b = map.get(h);
+          if (!b) { map.set(h, b = [h, u.a[o+1], u.a[o+2], u.a[o+3], u.a[o+4], 0, 0, 0]); }
+          else {
+            if (u.a[o+2] > b[2]) b[2] = u.a[o+2];
+            if (u.a[o+3] < b[3]) b[3] = u.a[o+3];
+            b[4] = u.a[o+4];
+          }
+          b[5] += u.a[o+5]; b[6] += u.a[o+6]; b[7]++;
+        }
+      }
+      const hours = [...map.keys()].sort((a,b)=>a-b);
+      const rows = [];
+      let partial = 0;
+      for (const h of hours) {
+        const b = map.get(h);
+        if (b[7] < 12) partial++;
+        rows.push([b[0],b[1],b[2],b[3],b[4],b[5],b[6]]);
+      }
+      // дыры в часовой сетке
+      let gaps = 0;
+      for (let j = 1; j < rows.length; j++) if (rows[j][0] - rows[j-1][0] !== MSH) gaps++;
+      gapsTotal += gaps;
+
+      await writeFile(root1, sym + ".bin", packBars(rows));
+      MAN.h1[sym] = { n: rows.length, first: rows.length?rows[0][0]:null, last: rows.length?rows[rows.length-1][0]:null,
+                      partial, gaps, built: Date.now() };
+      totalBars += rows.length;
+      if (gaps) log(`${sym}: ${rows.length} часов, разрывов ${gaps}, неполных часов ${partial}`, gaps>5?"w":"d");
+    } catch (e) {
+      log(`${sym}: сборка не удалась — ${e.message}`, "e");
+    }
+    i++;
+    setProg("pbA", i/syms.length*100);
+    setStat("aggState", `<b>${sym}</b> · ${i} из ${syms.length} · часов <b>${fmtN(totalBars)}</b>`);
+    if (i % 10 === 0) await saveManifest();
+    await sleep(0);
+  }
+  await saveManifest();
+  lockUI(false);
+  log(`часовые собраны: ${fmtN(totalBars)} баров по ${i} монетам за ${fmtDur((Date.now()-t0)/1000)}, разрывов всего ${gapsTotal}`, "o");
+  setStat("aggState", `Готово: <b>${fmtN(totalBars)}</b> часовых баров, разрывов ${gapsTotal}.`);
+  await scanDisk();
+  toast("часовые собраны");
+}
+
+/* ==========================================================================
+   ФИНАНСИРОВАНИЕ (полная история)
+   ========================================================================== */
+async function downloadFunding() {
+  if (!await guard()) return;
+  STOP = false; lockUI(true);
+  const dir = await subdir(DIR, "funding");
+  const syms = UNI.symbols.map(s=>s.symbol);
+  let i = 0, recs = 0;
+  for (const sym of syms) {
+    if (STOP) break;
+    try {
+      const old = (await readJson(dir, sym + ".json")) || {rows:[]};
+      const map = new Map(old.rows.map(r => [r[0], r]));
+      let start = old.rows.length ? old.rows[old.rows.length-1][0] + 1 : Date.now() - 1200*86400000;
+      for (let p = 0; p < 40; p++) {
+        const d = await apiGet(`/fapi/v1/fundingRate?symbol=${sym}&startTime=${start}&limit=1000`, 1);
+        if (!Array.isArray(d) || !d.length) break;
+        for (const x of d) map.set(+x.fundingTime, [+x.fundingTime, +x.fundingRate]);
+        start = +d[d.length-1].fundingTime + 1;
+        if (d.length < 1000) break;
+      }
+      const rows = [...map.values()].sort((a,b)=>a[0]-b[0]);
+      await writeJson(dir, sym + ".json", {symbol:sym, updated:Date.now(), n:rows.length, rows});
+      MAN.funding[sym] = {n:rows.length, first:rows.length?rows[0][0]:null, last:rows.length?rows[rows.length-1][0]:null};
+      recs += rows.length;
+    } catch(e){ if (e.message==="остановлено") break; log(`финансирование ${sym}: ${e.message}`, "e"); }
+    i++;
+    setProg("pbE", i/syms.length*100);
+    setStat("extState", `финансирование · <b>${i}</b> из ${syms.length} · записей ${fmtN(recs)}`);
+    paintWeight();
+  }
+  await saveManifest(); lockUI(false);
+  log(`финансирование: ${fmtN(recs)} записей по ${i} монетам`, "o");
+  toast("финансирование обновлено");
+}
+
+/* ==========================================================================
+   МЕТРИКИ 30 ДНЕЙ (окно Binance — копим свой архив)
+   ========================================================================== */
+const METRICS = [
+  {key:"oi",     dir:"oi",     path:"/futures/data/openInterestHist",         f:x=>[+x.timestamp, +x.sumOpenInterest, +x.sumOpenInterestValue]},
+  {key:"topAcc", dir:"ratios", path:"/futures/data/topLongShortAccountRatio", f:x=>[+x.timestamp, +x.longShortRatio]},
+  {key:"topPos", dir:"ratios", path:"/futures/data/topLongShortPositionRatio",f:x=>[+x.timestamp, +x.longShortRatio]},
+  {key:"global", dir:"ratios", path:"/futures/data/globalLongShortAccountRatio",f:x=>[+x.timestamp, +x.longShortRatio]},
+  {key:"taker",  dir:"ratios", path:"/futures/data/takerlongshortRatio",      f:x=>[+x.timestamp, +x.buySellRatio]}
+];
+
+async function downloadMetrics() {
+  if (!await guard()) return;
+  STOP = false; lockUI(true);
+  const dOi = await subdir(DIR, "oi"), dR = await subdir(DIR, "ratios");
+  const syms = UNI.symbols.map(s=>s.symbol);
+  let i = 0, added = 0;
+  for (const sym of syms) {
+    if (STOP) break;
+    const store = {};
+    for (const m of METRICS) {
+      const dir = m.dir === "oi" ? dOi : dR;
+      const fname = sym + ".json";
+      try {
+        const old = (await readJson(dir, fname)) || {};
+        const map = new Map((old[m.key] || []).map(r => [r[0], r]));
+        const before = map.size;
+        let end = Date.now();
+        for (let p = 0; p < 4; p++) {                    // 4×500 часов с запасом на 30 дней
+          const d = await apiGet(`${m.path}?symbol=${sym}&period=1h&limit=500&endTime=${end}`, 1);
+          if (!Array.isArray(d) || !d.length) break;
+          for (const x of d) { const r = m.f(x); map.set(r[0], r); }
+          const first = +d[0].timestamp;
+          if (first >= end - 1000) break;
+          end = first - 1;
+          if (d.length < 500) break;
+        }
+        const rows = [...map.values()].sort((a,b)=>a[0]-b[0]);
+        added += map.size - before;
+        store[m.dir] = store[m.dir] || {};
+        store[m.dir][m.key] = rows;
+        store[m.dir]._old = old;
+      } catch(e){ if (e.message==="остановлено") { lockUI(false); return; } log(`${m.key} ${sym}: ${e.message}`, "e"); }
+    }
+    // запись: oi в свой файл, три коэффициента в общий
+    try {
+      if (store.oi) { const o = Object.assign({}, store.oi._old, {symbol:sym, updated:Date.now(), oi:store.oi.oi}); delete o._old; await writeJson(dOi, sym+".json", o); }
+      if (store.ratios) { const o = Object.assign({}, store.ratios._old, {symbol:sym, updated:Date.now(),
+          topAcc:store.ratios.topAcc, topPos:store.ratios.topPos, global:store.ratios.global, taker:store.ratios.taker}); delete o._old;
+          await writeJson(dR, sym+".json", o); }
+    } catch(e){ log(`запись метрик ${sym}: ${e.message}`, "e"); }
+    i++;
+    setProg("pbE", i/syms.length*100);
+    setStat("extState", `метрики · <b>${i}</b> из ${syms.length} · новых точек ${fmtN(added)}`);
+    paintWeight();
+  }
+  MAN.metrics = {updated: Date.now(), symbols: i};
+  await saveManifest(); lockUI(false);
+  log(`метрики: добавлено ${fmtN(added)} точек по ${i} монетам`, "o");
+  log(`следующий запуск сделать не позже ${iso(Date.now()+25*86400000)} — иначе появится невосполнимая дыра`, "w");
+  toast("метрики обновлены");
+}
+
+/* ==========================================================================
+   СОСТОЯНИЕ АРХИВА
+   ========================================================================== */
+async function scanDisk() {
+  if (!DIR) return;
+  const rows = [];
+  let bytes = 0, bars5 = 0, bars1 = 0;
+  const root5 = await haveDir(DIR, "klines_5m");
+  const syms = UNI ? UNI.symbols.map(s=>s.symbol) : Object.keys(MAN.k5);
+  const extra = Object.keys(MAN.k5).filter(s => !syms.includes(s));
+
+  for (const sym of [...syms, ...extra]) {
+    const rec = MAN.k5[sym];
+    const h = MAN.h1[sym];
+    let n = 0, exp = 0, mo = 0, first = null, last = null;
+    if (rec) for (const k of Object.keys(rec.months)) {
+      const m = rec.months[k];
+      if (!m) continue;
+      mo++; n += m.n || 0; exp += m.exp || 0;
+      if (m.first && (!first || m.first < first)) first = m.first;
+      if (m.last && (!last || m.last > last)) last = m.last;
+    }
+    bars5 += n; bars1 += h ? h.n : 0;
+    bytes += n * COLS * 8 + (h ? h.n * COLS * 8 : 0);
+    rows.push({sym, mo, n, exp, first, last, h1: h ? h.n : 0, gaps: h ? h.gaps : null,
+               inUni: syms.includes(sym),
+               fund: MAN.funding[sym] ? MAN.funding[sym].n : 0});
+  }
+  rows.sort((a,b) => b.n - a.n);
+
+  const covDays = rows.length && rows[0].first ? (Date.now() - Math.min(...rows.filter(r=>r.first).map(r=>r.first)))/86400000 : 0;
+  $("cards").innerHTML = `
+    <div class="card"><div class="k">Монет</div><div class="v amb">${rows.length}</div><div class="s">в архиве</div></div>
+    <div class="card"><div class="k">Баров 5m</div><div class="v">${fmtN(bars5)}</div><div class="s">сырьё</div></div>
+    <div class="card"><div class="k">Баров 1H</div><div class="v ${bars1?"up":"mut"}">${fmtN(bars1)}</div><div class="s">для стенда</div></div>
+    <div class="card"><div class="k">Объём</div><div class="v">${fmtMB(bytes)}</div><div class="s">на диске</div></div>
+    <div class="card"><div class="k">Глубина</div><div class="v">${covDays?Math.round(covDays):"—"}</div><div class="s">дней истории</div></div>
+    <div class="card"><div class="k">Метрики</div><div class="v ${MAN.metrics.updated?"up":"mut"}" style="font-size:14px">${MAN.metrics.updated?iso(MAN.metrics.updated):"—"}</div><div class="s">обновлены</div></div>`;
+
+  const body = rows.map(r => {
+    const cov = r.exp ? r.n / r.exp * 100 : 0;
+    const covCls = !r.exp ? "mut" : cov >= 99 ? "up" : cov >= 90 ? "amb" : "dn";
+    return `<tr>
+      <td>${r.sym}${r.inUni?"":' <span class="pill p-mut">вне списка</span>'}</td>
+      <td>${r.mo}</td>
+      <td>${fmtN(r.n)}</td>
+      <td class="${covCls}">${r.exp?cov.toFixed(1)+"%":"—"}</td>
+      <td class="mut">${r.first?iso(r.first):"—"}</td>
+      <td class="mut">${r.last?iso(r.last):"—"}</td>
+      <td class="${r.h1?"blu":"mut"}">${r.h1?fmtN(r.h1):"—"}</td>
+      <td class="${r.gaps?(r.gaps>5?"dn":"amb"):"mut"}">${r.gaps===null?"—":r.gaps}</td>
+      <td class="mut">${r.fund?fmtN(r.fund):"—"}</td>
+    </tr>`;
+  }).join("");
+  $("tblSym").innerHTML = `<thead><tr>
+      <th>Монета</th><th>Мес.</th><th>Баров 5m</th><th>Полнота</th><th>С</th><th>По</th><th>Часов</th><th>Разрывов</th><th>Фанд.</th>
+    </tr></thead><tbody>${body || '<tr><td class="mut">пусто</td></tr>'}</tbody>`;
+}
+
+/** Проверка целостности: ищем месяцы с недобором баров и дыры в часовой сетке */
+async function integrityCheck() {
+  if (!DIR || !MAN) return;
+  log("— проверка целостности —", "w");
+  let bad = 0;
+  for (const sym of Object.keys(MAN.k5)) {
+    const rec = MAN.k5[sym];
+    for (const k of Object.keys(rec.months).sort()) {
+      const m = rec.months[k];
+      if (!m || !m.complete || m.empty) continue;
+      if (!m.exp) continue;
+      const cov = m.n / m.exp;
+      if (cov < 0.98) { log(`${sym} ${k}: ${m.n} из ${m.exp} баров (${(cov*100).toFixed(1)}%)`, cov<0.9?"e":"w"); bad++; }
+    }
+    const h = MAN.h1[sym];
+    if (h && h.gaps > 5) { log(`${sym}: ${h.gaps} разрывов в часовой сетке`, "w"); bad++; }
+  }
+  if (!bad) log("дыр не найдено, архив цельный", "o");
+  else log(`проблемных мест: ${bad}. Недобор до 2% — норма (остановки биржи), больше — стоит перекачать месяц.`, "w");
+  toast(bad ? `замечаний: ${bad}` : "архив цельный");
+}
+
+/* ==========================================================================
+   ИНИЦИАЛИЗАЦИЯ ПАПКИ
+   ========================================================================== */
+const EMPTY_MAN = () => ({version:1, created:Date.now(), updated:Date.now(), k5:{}, h1:{}, funding:{}, metrics:{}});
+
+async function useDir(handle, silent) {
+  const perm = await handle.queryPermission({mode:"readwrite"});
+  if (perm !== "granted") {
+    const rq = await handle.requestPermission({mode:"readwrite"});
+    if (rq !== "granted") { if (!silent) log("доступ к папке не выдан", "e"); return false; }
+  }
+  DIR = handle;
+  MAN = (await readJson(DIR, "manifest.json")) || EMPTY_MAN();
+  MAN.k5 = MAN.k5 || {}; MAN.h1 = MAN.h1 || {}; MAN.funding = MAN.funding || {}; MAN.metrics = MAN.metrics || {};
+  UNI = await readJson(DIR, "universe.json");
+  await writeFile(DIR, "FORMAT.txt", FORMAT_TXT);
+  await saveManifest();
+  setStat("dirState", `папка: <b>${handle.name}</b> · манифест от ${new Date(MAN.updated).toLocaleString("ru-RU")}`);
+  if (UNI) setStat("uniState", `<b>${UNI.symbols.length}</b> монет · от <b>${(UNI.minVol/1e6).toFixed(0)}</b> млн $ · собран ${iso(UNI.collected)}`);
+  log(`папка подключена: ${handle.name}`, "o");
+  lockUI(false);
+  await scanDisk();
+  return true;
+}
+
+async function pickDir() {
+  try {
+    const h = await window.showDirectoryPicker({mode:"readwrite", id:"rkdata", startIn:"documents"});
+    if (await useDir(h)) { await dirSave(h); toast("папка подключена"); }
+  } catch(e) {
+    if (e.name !== "AbortError") log("выбор папки: " + e.message, "e");
+  }
+}
+
+async function guard() {
+  if (!DIR) { log("сначала выбери папку", "e"); return false; }
+  if (!UNI || !UNI.symbols.length) { log("сначала обнови список монет", "e"); return false; }
+  const p = await DIR.queryPermission({mode:"readwrite"});
+  if (p !== "granted") {
+    const r = await DIR.requestPermission({mode:"readwrite"});
+    if (r !== "granted") { log("доступ к папке отозван — выбери её заново", "e"); return false; }
+  }
+  return true;
+}
+
+function lockUI(busy) {
+  BUSY = busy;
+  const on = !!DIR;
+  $("btnUni").disabled  = !on || busy;
+  $("btnK").disabled    = !on || busy;
+  $("btnPlan").disabled = !on || busy;
+  $("btnAgg").disabled  = !on || busy;
+  $("btnFund").disabled = !on || busy;
+  $("btnMetr").disabled = !on || busy;
+  $("btnScan").disabled = !on || busy;
+  $("btnCheck").disabled= !on || busy;
+  $("btnDir").disabled  = busy;
+  $("btnStop").disabled = !busy;
+}
+
+const FORMAT_TXT = `RK_DATA — архив истории Binance Futures
+=========================================
+
+klines_5m/<SYMBOL>/<YYYY-MM>.bin   сырые 5-минутные свечи, помесячно
+klines_1h/<SYMBOL>.bin             часовые, собраны локально из 5m
+funding/<SYMBOL>.json              ставка финансирования, полная история
+oi/<SYMBOL>.json                   открытый интерес (окно Binance 30 дней, копится)
+ratios/<SYMBOL>.json               лонг/шорт по счетам, по позициям, тейкеры
+manifest.json                      учёт скачанного
+universe.json                      список монет и оборот на день сбора
+
+ФОРМАТ .bin (RKB1), little-endian
+---------------------------------
+Заголовок, 32 байта:
+  0  char[4]  "RKB1"
+  4  uint32   версия формата = 1
+  8  uint32   колонок = 7
+  12 uint32   число баров N
+  16 float64  время открытия первого бара, мс
+  24 float64  время открытия последнего бара, мс
+Далее N × 7 float64 подряд:
+  время открытия (мс), open, high, low, close, объём в монете, объём в долларах
+
+Гарантии:
+  - формирующиеся свечи не сохраняются никогда;
+  - бары внутри файла упорядочены по времени и не повторяются;
+  - разрывы возможны (остановки биржи) — их число записано в manifest.json.
+`;
+
+/* ==========================================================================
+   СТАРТ
+   ========================================================================== */
+(async function init() {
+  if (!window.showDirectoryPicker || !window.isSecureContext) {
+    $("app").style.display = "none";
+    $("unsupported").style.display = "block";
+    return;
+  }
+  lockUI(false);
+  log("готов. Шаг 1 — выбери папку на диске.", "o");
+  try {
+    const h = await dirLoad();
+    if (h) {
+      const p = await h.queryPermission({mode:"readwrite"});
+      if (p === "granted") await useDir(h, true);
+      else {
+        PENDING = h;
+        setStat("dirState", `папка <b>${h.name}</b> знакома — нажми «Выбрать папку», чтобы подтвердить доступ`);
+        return;
+      }
+    }
+  } catch {}
+})();
+
+$("btnDir").addEventListener("click", async () => {
+  // если папка знакома с прошлого раза — сначала пробуем просто подтвердить доступ
+  if (PENDING) {
+    const h = PENDING; PENDING = null;
+    if (await useDir(h)) { await dirSave(h); toast("папка подключена"); return; }
+  }
+  pickDir();
+});
+$("btnUni").addEventListener("click", loadUniverse);
+$("btnK").addEventListener("click", () => downloadKlines().catch(e => { log("сбой: " + e.message, "e"); lockUI(false); }));
+$("btnPlan").addEventListener("click", planKlines);
+$("btnAgg").addEventListener("click", () => buildHourly().catch(e => { log("сбой: " + e.message, "e"); lockUI(false); }));
+$("btnFund").addEventListener("click", () => downloadFunding().catch(e => { log("сбой: " + e.message, "e"); lockUI(false); }));
+$("btnMetr").addEventListener("click", () => downloadMetrics().catch(e => { log("сбой: " + e.message, "e"); lockUI(false); }));
+$("btnScan").addEventListener("click", scanDisk);
+$("btnCheck").addEventListener("click", integrityCheck);
+$("btnStop").addEventListener("click", () => { STOP = true; log("останавливаю после текущего блока…", "w"); });
+$("btnForget").addEventListener("click", async () => {
+  await dirForget(); DIR = null; MAN = null; UNI = null; PENDING = null;
+  setStat("dirState", "папка не выбрана"); lockUI(false);
+  log("ссылка на папку забыта. Файлы на диске не тронуты.", "w");
+});
+window.addEventListener("beforeunload", e => { if (BUSY) { e.preventDefault(); e.returnValue = ""; } });
+</script>
+</body>
+</html>
