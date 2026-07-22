@@ -168,6 +168,24 @@ h3.sec{font-family:var(--fm);font-size:11px;letter-spacing:.8px;text-transform:u
       <select id="cfgAdxCap"><option value="off">Выкл</option><option value="40">Не входить при ADX ctx > 40</option></select>
     </div>
   </div>
+  <div class="panel-t" style="margin-top:18px">Фильтр отката <span class="hl">— структурная гипотеза</span></div>
+  <div class="grid">
+    <div class="fld"><label>Откат Фибоначчи (гипотеза S)</label>
+      <select id="cfgFibFilter">
+        <option value="off">Выкл</option>
+        <option value="shallow">Только МЕЛКИЙ откат (retr &lt; порог)</option>
+        <option value="deep">Только ГЛУБОКИЙ откат (retr ≥ порог)</option>
+      </select>
+      <span class="hint">на чём нашли: LONG+мелкий давал +0.145 на заповеднике</span>
+    </div>
+    <div class="fld"><label>Порог глубины отката</label>
+      <input type="range" id="cfgFibThr" min="0.15" max="0.7" step="0.01" value="0.35" disabled>
+      <span class="hint" id="fibThrLbl">0.35 · <span style="color:var(--vio)">не проверен на заповеднике вслепую</span></span>
+    </div>
+    <div class="fld"><label>Окно отката, баров</label>
+      <select id="cfgFibN" disabled><option value="48">48</option><option value="24">24</option><option value="96">96</option></select>
+    </div>
+  </div>
 
   <div class="panel-t" style="margin-top:18px">Заповедный период <span class="hl">— защита от подгонки</span></div>
   <div class="grid">
@@ -660,6 +678,17 @@ function backtestSymbol(sym, base, ctx, conf, cfg, B) {
     if (!sig && cfg.pb2) sig = pb2(x, i, cfg, regime);
     if (!sig) continue;
 
+    // ФИЛЬТР ОТКАТА (гипотеза «лонг на мелком откате»).
+    // Считается ДО входа, только по прошлым барам. Не влияет на структуру-запись ниже.
+    if (cfg.fibFilter && cfg.fibFilter !== "off") {
+      const fbF = structFib(x, i, cfg.fibN || 48);
+      const retr = fbF ? fbF.retr : null;
+      if (retr === null) continue;                 // нет размаха — пропускаем
+      const thr = cfg.fibThr;                      // порог глубины отката
+      if (cfg.fibFilter === "shallow" && retr >= thr) continue;  // берём только мелкий откат
+      if (cfg.fibFilter === "deep"    && retr <  thr) continue;  // берём только глубокий
+    }
+
     const entry = sig.dir === "LONG" ? sig.entry * (1 + slip) : sig.entry * (1 - slip);
     const risk = Math.abs(entry - sig.sl);
     if (risk <= 0) continue;
@@ -855,6 +884,7 @@ function readCfg(){
     btcFilter:$("cfgBtcFilter").value, early:$("cfgEarly").value==="on",
     earlyN:Math.round(num("cfgEarlyN")), earlyR:num("cfgEarlyR"),
     adxCap:$("cfgAdxCap").value==="off"?null:+$("cfgAdxCap").value,
+    fibFilter:$("cfgFibFilter").value, fibThr:parseFloat($("cfgFibThr").value), fibN:+$("cfgFibN").value,
     holdout:+$("cfgHoldout").value
   };
   const ms=MS[baseTF];
@@ -1080,6 +1110,19 @@ $("btnStop").addEventListener("click",()=>{STOP=true;log("останавлива
 $("btnCsv").addEventListener("click",downloadCsv);
 $("cfgSpan").addEventListener("change",e=>{const c=e.target.value==="custom";$("cfgFrom").disabled=!c;$("cfgTo").disabled=!c;});
 $("cfgEarly").addEventListener("change",e=>{const on=e.target.value==="on";$("cfgEarlyN").disabled=!on;$("cfgEarlyR").disabled=!on;});
+
+// фильтр отката + предохранитель против подгонки:
+// как только пользователь двигает порог, помечаем его как "подобранный вручную"
+let FIB_THR_TOUCHED=false;
+$("cfgFibFilter").addEventListener("change",e=>{const on=e.target.value!=="off";$("cfgFibThr").disabled=!on;$("cfgFibN").disabled=!on;paintFibThr();});
+$("cfgFibThr").addEventListener("input",()=>{FIB_THR_TOUCHED=true;paintFibThr();});
+function paintFibThr(){
+  const v=parseFloat($("cfgFibThr").value).toFixed(2);
+  const tag=FIB_THR_TOUCHED
+    ? '<span style="color:var(--dn)">подобран вручную — заповедник больше не независим</span>'
+    : '<span style="color:var(--vio)">исходный 0.35 — заповедник ещё независим</span>';
+  $("fibThrLbl").innerHTML=v+" · "+tag;
+}
 </script>
 </body>
 </html>
