@@ -330,6 +330,102 @@ function alignIndex(tBase, msBase, tHi, msHi) {
   return out;
 }
 
+/* ==========================================================================
+   СТРУКТУРНЫЕ ПРИЗНАКИ (новое) — считаются по совокупности свечей ДО входа.
+   Всё смотрит только назад (бары i-N..i-1 или ..i), без заглядывания в будущее.
+   Записываются в каждую сделку и потом измеряются на разделяющую силу.
+   ========================================================================== */
+
+/** Расстояние цены входа до макс/мин за N предыдущих баров, в единицах ATR.
+ *  distHi>0 — сколько ATR ДО потолка (0 = у самого потолка). distLo — до дна.
+ *  posRange 0..1 — где цена внутри [min,max] диапазона (0=на дне, 1=на потолке). */
+function structRange(x, i, N) {
+  const atr = x.atr[i]; if (!atr) return null;
+  const a = Math.max(0, i - N);
+  let hi = -Infinity, lo = Infinity;
+  for (let k = a; k < i; k++) { if (x.h[k] > hi) hi = x.h[k]; if (x.l[k] < lo) lo = x.l[k]; }
+  if (!isFinite(hi) || !isFinite(lo) || hi <= lo) return null;
+  const p = x.c[i];
+  return {
+    distHi: (hi - p) / atr,
+    distLo: (p - lo) / atr,
+    posRange: (p - lo) / (hi - lo),
+    width: (hi - lo) / p            // ширина диапазона в долях цены
+  };
+}
+
+/** Уровни Фибоначчи по свежему размаху за N баров.
+ *  Определяем размах как (минимум..максимум) окна; направление — по тому,
+ *  что случилось позже (если максимум позже минимума — импульс вверх, откат вниз).
+ *  fibZone: к какому уровню (0.382/0.5/0.618) цена ближе всего, и насколько (в ATR). */
+function structFib(x, i, N) {
+  const atr = x.atr[i]; if (!atr) return null;
+  const a = Math.max(0, i - N);
+  let hi = -Infinity, lo = Infinity, hiIdx = a, loIdx = a;
+  for (let k = a; k < i; k++) {
+    if (x.h[k] > hi) { hi = x.h[k]; hiIdx = k; }
+    if (x.l[k] < lo) { lo = x.l[k]; loIdx = k; }
+  }
+  if (hi <= lo) return null;
+  const range = hi - lo, p = x.c[i];
+  const upImpulse = hiIdx > loIdx;            // максимум сформирован позже минимума → рос
+  // ретрейс от импульса: для роста меряем откат сверху, для падения — снизу
+  const retr = upImpulse ? (hi - p) / range : (p - lo) / range; // 0=у вершины импульса,1=полный откат
+  const levels = [0.382, 0.5, 0.618];
+  let near = null, nd = Infinity;
+  for (const L of levels) { const d = Math.abs(retr - L); if (d < nd) { nd = d; near = L; } }
+  // расстояние до ближайшего уровня в ATR (по цене)
+  const levelPrice = upImpulse ? hi - near * range : lo + near * range;
+  return {
+    dir: upImpulse ? "UP" : "DN",
+    retr,                                   // глубина отката 0..1+
+    nearLevel: near,                        // 0.382 / 0.5 / 0.618
+    atLevelATR: Math.abs(p - levelPrice) / atr,  // насколько близко к уровню, в ATR
+    inGolden: retr >= 0.5 && retr <= 0.66   // «золотая зона» 0.5–0.618
+  };
+}
+
+/** Свежесть пробоя: пробила ли цена на баре i уровень диапазона предыдущих N баров,
+ *  за которым до этого держалась. broke=+1 пробой вверх, -1 вниз, 0 нет.
+ *  ageBars — сколько баров назад был последний столь же экстремальный уровень. */
+function structBreak(x, i, N) {
+  const a = Math.max(0, i - N);
+  let hi = -Infinity, lo = Infinity;
+  for (let k = a; k < i; k++) { if (x.h[k] > hi) hi = x.h[k]; if (x.l[k] < lo) lo = x.l[k]; }
+  const p = x.c[i], pv = x.c[i - 1];
+  let broke = 0;
+  if (p > hi && pv <= hi) broke = 1;
+  else if (p < lo && pv >= lo) broke = -1;
+  // сколько тестов уровня было: считаем касания hi/lo зоны за окно
+  let touchHi = 0, touchLo = 0;
+  const tol = (x.atr[i] || 0) * 0.25;
+  for (let k = a; k < i; k++) {
+    if (Math.abs(x.h[k] - hi) <= tol) touchHi++;
+    if (Math.abs(x.l[k] - lo) <= tol) touchLo++;
+  }
+  return { broke, touchHi, touchLo };
+}
+
+/** Сжатие: отношение недавнего размаха (ATR коротко) к более старому (ATR длинно).
+ *  <1 — сжатие (пружина), >1 — расширение. Плюс сжатие ширины диапазона. */
+function structSqueeze(x, i) {
+  const atrNow = x.atr[i]; if (!atrNow || !x.atrSmaLong[i]) return null;
+  return { squeeze: atrNow / x.atrSmaLong[i] };  // <0.85 — заметное сжатие
+}
+
+/** Эшелон / пройденный путь: как далеко зашло текущее движение от последнего
+ *  разворота. Ищем последний локальный экстремум против направления и меряем,
+ *  какую долю недавнего размаха цена уже прошла. path 0..1 (0=начало,1=конец хода). */
+function structEchelon(x, i, N) {
+  const a = Math.max(0, i - N);
+  let hi = -Infinity, lo = Infinity;
+  for (let k = a; k <= i; k++) { if (x.h[k] > hi) hi = x.h[k]; if (x.l[k] < lo) lo = x.l[k]; }
+  if (hi <= lo) return null;
+  const p = x.c[i];
+  // направление тренда по EMA50 контекста уже известно снаружи; здесь — позиция в размахе
+  return { path: (p - lo) / (hi - lo) };   // для лонга ближе к 1 = поздно, для шорта ближе к 0 = поздно
+}
+
 /* ---------- режим (копия v2) ---------- */
 function classifyRegime(x, i) {
   const p = x.c[i], atr = x.atr[i];
@@ -592,6 +688,20 @@ function backtestSymbol(sym, base, ctx, conf, cfg, B) {
     let btc = null;
     if (B) btc = btcSnapshot(B, x.t[i]);
 
+    // СТРУКТУРНЫЕ ПРИЗНАКИ на момент входа (только назад, без будущего)
+    const st = {};
+    for (const N of [24, 48, 96]) {
+      const rg = structRange(x, i, N), fb = structFib(x, i, N),
+            bk = structBreak(x, i, N), ec = structEchelon(x, i, N);
+      st["r"+N]  = rg;  st["f"+N] = fb;  st["b"+N] = bk;  st["e"+N] = ec;
+    }
+    const sq = structSqueeze(x, i);
+    // «путь» с поправкой на направление сделки: 0 = вошли в начале хода, 1 = на излёте
+    const pathDir = (ec96 => {
+      const e = st.e96; if (!e) return null;
+      return sig.dir === "LONG" ? e.path : 1 - e.path;
+    })();
+
     // ликвидность на момент входа: оборот в $ за 24ч, посчитанный из свечей
     let liq = null;
     { const back = Math.max(0, i - x.bars24); let s = 0;
@@ -612,7 +722,23 @@ function backtestSymbol(sym, base, ctx, conf, cfg, B) {
       // согласованность направления сделки с трендом BTC на 4H
       btcAlign: btc ? (btc.trend4h === "NA" ? "NA"
                  : (sig.dir === "LONG" && btc.trend4h === "UP") || (sig.dir === "SHORT" && btc.trend4h === "DOWN")
-                   ? "WITH" : "AGAINST") : "NA"
+                   ? "WITH" : "AGAINST") : "NA",
+      // структура (для анализа разделяющей силы; на исполнение не влияет)
+      st_distHi48: st.r48 ? +st.r48.distHi.toFixed(3) : null,
+      st_distLo48: st.r48 ? +st.r48.distLo.toFixed(3) : null,
+      st_posRange48: st.r48 ? +st.r48.posRange.toFixed(3) : null,
+      st_width48: st.r48 ? +st.r48.width.toFixed(4) : null,
+      st_posRange96: st.r96 ? +st.r96.posRange.toFixed(3) : null,
+      st_fibRetr48: st.f48 ? +st.f48.retr.toFixed(3) : null,
+      st_fibLevel48: st.f48 ? st.f48.nearLevel : null,
+      st_fibAtLevelATR48: st.f48 ? +st.f48.atLevelATR.toFixed(3) : null,
+      st_fibGolden48: st.f48 ? (st.f48.inGolden ? 1 : 0) : null,
+      st_break48: st.b48 ? st.b48.broke : null,
+      st_touchHi48: st.b48 ? st.b48.touchHi : null,
+      st_touchLo48: st.b48 ? st.b48.touchLo : null,
+      st_squeeze: sq ? +sq.squeeze.toFixed(3) : null,
+      st_path96: pathDir === null ? null : +pathDir.toFixed(3),
+      st_distToStopATR: st.r48 && (sig.dir === "LONG" ? st.r48.distLo : st.r48.distHi)
     });
     blocked = bar + cfg.cool;
     i = bar;
@@ -920,14 +1046,16 @@ function render(L){
 
 /* ---------- CSV ---------- */
 function toCsv(L){
-  const cols=["symbol","playbook","dir","tier","regime","split","entry_time","exit_time","entry","sl","tp","exit","reason","bars","R","mae_R","stop_pct","adx_ctx","vol_ratio","rsi","atr_pct","liq24_usd","btc_trend_1h","btc_trend_4h","btc_adx","btc_chg24","btc_align"];
+  const stCols=["st_distHi48","st_distLo48","st_posRange48","st_width48","st_posRange96","st_fibRetr48","st_fibLevel48","st_fibAtLevelATR48","st_fibGolden48","st_break48","st_touchHi48","st_touchLo48","st_squeeze","st_path96"];
+  const cols=["symbol","playbook","dir","tier","regime","split","entry_time","exit_time","entry","sl","tp","exit","reason","bars","R","mae_R","stop_pct","adx_ctx","vol_ratio","rsi","atr_pct","liq24_usd","btc_trend_1h","btc_trend_4h","btc_adx","btc_chg24","btc_align",...stCols];
   const lines=[cols.join(",")];
   for(const t of L.all){
+    const stv=stCols.map(k=>t[k]==null?"":t[k]);
     lines.push([t.sym,t.playbook,t.dir,t.tier,t.regime,t._split,
       new Date(t.tEntry).toISOString(),new Date(t.tExit).toISOString(),
       t.entry,t.sl,t.tp,t.exit,t.reason,t.bars,t.R.toFixed(4),t.mae.toFixed(4),
       fmt(t.stopPct,3),fmt(t.adx,1),fmt(t.volRatio,2),fmt(t.rsi,1),fmt(t.atrPct,3),
-      t.liq24?Math.round(t.liq24):"",t.btcTrend1h,t.btcTrend4h,t.btcAdx??"",t.btcChg24??"",t.btcAlign].join(","));
+      t.liq24?Math.round(t.liq24):"",t.btcTrend1h,t.btcTrend4h,t.btcAdx??"",t.btcChg24??"",t.btcAlign,...stv].join(","));
   }
   return lines.join("\n");
 }
