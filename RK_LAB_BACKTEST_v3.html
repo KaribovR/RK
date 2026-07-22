@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RK // LAB v3 — бэктест на локальном архиве</title>
+<style>
+:root{
+  --bg:#0a0c0f; --bg2:#11151a; --bg3:#161b22; --bd:#222b36; --bd2:#2e3a48;
+  --t1:#e6edf3; --t2:#8b98a8; --t3:#5c6875;
+  --amb:#ffb020; --amb-dim:rgba(255,176,32,.12);
+  --up:#26d07c; --dn:#ff4d5e; --vio:#a78bfa; --blu:#4aa8ff;
+  --fm:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --fs:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--t1);font-family:var(--fs);font-size:13px;line-height:1.5}
+.wrap{max-width:1500px;margin:0 auto;padding:18px 16px 80px}
+.hdr{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--bd);padding-bottom:12px;margin-bottom:18px}
+.logo{font-family:var(--fm);font-size:15px;font-weight:700;letter-spacing:.5px;color:var(--amb)}
+.logo span{color:var(--t3)}
+.tag{font-family:var(--fm);font-size:11px;color:var(--t2)}
+.panel{background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:14px 16px;margin-bottom:14px}
+.panel-t{font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:1px;color:var(--t3);text-transform:uppercase;margin-bottom:12px}
+.panel-t b,.panel-t .hl{color:var(--amb)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld label{font-family:var(--fm);font-size:10px;color:var(--t2);letter-spacing:.3px}
+.fld input,.fld select{background:var(--bg3);border:1px solid var(--bd2);color:var(--t1);border-radius:5px;padding:6px 8px;font-family:var(--fm);font-size:12px}
+.fld input:focus,.fld select:focus{outline:2px solid var(--amb);border-color:var(--amb)}
+.hint{font-family:var(--fm);font-size:9px;color:var(--t3)}
+.chk{display:flex;align-items:center;gap:7px;font-family:var(--fm);font-size:11px;color:var(--t2);cursor:pointer;padding:6px 0}
+.chk input{width:15px;height:15px;accent-color:var(--amb)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+button{font-family:var(--fm);font-size:12px;font-weight:700;letter-spacing:.4px;border-radius:6px;padding:9px 18px;cursor:pointer;border:1px solid var(--bd2);background:var(--bg3);color:var(--t1);transition:.15s}
+button:hover:not(:disabled){border-color:var(--amb);color:var(--amb)}
+button:disabled{opacity:.35;cursor:not-allowed}
+.btn-run{background:var(--amb-dim);border-color:var(--amb);color:var(--amb)}
+.btn-sm{padding:6px 12px;font-size:11px}
+.prog{height:3px;background:var(--bd);border-radius:2px;overflow:hidden;margin-top:12px}
+.prog i{display:block;height:100%;width:0;background:var(--amb);transition:width .2s}
+.status{font-family:var(--fm);font-size:11px;color:var(--t2);margin-top:8px;min-height:16px}
+.status b{color:var(--amb)}
+.dirline{font-family:var(--fm);font-size:11px;color:var(--t2);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dirline b{color:var(--amb)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px}
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:12px 14px}
+.card .k{font-family:var(--fm);font-size:9px;letter-spacing:.8px;color:var(--t3);text-transform:uppercase}
+.card .v{font-family:var(--fm);font-size:20px;font-weight:700;margin-top:5px;letter-spacing:-.5px}
+.card .s{font-family:var(--fm);font-size:10px;color:var(--t3);margin-top:2px}
+.tw{overflow-x:auto;border:1px solid var(--bd);border-radius:8px;margin-top:12px}
+table{width:100%;border-collapse:collapse;font-family:var(--fm);font-size:11px;min-width:560px}
+th{background:var(--bg3);color:var(--t3);font-size:9px;letter-spacing:.7px;text-transform:uppercase;text-align:right;padding:8px 10px;font-weight:700;border-bottom:1px solid var(--bd);white-space:nowrap;position:sticky;top:0}
+th:first-child,td:first-child{text-align:left}
+td{padding:6px 10px;text-align:right;border-bottom:1px solid rgba(34,43,54,.5);white-space:nowrap}
+tbody tr:hover{background:rgba(255,176,32,.04)}
+.up{color:var(--up)}.dn{color:var(--dn)}.mut{color:var(--t3)}.amb{color:var(--amb)}.blu{color:var(--blu)}.vio{color:var(--vio)}
+.log{font-family:var(--fm);font-size:10.5px;line-height:1.6;background:#07090b;border:1px solid var(--bd);border-radius:8px;padding:10px 12px;height:180px;overflow-y:auto;color:var(--t2);white-space:pre-wrap}
+.log .e{color:var(--dn)}.log .w{color:var(--amb)}.log .o{color:var(--up)}.log .d{color:var(--t3)}
+.err{border-color:rgba(255,77,94,.5);background:rgba(255,77,94,.06)}
+.err .panel-t{color:var(--dn)}
+.note{font-family:var(--fm);font-size:10px;color:var(--t3);line-height:1.7;margin-top:10px}
+.note b{color:var(--t2);font-weight:400}
+.tier{display:inline-block;font-size:9px;font-weight:700;border-radius:3px;padding:1px 6px}
+.tA{background:rgba(38,208,124,.15);color:var(--up)} .tB{background:rgba(255,176,32,.15);color:var(--amb)} .tC{background:rgba(255,77,94,.12);color:var(--dn)}
+.split-flag{display:inline-block;font-size:9px;font-weight:700;border-radius:3px;padding:1px 6px;border:1px solid}
+.f-train{background:rgba(74,168,255,.1);color:var(--blu);border-color:rgba(74,168,255,.35)}
+.f-hold{background:rgba(167,139,250,.12);color:var(--vio);border-color:rgba(167,139,250,.4)}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--amb);color:#0a0c0f;font-family:var(--fm);font-size:11px;font-weight:700;padding:8px 16px;border-radius:6px;opacity:0;pointer-events:none;transition:.2s;z-index:9}
+.toast.on{opacity:1}
+.hy{border-left:2px solid var(--bd2);padding-left:12px;margin:10px 0}
+.hy b{color:var(--amb)}
+details{margin-top:10px}summary{font-family:var(--fm);font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);cursor:pointer}
+summary:hover{color:var(--amb)}
+h3.sec{font-family:var(--fm);font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--amb);margin:20px 0 8px;border-top:1px solid var(--bd);padding-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <div class="logo">RK <span>//</span> LAB v3</div>
+  <div class="tag">бэктест на локальном архиве · читает папку, не сеть · контекст BTC · настроечный/заповедный периоды</div>
+</div>
+
+<div id="unsupported" style="display:none">
+  <div class="panel err"><div class="panel-t">Браузер не подходит</div>
+    <div class="note" style="font-size:11.5px;color:var(--t2)">Нужен Chrome или Edge на компьютере, страница по https:// или localhost.</div></div>
+</div>
+
+<div id="app">
+
+<div class="panel">
+  <div class="panel-t">Архив на диске</div>
+  <div class="dirline">
+    <button class="btn-run" id="btnDir">Выбрать папку</button>
+    <span id="dirState" class="mut">папка не выбрана</span>
+  </div>
+  <div class="note">Та же папка <b>RK_DATA</b>, куда качал data manager. Нужны часовые (klines_1h) — на них считается прогон.</div>
+</div>
+
+<div class="panel">
+  <div class="panel-t">Юниверс и период</div>
+  <div class="grid">
+    <div class="fld"><label>Мин. оборот, млн $</label><input type="number" id="cfgMinVol" value="10" min="1" step="5"><span class="hint">по обороту из архива на день сбора</span></div>
+    <div class="fld"><label>Потолок монет</label><input type="number" id="cfgTop" value="150" min="5" step="5"></div>
+    <div class="fld"><label>Период</label>
+      <select id="cfgSpan">
+        <option value="ref">Как в v2 (22.04–20.07)</option>
+        <option value="full">Весь архив</option>
+        <option value="custom">Свои даты</option>
+      </select>
+      <span class="hint">«Как в v2» — для сверки движка</span>
+    </div>
+    <div class="fld"><label>С даты</label><input type="date" id="cfgFrom" value="2026-04-22" disabled></div>
+    <div class="fld"><label>По дату</label><input type="date" id="cfgTo" value="2026-07-20" disabled></div>
+    <div class="fld"><label>Таймфрейм входа</label>
+      <select id="cfgBase"><option value="1h">1H (контекст 4H)</option><option value="15m">15m (контекст 1H)</option></select>
+      <span class="hint">15m строится из 5m архива</span>
+    </div>
+  </div>
+
+  <div class="panel-t" style="margin-top:18px">Правила сделки</div>
+  <div class="grid">
+    <div class="fld"><label>Цель, в R</label><input type="number" id="cfgRR" value="2" min="0.5" max="6" step="0.5"></div>
+    <div class="fld"><label>Тайм-стоп, часов</label><input type="number" id="cfgTimeH" value="24" min="2" max="72" step="1"></div>
+    <div class="fld"><label>Пауза после сделки, баров</label><input type="number" id="cfgCool" value="4" min="0" max="48" step="1"></div>
+    <div class="fld"><label>Проскальзывание, %</label><input type="number" id="cfgSlip" value="0.05" min="0" max="1" step="0.01"></div>
+    <div class="fld"><label>Комиссия, % за сторону</label><input type="number" id="cfgFee" value="0.05" min="0" max="0.5" step="0.01"></div>
+    <div class="fld"><label>Направления</label>
+      <select id="cfgSide"><option value="both">Лонг и шорт</option><option value="long">Только лонг</option><option value="short">Только шорт</option></select>
+    </div>
+  </div>
+
+  <div class="panel-t" style="margin-top:18px">Пол по издержкам</div>
+  <div class="grid">
+    <div class="fld"><label>Мин. ширина стопа, %</label><input type="number" id="cfgMinStop" value="1.0" min="0" max="5" step="0.1"></div>
+    <div class="fld"><label>Мин. ATR, %</label><input type="number" id="cfgMinAtr" value="0.5" min="0" max="5" step="0.1"></div>
+    <div class="fld"><label>Макс. издержки, % от R</label><input type="number" id="cfgMaxCost" value="15" min="1" max="60" step="1"></div>
+  </div>
+
+  <div class="panel-t" style="margin-top:18px">Плейбуки, допуски и контекст BTC</div>
+  <div class="grid">
+    <label class="chk"><input type="checkbox" id="pb1" checked> PB1 · Откат в тренде</label>
+    <label class="chk"><input type="checkbox" id="pb2"> PB2 · Пробой сжатия</label>
+    <label class="chk"><input type="checkbox" id="cfgConf"> Подтверждение старшим ТФ</label>
+    <label class="chk"><input type="checkbox" id="cfgRange"> Допускать RANGE</label>
+    <label class="chk"><input type="checkbox" id="cfgParabola"> Допускать PARABOLIC</label>
+  </div>
+  <div class="grid" style="margin-top:6px">
+    <div class="fld"><label>Фильтр по BTC (гипотеза A)</label>
+      <select id="cfgBtcFilter">
+        <option value="off">Выкл — писать контекст, не фильтровать</option>
+        <option value="with">Только В СТОРОНУ тренда BTC 4H</option>
+        <option value="notagainst">Кроме ПРОТИВ тренда BTC 4H</option>
+      </select>
+      <span class="hint">«кроме против» = запрет входа против биткоина</span>
+    </div>
+    <div class="fld"><label>Ранний выход (гипотеза B)</label>
+      <select id="cfgEarly">
+        <option value="off">Выкл</option>
+        <option value="on">Выйти, если за N баров нет хода в плюс</option>
+      </select>
+    </div>
+    <div class="fld"><label>N баров до раннего выхода</label><input type="number" id="cfgEarlyN" value="6" min="2" max="24" step="1" disabled><span class="hint">и порог хода ниже</span></div>
+    <div class="fld"><label>Мин. ход в плюс к N, R</label><input type="number" id="cfgEarlyR" value="0.3" min="0" max="1.5" step="0.1" disabled></div>
+    <div class="fld"><label>ADX-запрет (гипотеза C)</label>
+      <select id="cfgAdxCap"><option value="off">Выкл</option><option value="40">Не входить при ADX ctx > 40</option></select>
+    </div>
+  </div>
+
+  <div class="panel-t" style="margin-top:18px">Заповедный период <span class="hl">— защита от подгонки</span></div>
+  <div class="grid">
+    <div class="fld"><label>Отложить последние</label>
+      <select id="cfgHoldout">
+        <option value="0">не откладывать (весь период — настройка)</option>
+        <option value="33" selected>последнюю треть — в заповедник</option>
+        <option value="25">последнюю четверть</option>
+      </select>
+      <span class="hint">на заповеднике результат считается, но им нельзя настраивать</span>
+    </div>
+  </div>
+
+  <div class="row">
+    <button class="btn-run" id="btnRun" disabled>Прогон</button>
+    <button id="btnStop" disabled>■ Стоп</button>
+    <button class="btn-sm" id="btnCsv" disabled>Выгрузить сделки CSV</button>
+    <span class="status" id="runState">—</span>
+  </div>
+  <div class="prog"><i id="pb"></i></div>
+</div>
+
+<div id="results"></div>
+
+<div class="panel">
+  <div class="panel-t">Журнал</div>
+  <div class="log" id="log"></div>
+</div>
+
+</div>
+<div class="toast" id="toast">готово</div>
+</div>
+
+<script>
+/* ====== ВСТАВЛЕННЫЙ ДВИЖОК engine_v3.js ====== */
+"use strict";
+/* ==========================================================================
+   RK LAB v3 — ДВИЖОК
+   Индикаторы, стратегии и симуляция перенесены из v2 БЕЗ ИЗМЕНЕНИЙ ЛОГИКИ,
+   чтобы прогон на тех же данных давал те же числа (сверка целостности).
+   Новое: чтение баров из папки (не из сети) и контекст BTC в каждой сделке.
+   ========================================================================== */
+
+const MS = { "5m":300000, "15m":900000, "1h":3600000, "4h":14400000, "1d":86400000 };
+const MAGIC = 0x31424B52, COLS = 7, HEAD = 32;
+
+/* ---------- индикаторы (копия v2) ---------- */
+function emaArr(a, p) {
+  const out = new Array(a.length).fill(null);
+  if (a.length < p) return out;
+  let s = 0; for (let i = 0; i < p; i++) s += a[i];
+  let v = s / p; out[p - 1] = v; const k = 2 / (p + 1);
+  for (let i = p; i < a.length; i++) { v = a[i] * k + v * (1 - k); out[i] = v; }
+  return out;
+}
+function rsiArr(c, p = 14) {
+  if (c.length < p + 1) return new Array(c.length).fill(50);
+  const r = new Array(p).fill(50);
+  let g = 0, l = 0;
+  for (let i = 1; i <= p; i++) { const d = c[i] - c[i - 1]; d > 0 ? g += d : l -= d; }
+  let ag = g / p, al = l / p;
+  r.push(al === 0 ? 100 : 100 - 100 / (1 + ag / al));
+  for (let i = p + 1; i < c.length; i++) {
+    const d = c[i] - c[i - 1];
+    ag = (ag * (p - 1) + Math.max(0, d)) / p;
+    al = (al * (p - 1) + Math.max(0, -d)) / p;
+    r.push(al === 0 ? 100 : 100 - 100 / (1 + ag / al));
+  }
+  return r;
+}
+function atrArr(h, l, c, p = 14) {
+  const out = new Array(c.length).fill(null);
+  if (c.length < p + 1) return out;
+  const tr = [0];
+  for (let i = 1; i < c.length; i++) tr.push(Math.max(h[i] - l[i], Math.abs(h[i] - c[i - 1]), Math.abs(l[i] - c[i - 1])));
+  let s = 0; for (let i = 1; i <= p; i++) s += tr[i];
+  let v = s / p; out[p] = v;
+  for (let i = p + 1; i < c.length; i++) { v = (v * (p - 1) + tr[i]) / p; out[i] = v; }
+  return out;
+}
+function adxArr(h, l, c, p = 14) {
+  const n = c.length, adx = new Array(n).fill(null), pdi = new Array(n).fill(null), ndi = new Array(n).fill(null);
+  if (n < p * 2 + 2) return { adx, pdi, ndi };
+  const tr = [0], pm = [0], nm = [0];
+  for (let i = 1; i < n; i++) {
+    tr.push(Math.max(h[i] - l[i], Math.abs(h[i] - c[i - 1]), Math.abs(l[i] - c[i - 1])));
+    const u = h[i] - h[i - 1], d = l[i - 1] - l[i];
+    pm.push(u > d && u > 0 ? u : 0); nm.push(d > u && d > 0 ? d : 0);
+  }
+  let str = 0, sp = 0, sn = 0;
+  for (let i = 1; i <= p; i++) { str += tr[i]; sp += pm[i]; sn += nm[i]; }
+  const dxs = [];
+  const push = i => {
+    const P = str === 0 ? 0 : 100 * sp / str, N = str === 0 ? 0 : 100 * sn / str;
+    pdi[i] = P; ndi[i] = N; const s = P + N;
+    dxs.push({ i, dx: s === 0 ? 0 : 100 * Math.abs(P - N) / s });
+  };
+  push(p);
+  for (let i = p + 1; i < n; i++) { str = str - str / p + tr[i]; sp = sp - sp / p + pm[i]; sn = sn - sn / p + nm[i]; push(i); }
+  if (dxs.length < p) return { adx, pdi, ndi };
+  let a = 0; for (let k = 0; k < p; k++) a += dxs[k].dx;
+  a /= p; adx[dxs[p - 1].i] = a;
+  for (let k = p; k < dxs.length; k++) { a = (a * (p - 1) + dxs[k].dx) / p; adx[dxs[k].i] = a; }
+  return { adx, pdi, ndi };
+}
+function stochRsiArr(c, rp = 14, sp = 14, kp = 3, dp = 3) {
+  const n = c.length, K = new Array(n).fill(null), D = new Array(n).fill(null);
+  const ra = rsiArr(c, rp), raw = new Array(n).fill(null);
+  for (let i = sp - 1; i < n; i++) {
+    let lo = Infinity, hi = -Infinity;
+    for (let j = i - sp + 1; j <= i; j++) { if (ra[j] < lo) lo = ra[j]; if (ra[j] > hi) hi = ra[j]; }
+    raw[i] = hi === lo ? 50 : ((ra[i] - lo) / (hi - lo)) * 100;
+  }
+  for (let i = 0; i < n; i++) {
+    if (i < sp - 2 + kp) continue;
+    let s = 0, ok = true;
+    for (let j = i - kp + 1; j <= i; j++) { if (raw[j] === null) { ok = false; break; } s += raw[j]; }
+    if (ok) K[i] = s / kp;
+  }
+  for (let i = 0; i < n; i++) {
+    let s = 0, ok = true;
+    for (let j = i - dp + 1; j <= i; j++) { if (j < 0 || K[j] === null) { ok = false; break; } s += K[j]; }
+    if (ok) D[i] = s / dp;
+  }
+  return { k: K, d: D };
+}
+function smaArr(a, p) {
+  const out = new Array(a.length).fill(null); let s = 0;
+  for (let i = 0; i < a.length; i++) { s += a[i]; if (i >= p) s -= a[i - p]; if (i >= p - 1) out[i] = s / p; }
+  return out;
+}
+function rollMin(a, p) {
+  const out = new Array(a.length).fill(null);
+  for (let i = p - 1; i < a.length; i++) { let m = Infinity; for (let j = i - p + 1; j <= i; j++) if (a[j] < m) m = a[j]; out[i] = m; }
+  return out;
+}
+function rollMax(a, p) {
+  const out = new Array(a.length).fill(null);
+  for (let i = p - 1; i < a.length; i++) { let m = -Infinity; for (let j = i - p + 1; j <= i; j++) if (a[j] > m) m = a[j]; out[i] = m; }
+  return out;
+}
+
+/* ---------- агрегация и выравнивание (копия v2) ---------- */
+function aggregate(src, ms) {
+  const t = [], o = [], h = [], l = [], c = [], v = []; let cur = null;
+  for (let i = 0; i < src.t.length; i++) {
+    const key = Math.floor(src.t[i] / ms) * ms;
+    if (key !== cur) { cur = key; t.push(key); o.push(src.o[i]); h.push(src.h[i]); l.push(src.l[i]); c.push(src.c[i]); v.push(src.v[i]); }
+    else { const j = t.length - 1; if (src.h[i] > h[j]) h[j] = src.h[i]; if (src.l[i] < l[j]) l[j] = src.l[i]; c[j] = src.c[i]; v[j] += src.v[i]; }
+  }
+  return { t, o, h, l, c, v };
+}
+function alignIndex(tBase, msBase, tHi, msHi) {
+  const out = new Array(tBase.length).fill(-1); let j = -1;
+  for (let i = 0; i < tBase.length; i++) {
+    const close = tBase[i] + msBase;
+    while (j + 1 < tHi.length && tHi[j + 1] + msHi <= close) j++;
+    out[i] = j;
+  }
+  return out;
+}
+
+/* ---------- режим (копия v2) ---------- */
+function classifyRegime(x, i) {
+  const p = x.c[i], atr = x.atr[i];
+  if (!atr || x.ema50[i] === null) return "DEAD";
+  const ext = Math.abs(p - x.ema50[i]) / atr;
+  const back = i >= x.bars24 ? x.c[i - x.bars24] : null;
+  const chg = back ? Math.abs(p / back - 1) : 0;
+  const atrPct = atr / p;
+  if (ext > 4 || chg > 0.40) return "PARABOLIC";
+  if (atrPct < 0.0015) return "DEAD";
+  const j = x.iCtx[i];
+  if (j < 0) return "DEAD";
+  const adx = x.ctxAdx[j], e50 = x.ctxE50[j], e200 = x.ctxE200[j];
+  if (adx === null || e50 === null || e200 === null) return "DEAD";
+  if (adx < 15 && atrPct < 0.0025) return "DEAD";
+  const up = e50 > e200, dn = e50 < e200;
+  if (adx >= 20 && ((up && p > e50) || (dn && p < e50))) return "TREND";
+  return "RANGE";
+}
+function costCheck(entry, dist, cfg) {
+  const stopPct = dist / entry * 100;
+  if (stopPct < cfg.minStopPct) return null;
+  const costR = (2 * (cfg.fee + cfg.slip) / 100) * entry / dist;
+  if (costR * 100 > cfg.maxCostPct) return null;
+  return { stopPct, costR };
+}
+function confirmTier(x, i, dir, cfg, tier) {
+  if (!cfg.useConf) return tier;
+  const j = x.iConf[i];
+  if (j < 0) return tier;
+  const e50 = x.confE50[j], e200 = x.confE200[j];
+  if (e50 === null || e200 === null) return tier;
+  const agree = dir === "LONG" ? e50 > e200 : e50 < e200;
+  if (agree) return tier;
+  return "C";
+}
+
+/* ---------- PB1 (копия v2) ---------- */
+function pb1(x, i, cfg, regime) {
+  if (regime === "DEAD") return null;
+  if (regime === "PARABOLIC" && !cfg.allowParabola) return null;
+  if (regime === "RANGE" && !cfg.allowRange) return null;
+  const j = x.iCtx[i]; if (j < 0) return null;
+  const adx = x.ctxAdx[j], e50c = x.ctxE50[j], e200c = x.ctxE200[j];
+  if (adx === null || e50c === null || e200c === null) return null;
+  if (x.ema21[i] === null || x.ema50[i] === null || x.atr[i] === null || x.volSma[i] === null) return null;
+  if (x.stochK[i] === null || x.stochK[i - 1] === null) return null;
+
+  const p = x.c[i], atr = x.atr[i];
+  if (atr / p * 100 < cfg.minAtrPct) return null;
+
+  const up = e50c > e200c, dn = e50c < e200c;
+  const LOOK = 8, SL_LOOK = 6;
+  let dir = null;
+
+  if (up && cfg.side !== "short") {
+    let disch = false;
+    for (let k = Math.max(0, i - LOOK); k <= i; k++)
+      if ((x.stochK[k] !== null && x.stochK[k] < 30) || x.rsi[k] < 45) { disch = true; break; }
+    if (disch && p > x.ema21[i] && x.c[i - 1] <= x.ema21[i - 1] && p > x.ema50[i] * 0.995) dir = "LONG";
+  }
+  if (!dir && dn && cfg.side !== "long") {
+    let disch = false;
+    for (let k = Math.max(0, i - LOOK); k <= i; k++)
+      if ((x.stochK[k] !== null && x.stochK[k] > 70) || x.rsi[k] > 55) { disch = true; break; }
+    if (disch && p < x.ema21[i] && x.c[i - 1] >= x.ema21[i - 1] && p < x.ema50[i] * 1.005) dir = "SHORT";
+  }
+  if (!dir) return null;
+
+  const volRatio = x.volSma[i] > 0 ? x.v[i] / x.volSma[i] : 0;
+  if (volRatio < 0.7) return null;
+
+  let sl;
+  if (dir === "LONG") { let lo = Infinity; for (let k = Math.max(0, i - SL_LOOK); k <= i; k++) if (x.l[k] < lo) lo = x.l[k]; sl = lo - atr * 0.15; }
+  else { let hi = -Infinity; for (let k = Math.max(0, i - SL_LOOK); k <= i; k++) if (x.h[k] > hi) hi = x.h[k]; sl = hi + atr * 0.15; }
+
+  let dist = Math.abs(p - sl);
+  const minD = atr * 0.8, maxD = Math.min(atr * 3.0, p * 0.08);
+  if (dist < minD) { dist = minD; sl = dir === "LONG" ? p - dist : p + dist; }
+  if (dist > maxD) return null;
+
+  const cc = costCheck(p, dist, cfg); if (!cc) return null;
+
+  let tier;
+  if (regime === "TREND" && adx >= 25 && volRatio >= 1.0 && dist <= atr * 2.0) tier = "A";
+  else if (regime === "TREND") tier = "B";
+  else tier = "C";
+  tier = confirmTier(x, i, dir, cfg, tier);
+
+  return {
+    playbook: "PB1", dir, entry: p, sl, dist, tier, regime,
+    tp: dir === "LONG" ? p + dist * cfg.rr : p - dist * cfg.rr,
+    meta: { adx, volRatio, rsi: x.rsi[i], atrPct: atr / p * 100, stopPct: cc.stopPct, costR: cc.costR }
+  };
+}
+
+/* ---------- PB2 (копия v2) ---------- */
+function pb2(x, i, cfg, regime) {
+  if (regime === "DEAD") return null;
+  if (regime === "PARABOLIC" && !cfg.allowParabola) return null;
+  if (x.atr[i] === null || x.volSma[i] === null || x.atrSmaLong[i] === null) return null;
+  if (x.hiRange[i - 1] === null || x.loRange[i - 1] === null) return null;
+
+  const p = x.c[i], atr = x.atr[i];
+  if (atr / p * 100 < cfg.minAtrPct) return null;
+
+  const squeeze = atr < x.atrSmaLong[i] * 0.85;
+  if (!squeeze) return null;
+
+  const hi = x.hiRange[i - 1], lo = x.loRange[i - 1];
+  const width = hi - lo;
+  if (width <= 0 || width / p > 0.12) return null;
+
+  const volRatio = x.volSma[i] > 0 ? x.v[i] / x.volSma[i] : 0;
+  if (volRatio < 1.2) return null;
+
+  let dir = null;
+  if (p > hi && x.c[i - 1] <= hi && cfg.side !== "short") dir = "LONG";
+  else if (p < lo && x.c[i - 1] >= lo && cfg.side !== "long") dir = "SHORT";
+  if (!dir) return null;
+
+  const mid = (hi + lo) / 2;
+  let sl = dir === "LONG" ? Math.min(mid, p - atr * 0.8) : Math.max(mid, p + atr * 0.8);
+  let dist = Math.abs(p - sl);
+  const maxD = Math.min(atr * 3.5, p * 0.08);
+  if (dist > maxD) return null;
+
+  const cc = costCheck(p, dist, cfg); if (!cc) return null;
+
+  const j = x.iCtx[i];
+  const adx = j >= 0 ? x.ctxAdx[j] : null;
+  let tier;
+  if (regime === "TREND" && volRatio >= 1.8) tier = "A";
+  else if (regime === "TREND" || volRatio >= 1.8) tier = "B";
+  else tier = "C";
+  tier = confirmTier(x, i, dir, cfg, tier);
+
+  return {
+    playbook: "PB2", dir, entry: p, sl, dist, tier, regime,
+    tp: dir === "LONG" ? p + dist * cfg.rr : p - dist * cfg.rr,
+    meta: { adx: adx || 0, volRatio, rsi: x.rsi[i], atrPct: atr / p * 100, stopPct: cc.stopPct, costR: cc.costR }
+  };
+}
+
+/* ---------- контекст индикаторов (копия v2 + новые поля BTC приходят снаружи) ---------- */
+function buildCtx(sym, base, ctx, conf, cfg) {
+  const msBase = MS[cfg.baseTF];
+  const x = {
+    sym, t: base.t, o: base.o, h: base.h, l: base.l, c: base.c, v: base.v,
+    ema21: emaArr(base.c, 21), ema50: emaArr(base.c, 50),
+    atr: atrArr(base.h, base.l, base.c, 14),
+    rsi: rsiArr(base.c, 14),
+    stochK: stochRsiArr(base.c).k,
+    volSma: smaArr(base.v, 20),
+    hiRange: rollMax(base.h, 20), loRange: rollMin(base.l, 20),
+    iCtx: alignIndex(base.t, msBase, ctx.t, MS[cfg.ctxTF]),
+    iConf: alignIndex(base.t, msBase, conf.t, MS[cfg.confTF]),
+    ctxAdx: adxArr(ctx.h, ctx.l, ctx.c, 14).adx,
+    ctxE50: emaArr(ctx.c, 50), ctxE200: emaArr(ctx.c, 200),
+    confE50: emaArr(conf.c, 50), confE200: emaArr(conf.c, 200),
+    bars24: Math.round(MS["1d"] / msBase)
+  };
+  x.atrSmaLong = smaArr(x.atr.map(v => v === null ? 0 : v), 96);
+  return x;
+}
+
+/* ==========================================================================
+   КОНТЕКСТ BTC (новое в v3)
+   Готовит по времени входа: тренд BTC на 1H и 4H (EMA50 vs EMA200 + цена/EMA50),
+   ADX 1H, ход BTC за 24 часа. Всё считается на ЗАКРЫТЫХ барах BTC.
+   ========================================================================== */
+function buildBtcContext(btc1h) {
+  // btc1h: {t,o,h,l,c,v} часовые
+  const e50 = emaArr(btc1h.c, 50), e200 = emaArr(btc1h.c, 200);
+  const adx = adxArr(btc1h.h, btc1h.l, btc1h.c, 14).adx;
+  const btc4h = aggregate(btc1h, MS["4h"]);
+  const e50_4 = emaArr(btc4h.c, 50), e200_4 = emaArr(btc4h.c, 200);
+  const i4 = alignIndex(btc1h.t, MS["1h"], btc4h.t, MS["4h"]);
+  return {
+    t: btc1h.t, c: btc1h.c, e50, e200, adx,
+    e50_4, e200_4, i4,
+    // быстрый поиск бара BTC по времени
+    idxByTime: (() => { const m = new Map(); for (let i=0;i<btc1h.t.length;i++) m.set(btc1h.t[i], i); return m; })()
+  };
+}
+
+/** Возвращает снимок состояния BTC на момент времени t (мс, открытие бара базового ТФ).
+ *  Берётся последний ЗАКРЫТЫЙ часовой бар BTC на этот момент. */
+function btcSnapshot(B, t) {
+  // последний час, чей close <= t
+  let hourOpen = Math.floor((t) / MS["1h"]) * MS["1h"] - MS["1h"];
+  // ищем индекс: бар с этим временем открытия, гарантированно закрытый к t
+  let i = B.idxByTime.get(hourOpen);
+  if (i === undefined) {
+    // бинарный поиск ближайшего <= hourOpen
+    let lo = 0, hi = B.t.length - 1, best = -1;
+    while (lo <= hi) { const m = (lo+hi)>>1; if (B.t[m] <= hourOpen) { best = m; lo = m+1; } else hi = m-1; }
+    i = best;
+  }
+  if (i === undefined || i < 0) return null;
+  const c = B.c[i], e50 = B.e50[i], e200 = B.e200[i], adx = B.adx[i];
+  const j4 = B.i4[i];
+  const e50_4 = j4 >= 0 ? B.e50_4[j4] : null, e200_4 = j4 >= 0 ? B.e200_4[j4] : null;
+  // ход за 24 часа
+  let chg24 = null;
+  if (i >= 24 && B.c[i-24]) chg24 = c / B.c[i-24] - 1;
+  const trend1h = (e50 !== null && e200 !== null)
+      ? (e50 > e200 && c > e50 ? "UP" : e50 < e200 && c < e50 ? "DOWN" : "FLAT") : "NA";
+  const trend4h = (e50_4 !== null && e200_4 !== null)
+      ? (e50_4 > e200_4 ? "UP" : "DOWN") : "NA";
+  return {
+    price: c, trend1h, trend4h,
+    adx: adx === null ? null : +adx.toFixed(1),
+    chg24: chg24 === null ? null : +(chg24*100).toFixed(2)
+  };
+}
+
+/* ---------- симуляция одной монеты (копия v2 + запись контекста BTC) ---------- */
+function backtestSymbol(sym, base, ctx, conf, cfg, B) {
+  const n = base.c.length;
+  if (n < cfg.warm + 60) return [];
+  const x = buildCtx(sym, base, ctx, conf, cfg);
+  const trades = [];
+  const slip = cfg.slip / 100, fee = cfg.fee / 100;
+  let blocked = -1;
+
+  for (let i = cfg.warm; i < n - 1; i++) {
+    if (i < blocked) continue;
+    const regime = classifyRegime(x, i);
+    let sig = null;
+    if (cfg.pb1) sig = pb1(x, i, cfg, regime);
+    if (!sig && cfg.pb2) sig = pb2(x, i, cfg, regime);
+    if (!sig) continue;
+
+    const entry = sig.dir === "LONG" ? sig.entry * (1 + slip) : sig.entry * (1 - slip);
+    const risk = Math.abs(entry - sig.sl);
+    if (risk <= 0) continue;
+
+    let exit = null, bar = null, reason = null, mae = 0;
+    for (let j = i + 1; j < n; j++) {
+      const hi = x.h[j], lo = x.l[j];
+      const adv = sig.dir === "LONG" ? (entry - lo) / risk : (hi - entry) / risk;
+      if (adv > mae) mae = adv;
+      if (sig.dir === "LONG") {
+        if (lo <= sig.sl) { exit = sig.sl * (1 - slip); reason = "SL"; bar = j; break; }
+        if (hi >= sig.tp) { exit = sig.tp * (1 - slip); reason = "TP"; bar = j; break; }
+      } else {
+        if (hi >= sig.sl) { exit = sig.sl * (1 + slip); reason = "SL"; bar = j; break; }
+        if (lo <= sig.tp) { exit = sig.tp * (1 + slip); reason = "TP"; bar = j; break; }
+      }
+      if (j - i >= cfg.timeStop) { exit = x.c[j]; reason = "TIME"; bar = j; break; }
+    }
+    if (exit === null) continue;
+
+    const gross = sig.dir === "LONG" ? (exit - entry) : (entry - exit);
+    const feeCost = (entry + exit) * fee;
+    const R = (gross - feeCost) / risk;
+
+    // контекст BTC на момент входа (не влияет на исполнение — только записывается)
+    let btc = null;
+    if (B) btc = btcSnapshot(B, x.t[i]);
+
+    // ликвидность на момент входа: оборот в $ за 24ч, посчитанный из свечей
+    let liq = null;
+    { const back = Math.max(0, i - x.bars24); let s = 0;
+      for (let k = back + 1; k <= i; k++) s += x.v[k]; // v здесь — базовый объём? нет: см. загрузку, кладём quote
+      liq = s; }
+
+    trades.push({
+      sym, playbook: sig.playbook, dir: sig.dir, tier: sig.tier, regime: sig.regime,
+      tEntry: x.t[i], tExit: x.t[bar], entry, sl: sig.sl, tp: sig.tp, exit, reason,
+      bars: bar - i, R, mae,
+      adx: sig.meta.adx, volRatio: sig.meta.volRatio, rsi: sig.meta.rsi,
+      atrPct: sig.meta.atrPct, stopPct: sig.meta.stopPct, costR: sig.meta.costR,
+      liq24: liq,
+      btcTrend1h: btc ? btc.trend1h : "NA",
+      btcTrend4h: btc ? btc.trend4h : "NA",
+      btcAdx: btc ? btc.adx : null,
+      btcChg24: btc ? btc.chg24 : null,
+      // согласованность направления сделки с трендом BTC на 4H
+      btcAlign: btc ? (btc.trend4h === "NA" ? "NA"
+                 : (sig.dir === "LONG" && btc.trend4h === "UP") || (sig.dir === "SHORT" && btc.trend4h === "DOWN")
+                   ? "WITH" : "AGAINST") : "NA"
+    });
+    blocked = bar + cfg.cool;
+    i = bar;
+  }
+  return trades;
+}
+
+/* ---------- метрики (копия v2) ---------- */
+function metrics(l) {
+  const n = l.length;
+  if (!n) return { n: 0, wr: null, avgR: null, sumR: 0, pf: null, maxDD: null, avgMae: null, medBars: null, avgCost: null };
+  let w = 0, s = 0, gp = 0, gl = 0, mae = 0, cost = 0;
+  for (const t of l) {
+    if (t.R > 0) { w++; gp += t.R; } else gl += -t.R;
+    s += t.R; mae += t.mae; cost += (t.costR || 0);
+  }
+  const bars = l.map(t => t.bars).sort((a, b) => a - b);
+  const srt = [...l].sort((a, b) => a.tEntry - b.tEntry);
+  let eq = 0, pk = 0, dd = 0;
+  for (const t of srt) { eq += t.R; if (eq > pk) pk = eq; if (pk - eq > dd) dd = pk - eq; }
+  return {
+    n, wr: w / n * 100, avgR: s / n, sumR: s,
+    pf: gl === 0 ? (gp > 0 ? Infinity : null) : gp / gl,
+    maxDD: dd, avgMae: mae / n, medBars: bars[Math.floor(bars.length / 2)], avgCost: cost / n * 100
+  };
+}
+function groupBy(l, k) { const m = {}; for (const t of l) (m[t[k]] = m[t[k]] || []).push(t); return m; }
+
+/* ====== /движок ====== */
+</script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const num = id => parseFloat($(id).value);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const fmtN = n => (n==null?"—":n.toLocaleString("ru-RU"));
+const iso = t => new Date(t).toISOString().slice(0,10);
+const fmt = (v,d=2) => v==null?"—":(+v).toFixed(d);
+const MAGIC2 = 0x31424B52, COLS2 = 7, HEAD2 = 32;
+
+let DIR=null, UNI=null, STOP=false, LAST=null;
+
+function log(m,c){const el=$("log");const t=new Date().toTimeString().slice(0,8);const d=document.createElement("div");if(c)d.className=c;d.textContent=`${t}  ${m}`;el.appendChild(d);while(el.childNodes.length>500)el.removeChild(el.firstChild);el.scrollTop=el.scrollHeight;}
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),1600);}
+function setProg(p){$("pb").style.width=Math.max(0,Math.min(100,p))+"%";}
+
+/* ---------- IndexedDB: только handle папки ---------- */
+function idb(mode,fn){return new Promise((res,rej)=>{const rq=indexedDB.open("rk_lab",1);rq.onupgradeneeded=()=>rq.result.createObjectStore("kv");rq.onerror=()=>rej(rq.error);rq.onsuccess=()=>{const db=rq.result,tx=db.transaction("kv",mode),st=tx.objectStore("kv");const r=fn(st);tx.oncomplete=()=>{db.close();res(r&&r.result!==undefined?r.result:undefined)};tx.onerror=()=>{db.close();rej(tx.error)}}})}
+const dirSave=h=>idb("readwrite",st=>st.put(h,"dir"));
+const dirLoad=()=>idb("readonly",st=>st.get("dir"));
+
+/* ---------- чтение файлов ---------- */
+async function haveDir(parent,name){try{return await parent.getDirectoryHandle(name)}catch{return null}}
+async function readFile(dir,name){try{const fh=await dir.getFileHandle(name);return await fh.getFile()}catch{return null}}
+async function readJson(dir,name){const f=await readFile(dir,name);if(!f)return null;try{return JSON.parse(await f.text())}catch{return null}}
+
+function unpackBars(buf){
+  if(!buf||buf.byteLength<HEAD2)return null;
+  const dv=new DataView(buf);
+  if(dv.getUint32(0,true)!==MAGIC2)return null;
+  const cols=dv.getUint32(8,true),n=dv.getUint32(12,true);
+  if(cols!==COLS2||HEAD2+n*cols*8>buf.byteLength)return null;
+  return {n,a:new Float64Array(buf,HEAD2,n*cols)};
+}
+/* .bin -> series {t,o,h,l,c,v, q}. v = базовый объём (для volRatio, как в v2). q = долларовый оборот. */
+function barsToSeries(u){
+  const n=u.n,a=u.a,t=[],o=[],h=[],l=[],c=[],v=[],q=[];
+  for(let i=0;i<n;i++){const b=i*COLS2;t.push(a[b]);o.push(a[b+1]);h.push(a[b+2]);l.push(a[b+3]);c.push(a[b+4]);v.push(a[b+5]);q.push(a[b+6]);}
+  return {t,o,h,l,c,v,q};
+}
+async function loadHourly(dir1h,sym){
+  const f=await readFile(dir1h,sym+".bin");if(!f)return null;
+  const u=unpackBars(await f.arrayBuffer());if(!u)return null;
+  return barsToSeries(u);
+}
+function sliceSeries(s,from,to){
+  const t=[],o=[],h=[],l=[],c=[],v=[],q=[];
+  for(let i=0;i<s.t.length;i++){if(s.t[i]<from||s.t[i]>to)continue;t.push(s.t[i]);o.push(s.o[i]);h.push(s.h[i]);l.push(s.l[i]);c.push(s.c[i]);v.push(s.v[i]);q.push(s.q[i]);}
+  return {t,o,h,l,c,v,q};
+}
+
+/* ---------- подключение папки ---------- */
+async function useDir(handle,silent){
+  const p=await handle.queryPermission({mode:"read"});
+  if(p!=="granted"){const r=await handle.requestPermission({mode:"read"});if(r!=="granted"){if(!silent)log("доступ к папке не выдан","e");return false;}}
+  DIR=handle;
+  UNI=await readJson(DIR,"universe.json");
+  const man=await readJson(DIR,"manifest.json");
+  const nH=man?Object.keys(man.h1||{}).length:0;
+  $("dirState").innerHTML=`папка: <b>${handle.name}</b> · монет с часовыми: <b>${nH}</b>`+(UNI?` · юниверс ${UNI.symbols.length}`:"");
+  $("btnRun").disabled=false;
+  if(!nH)log("в папке нет часовых (klines_1h). Собери их в data manager (шаг 4).","w");
+  else log(`папка подключена: ${nH} монет с часовыми`,"o");
+  return true;
+}
+let PENDING=null;
+async function pickDir(){
+  try{const h=await window.showDirectoryPicker({mode:"read",id:"rkdata",startIn:"documents"});
+    if(await useDir(h)){await dirSave(h);toast("папка подключена");}}
+  catch(e){if(e.name!=="AbortError")log("выбор папки: "+e.message,"e");}
+}
+
+/* ---------- сбор конфига ---------- */
+function readCfg(){
+  const baseTF=$("cfgBase").value;
+  const cfg={
+    minVol:num("cfgMinVol")*1e6, top:Math.round(num("cfgTop")), baseTF,
+    ctxTF: baseTF==="15m"?"1h":"4h", confTF: baseTF==="15m"?"4h":"1d",
+    rr:num("cfgRR"), cool:Math.round(num("cfgCool")),
+    slip:num("cfgSlip"), fee:num("cfgFee"), side:$("cfgSide").value,
+    minStopPct:num("cfgMinStop"), minAtrPct:num("cfgMinAtr"), maxCostPct:num("cfgMaxCost"),
+    pb1:$("pb1").checked, pb2:$("pb2").checked, useConf:$("cfgConf").checked,
+    allowRange:$("cfgRange").checked, allowParabola:$("cfgParabola").checked,
+    btcFilter:$("cfgBtcFilter").value, early:$("cfgEarly").value==="on",
+    earlyN:Math.round(num("cfgEarlyN")), earlyR:num("cfgEarlyR"),
+    adxCap:$("cfgAdxCap").value==="off"?null:+$("cfgAdxCap").value,
+    holdout:+$("cfgHoldout").value
+  };
+  const ms=MS[baseTF];
+  cfg.timeStop=Math.max(2,Math.round(num("cfgTimeH")*3600000/ms));
+  const ctxRatio=MS[cfg.ctxTF]/ms;
+  cfg.warm=Math.max(250,Math.ceil(210*ctxRatio));
+  return cfg;
+}
+function spanDates(){
+  const sp=$("cfgSpan").value;
+  if(sp==="ref")return [Date.parse("2026-04-22T00:00:00Z"), Date.parse("2026-07-20T23:59:59Z")];
+  if(sp==="custom")return [Date.parse($("cfgFrom").value+"T00:00:00Z"), Date.parse($("cfgTo").value+"T23:59:59Z")];
+  return [0, Date.now()];
+}
+
+/* ==========================================================================
+   ПРОГОН
+   ========================================================================== */
+async function run(){
+  if(!DIR){log("сначала выбери папку","e");return;}
+  const cfg=readCfg();
+  if(!cfg.pb1&&!cfg.pb2){log("включи хотя бы один плейбук","e");return;}
+  const dir1h=await haveDir(DIR,"klines_1h");
+  if(!dir1h){log("нет klines_1h в папке","e");return;}
+
+  STOP=false;$("btnRun").disabled=true;$("btnStop").disabled=false;$("btnCsv").disabled=true;setProg(0);
+  $("results").innerHTML="";
+
+  // юниверс
+  let syms;
+  if(UNI&&UNI.symbols){syms=UNI.symbols.filter(s=>s.vol24h>=cfg.minVol).slice(0,cfg.top).map(s=>s.symbol);}
+  else{ // из манифеста
+    const man=await readJson(DIR,"manifest.json"); syms=Object.keys(man.h1||{}).slice(0,cfg.top);
+  }
+  const [from,to]=spanDates();
+  log(`прогон: ${syms.length} монет, период ${iso(from)}..${iso(to)}, ТФ ${cfg.baseTF}`,"o");
+
+  // BTC контекст — грузим один раз
+  let B=null;
+  const btc=await loadHourly(dir1h,"BTCUSDT");
+  if(btc){B=buildBtcContext(btc);log("BTC контекст загружен","d");}
+  else log("BTCUSDT не найден — контекст BTC не будет записан","w");
+
+  const t0=Date.now();
+  let all=[], done=0, used=0;
+  const need15=cfg.baseTF==="15m";
+
+  for(const sym of syms){
+    if(STOP)break;
+    try{
+      const h1=await loadHourly(dir1h,sym);
+      if(!h1||h1.t.length<cfg.warm+80){done++;continue;}
+
+      // базовый ряд
+      let base;
+      if(need15){ // строим 15m из 5m архива
+        const d5=await haveDir(DIR,"klines_5m");
+        const sd=d5?await haveDir(d5,sym):null;
+        if(!sd){done++;continue;}
+        // читаем все месяцы
+        const man=await readJson(DIR,"manifest.json");
+        const keys=Object.keys(((man.k5||{})[sym]||{}).months||{}).sort();
+        let t=[],o=[],hh=[],l=[],c=[],v=[],q=[];
+        for(const k of keys){const f=await readFile(sd,k+".bin");if(!f)continue;const u=unpackBars(await f.arrayBuffer());if(!u)continue;const s=barsToSeries(u);t.push(...s.t);o.push(...s.o);hh.push(...s.h);l.push(...s.l);c.push(...s.c);v.push(...s.v);q.push(...s.q);}
+        const s5={t,o,h:hh,l,c,v,q};
+        base=aggregate(s5,MS["15m"]);
+        // q агрегируем отдельно
+      }else base=h1;
+
+      // контекст/подтверждение из базового ряда агрегацией
+      const ctx=aggregate(base,MS[cfg.ctxTF]);
+      const conf=aggregate(base,MS[cfg.confTF]);
+
+      // прогон на полном ряде, затем фильтр по времени входа
+      let tr=backtestSymbol(sym,base,ctx,conf,cfg,B);
+      tr=tr.filter(t=>t.tEntry>=from&&t.tEntry<=to);
+
+      // фильтры-гипотезы (пост-фактум по записанному контексту — только для A/C, т.к. не меняют исполнение)
+      if(cfg.btcFilter==="with")tr=tr.filter(t=>t.btcAlign==="WITH");
+      else if(cfg.btcFilter==="notagainst")tr=tr.filter(t=>t.btcAlign!=="AGAINST");
+      if(cfg.adxCap!=null)tr=tr.filter(t=>t.adx==null||t.adx<=cfg.adxCap);
+
+      all.push(...tr); used++;
+    }catch(e){log(`${sym}: ${e.message}`,"e");}
+    done++;
+    if(done%10===0||done===syms.length){
+      setProg(done/syms.length*100);
+      $("runState").innerHTML=`<b>${done}</b>/${syms.length} монет · сделок <b>${all.length}</b>`;
+      await sleep(0);
+    }
+  }
+
+  // разметка train/holdout по времени входа
+  if(cfg.holdout>0&&all.length){
+    const times=all.map(t=>t.tEntry).sort((a,b)=>a-b);
+    const lo=times[0], hi=times[times.length-1];
+    const cut=hi-(hi-lo)*cfg.holdout/100;
+    for(const t of all)t._split=t.tEntry>=cut?"hold":"train";
+    LAST={all,cfg,from,to,cut};
+    log(`заповедник: сделки после ${iso(cut)} (${cfg.holdout}%) помечены как hold`,"w");
+  }else{ for(const t of all)t._split="train"; LAST={all,cfg,from,to,cut:null}; }
+
+  setProg(100);
+  $("btnStop").disabled=true;$("btnRun").disabled=false;$("btnCsv").disabled=all.length===0;
+  log(`готово: ${all.length} сделок по ${used} монетам за ${((Date.now()-t0)/1000).toFixed(1)}с`,"o");
+  render(LAST);
+  if(!STOP)toast("прогон готов");
+}
+
+/* ==========================================================================
+   ВЫВОД
+   ========================================================================== */
+function mm(list){return metrics(list);}
+function cell(m,key,d,pos){
+  const v=m[key]; if(v==null)return `<td class="mut">—</td>`;
+  let cls=""; if(pos)cls=v>0?"up":v<0?"dn":"mut";
+  return `<td class="${cls}">${fmt(v,d)}</td>`;
+}
+function mrow(label,list){
+  const m=mm(list);
+  return `<tr><td>${label}</td><td>${m.n}</td>${cell(m,"avgR",3,true)}${cell(m,"wr",1)}${cell(m,"sumR",1,true)}${cell(m,"pf",2)}${cell(m,"maxDD",1)}${cell(m,"avgMae",2)}<td>${m.medBars??"—"}</td></tr>`;
+}
+function table(title,rows){
+  return `<div class="panel"><div class="panel-t">${title}</div><div class="tw"><table>
+    <thead><tr><th>Срез</th><th>N</th><th>ср.R</th><th>Винрейт</th><th>Σ R</th><th>PF</th><th>maxDD</th><th>MAE</th><th>бары</th></tr></thead>
+    <tbody>${rows}</tbody></table></div></div>`;
+}
+
+function render(L){
+  const {all,cfg,cut}=L;
+  const R=$("results");
+  if(!all.length){R.innerHTML=`<div class="panel err"><div class="panel-t">Ноль сделок</div><div class="note" style="color:var(--t2)">Ослабь фильтры или расширь период.</div></div>`;return;}
+
+  const train=all.filter(t=>t._split==="train"), hold=all.filter(t=>t._split==="hold");
+  const mAll=mm(all), mTr=mm(train), mHo=mm(hold);
+
+  // карточки
+  let html=`<div class="cards">
+    <div class="card"><div class="k">Сделок</div><div class="v amb">${all.length}</div><div class="s">всего</div></div>
+    <div class="card"><div class="k">ср.R</div><div class="v ${mAll.avgR>0?"up":"dn"}">${fmt(mAll.avgR,3)}</div><div class="s">на сделку</div></div>
+    <div class="card"><div class="k">Винрейт</div><div class="v ${mAll.wr>=50?"up":"mut"}">${fmt(mAll.wr,1)}%</div><div class="s">цель ${cfg.rr}R</div></div>
+    <div class="card"><div class="k">Σ R</div><div class="v ${mAll.sumR>0?"up":"dn"}">${fmt(mAll.sumR,1)}</div><div class="s">суммарно</div></div>
+    <div class="card"><div class="k">PF</div><div class="v">${fmt(mAll.pf,2)}</div><div class="s">profit factor</div></div>
+    <div class="card"><div class="k">maxDD</div><div class="v dn">${fmt(mAll.maxDD,1)}</div><div class="s">просадка R</div></div>
+  </div>`;
+
+  // ЗАПОВЕДНИК — главный экран честности
+  if(cut){
+    html+=`<div class="panel"><div class="panel-t">Настройка против заповедника <span class="hl">— выжила ли идея вне периода настройки</span></div>
+    <div class="tw"><table><thead><tr><th>Период</th><th>N</th><th>ср.R</th><th>Винрейт</th><th>Σ R</th><th>PF</th><th>maxDD</th></tr></thead><tbody>
+    <tr><td><span class="split-flag f-train">НАСТРОЙКА</span></td><td>${mTr.n}</td>${cell(mTr,"avgR",3,true)}${cell(mTr,"wr",1)}${cell(mTr,"sumR",1,true)}${cell(mTr,"pf",2)}${cell(mTr,"maxDD",1)}</tr>
+    <tr><td><span class="split-flag f-hold">ЗАПОВЕДНИК</span></td><td>${mHo.n}</td>${cell(mHo,"avgR",3,true)}${cell(mHo,"wr",1)}${cell(mHo,"sumR",1,true)}${cell(mHo,"pf",2)}${cell(mHo,"maxDD",1)}</tr>
+    </tbody></table></div>
+    <div class="note">Если на заповеднике ср.R близок к настроечному — идея переносится. Если рушится — это была подгонка под период. Сравнивай <b>эти две строки</b>, а не общий итог.</div></div>`;
+  }
+
+  // РАЗБИВКА ПО НАПРАВЛЕНИЮ — ключ к перекосу лонг/шорт
+  html+=table("По направлению",
+    mrow(`<span class="up">LONG</span>`,all.filter(t=>t.dir==="LONG"))+
+    mrow(`<span class="dn">SHORT</span>`,all.filter(t=>t.dir==="SHORT")));
+
+  // ГИПОТЕЗА A — согласованность с BTC 4H
+  const withB=all.filter(t=>t.btcAlign==="WITH"), against=all.filter(t=>t.btcAlign==="AGAINST"), na=all.filter(t=>t.btcAlign==="NA");
+  html+=table("Гипотеза A · сделка относительно тренда BTC (4H)",
+    mrow(`<span class="up">В СТОРОНУ BTC</span>`,withB)+
+    mrow(`<span class="dn">ПРОТИВ BTC</span>`,against)+
+    (na.length?mrow(`<span class="mut">нет данных BTC</span>`,na):""));
+
+  // ГИПОТЕЗА A' — тренд BTC 4H сам по себе
+  const byBtc={};for(const t of all)(byBtc[t.btcTrend4h]=byBtc[t.btcTrend4h]||[]).push(t);
+  let rowsB="";for(const k of ["UP","DOWN","NA"])if(byBtc[k])rowsB+=mrow(`BTC 4H = ${k}`,byBtc[k]);
+  html+=table("Состояние BTC (4H) на входе",rowsB);
+
+  // ПО НАПРАВЛЕНИЮ ВНУТРИ ТРЕНДА BTC — тут видно, перекос это рынок или система
+  html+=table("Направление × тренд BTC 4H (перекос: рынок или система?)",
+    mrow(`LONG · BTC UP`,all.filter(t=>t.dir==="LONG"&&t.btcTrend4h==="UP"))+
+    mrow(`LONG · BTC DOWN`,all.filter(t=>t.dir==="LONG"&&t.btcTrend4h==="DOWN"))+
+    mrow(`SHORT · BTC UP`,all.filter(t=>t.dir==="SHORT"&&t.btcTrend4h==="UP"))+
+    mrow(`SHORT · BTC DOWN`,all.filter(t=>t.dir==="SHORT"&&t.btcTrend4h==="DOWN")));
+
+  // ТИР, РЕЖИМ, ПРИЧИНА ВЫХОДА
+  html+=table("По тиру",["A","B","C"].map(t=>mrow(`<span class="tier t${t}">ТИР ${t}</span>`,all.filter(x=>x.tier===t))).join(""));
+  const byReason={};for(const t of all)(byReason[t.reason]=byReason[t.reason]||[]).push(t);
+  html+=table("По причине выхода (гипотеза B живёт здесь: сравни TIME с SL)",
+    ["TP","SL","TIME"].map(r=>byReason[r]?mrow(r,byReason[r]):"").join(""));
+
+  R.innerHTML=html;
+}
+
+/* ---------- CSV ---------- */
+function toCsv(L){
+  const cols=["symbol","playbook","dir","tier","regime","split","entry_time","exit_time","entry","sl","tp","exit","reason","bars","R","mae_R","stop_pct","adx_ctx","vol_ratio","rsi","atr_pct","liq24_usd","btc_trend_1h","btc_trend_4h","btc_adx","btc_chg24","btc_align"];
+  const lines=[cols.join(",")];
+  for(const t of L.all){
+    lines.push([t.sym,t.playbook,t.dir,t.tier,t.regime,t._split,
+      new Date(t.tEntry).toISOString(),new Date(t.tExit).toISOString(),
+      t.entry,t.sl,t.tp,t.exit,t.reason,t.bars,t.R.toFixed(4),t.mae.toFixed(4),
+      fmt(t.stopPct,3),fmt(t.adx,1),fmt(t.volRatio,2),fmt(t.rsi,1),fmt(t.atrPct,3),
+      t.liq24?Math.round(t.liq24):"",t.btcTrend1h,t.btcTrend4h,t.btcAdx??"",t.btcChg24??"",t.btcAlign].join(","));
+  }
+  return lines.join("\n");
+}
+function downloadCsv(){
+  if(!LAST)return;
+  const blob=new Blob([toCsv(LAST)],{type:"text/csv"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download=`RK_LAB_v3_trades_${iso(Date.now())}.csv`;a.click();
+  toast("CSV выгружен");
+}
+
+/* ---------- старт ---------- */
+(async function init(){
+  if(!window.showDirectoryPicker||!window.isSecureContext){$("app").style.display="none";$("unsupported").style.display="block";return;}
+  log("готов. Выбери папку RK_DATA.","o");
+  try{const h=await dirLoad();if(h){const p=await h.queryPermission({mode:"read"});if(p==="granted")await useDir(h,true);else{PENDING=h;$("dirState").innerHTML=`папка <b>${h.name}</b> знакома — нажми «Выбрать папку»`;}}}catch{}
+})();
+
+$("btnDir").addEventListener("click",async()=>{if(PENDING){const h=PENDING;PENDING=null;if(await useDir(h)){await dirSave(h);toast("папка подключена");return;}}pickDir();});
+$("btnRun").addEventListener("click",()=>run().catch(e=>{log("сбой: "+e.message,"e");$("btnRun").disabled=false;$("btnStop").disabled=true;}));
+$("btnStop").addEventListener("click",()=>{STOP=true;log("останавливаю…","w");});
+$("btnCsv").addEventListener("click",downloadCsv);
+$("cfgSpan").addEventListener("change",e=>{const c=e.target.value==="custom";$("cfgFrom").disabled=!c;$("cfgTo").disabled=!c;});
+$("cfgEarly").addEventListener("change",e=>{const on=e.target.value==="on";$("cfgEarlyN").disabled=!on;$("cfgEarlyR").disabled=!on;});
+</script>
+</body>
+</html>
