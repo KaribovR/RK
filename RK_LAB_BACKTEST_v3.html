@@ -143,6 +143,8 @@ h3.sec{font-family:var(--fm);font-size:11px;letter-spacing:.8px;text-transform:u
   <div class="grid">
     <label class="chk"><input type="checkbox" id="pb1" checked> PB1 · Откат в тренде</label>
     <label class="chk"><input type="checkbox" id="pb2"> PB2 · Пробой сжатия</label>
+    <label class="chk"><input type="checkbox" id="pb3"> PB3 · Контртренд (разворот)</label>
+    <label class="chk"><input type="checkbox" id="pb4"> PB4 · Возврат к среднему</label>
     <label class="chk"><input type="checkbox" id="cfgConf"> Подтверждение старшим ТФ</label>
     <label class="chk"><input type="checkbox" id="cfgRange"> Допускать RANGE</label>
     <label class="chk"><input type="checkbox" id="cfgParabola"> Допускать PARABOLIC</label>
@@ -182,6 +184,10 @@ h3.sec{font-family:var(--fm);font-size:11px;letter-spacing:.8px;text-transform:u
       <input type="range" id="cfgFibThr" min="0.15" max="0.7" step="0.01" value="0.35" disabled>
       <span class="hint" id="fibThrLbl">0.35 · <span style="color:var(--vio)">не проверен на заповеднике вслепую</span></span>
     </div>
+    <div class="fld"><label>Растяжение для PB4, ATR</label>
+      <input type="number" id="cfgMrExt" value="2.5" min="1" max="6" step="0.25">
+      <span class="hint">насколько далеко от EMA50 считать «резинка натянута»</span>
+    </div>
     <div class="fld"><label>Окно отката, баров</label>
       <select id="cfgFibN" disabled><option value="48">48</option><option value="24">24</option><option value="96">96</option></select>
     </div>
@@ -196,6 +202,13 @@ h3.sec{font-family:var(--fm);font-size:11px;letter-spacing:.8px;text-transform:u
         <option value="25">последнюю четверть</option>
       </select>
       <span class="hint">на заповеднике результат считается, но им нельзя настраивать</span>
+    </div>
+    <div class="fld"><label>Кросс-проверка третей</label>
+      <select id="cfgCV">
+        <option value="off">Выкл (обычный заповедник)</option>
+        <option value="on">Три трети по очереди в заповедник</option>
+      </select>
+      <span class="hint">камень: сигнал должен выжить на ВСЕХ трёх</span>
     </div>
   </div>
 
@@ -588,6 +601,120 @@ function pb2(x, i, cfg, regime) {
   };
 }
 
+/* ==========================================================================
+   PB3 — КОНТРТРЕНД (обратная ставка).
+   Логика PB1 перевёрнута: там, где PB1 покупает откат в тренде (ставка на
+   продолжение), PB3 ставит на разворот — вход ПРОТИВ тренда старшего ТФ
+   после признаков истощения (перегрев RSI/StochRSI + затухание объёма).
+   Смысл проверки: если рынок систематически наказывает продолжение,
+   обратная ставка должна давать плюс. Если и она в минусе — дело не в знаке.
+   ========================================================================== */
+function pb3(x, i, cfg, regime) {
+  if (regime === "DEAD") return null;
+  if (regime === "PARABOLIC" && !cfg.allowParabola) return null;
+  const j = x.iCtx[i]; if (j < 0) return null;
+  const adx = x.ctxAdx[j], e50c = x.ctxE50[j], e200c = x.ctxE200[j];
+  if (adx === null || e50c === null || e200c === null) return null;
+  if (x.ema21[i] === null || x.atr[i] === null || x.volSma[i] === null) return null;
+  if (x.stochK[i] === null || x.stochK[i - 1] === null) return null;
+
+  const p = x.c[i], atr = x.atr[i];
+  if (atr / p * 100 < cfg.minAtrPct) return null;
+
+  const up = e50c > e200c, dn = e50c < e200c;
+  const SL_LOOK = 6;
+  let dir = null;
+
+  // тренд ВВЕРХ + перегрев сверху → ставим на разворот ВНИЗ (шорт против тренда)
+  if (up && cfg.side !== "long") {
+    const hot = (x.stochK[i] !== null && x.stochK[i] > 80) || x.rsi[i] > 70;
+    const rolling = x.stochK[i] < x.stochK[i - 1];          // импульс уже загибается
+    if (hot && rolling && p < x.c[i - 1]) dir = "SHORT";
+  }
+  // тренд ВНИЗ + перепроданность → ставим на отскок ВВЕРХ (лонг против тренда)
+  if (!dir && dn && cfg.side !== "short") {
+    const cold = (x.stochK[i] !== null && x.stochK[i] < 20) || x.rsi[i] < 30;
+    const turning = x.stochK[i] > x.stochK[i - 1];
+    if (cold && turning && p > x.c[i - 1]) dir = "LONG";
+  }
+  if (!dir) return null;
+
+  const volRatio = x.volSma[i] > 0 ? x.v[i] / x.volSma[i] : 0;
+  if (volRatio < 0.7) return null;
+
+  let sl;
+  if (dir === "LONG") { let lo = Infinity; for (let k = Math.max(0, i - SL_LOOK); k <= i; k++) if (x.l[k] < lo) lo = x.l[k]; sl = lo - atr * 0.15; }
+  else { let hi = -Infinity; for (let k = Math.max(0, i - SL_LOOK); k <= i; k++) if (x.h[k] > hi) hi = x.h[k]; sl = hi + atr * 0.15; }
+
+  let dist = Math.abs(p - sl);
+  const minD = atr * 0.8, maxD = Math.min(atr * 3.0, p * 0.08);
+  if (dist < minD) { dist = minD; sl = dir === "LONG" ? p - dist : p + dist; }
+  if (dist > maxD) return null;
+
+  const cc = costCheck(p, dist, cfg); if (!cc) return null;
+
+  let tier;
+  if (adx >= 25 && volRatio >= 1.2) tier = "A";
+  else if (adx >= 20) tier = "B";
+  else tier = "C";
+  tier = confirmTier(x, i, dir, cfg, tier);
+
+  return {
+    playbook: "PB3", dir, entry: p, sl, dist, tier, regime,
+    tp: dir === "LONG" ? p + dist * cfg.rr : p - dist * cfg.rr,
+    meta: { adx, volRatio, rsi: x.rsi[i], atrPct: atr / p * 100, stopPct: cc.stopPct, costR: cc.costR }
+  };
+}
+
+/* ==========================================================================
+   PB4 — ВОЗВРАТ К СРЕДНЕМУ.
+   Цена ушла аномально далеко от EMA50 (в единицах ATR) — ставим на возврат.
+   Без оглядки на тренд старшего ТФ: это ставка на растяжение резинки.
+   Работает в боковике, гибнет в сильном тренде — проверяем, чего больше.
+   ========================================================================== */
+function pb4(x, i, cfg, regime) {
+  if (regime === "DEAD") return null;
+  if (x.ema50[i] === null || x.atr[i] === null || x.volSma[i] === null) return null;
+  const p = x.c[i], atr = x.atr[i], e50 = x.ema50[i];
+  if (atr / p * 100 < cfg.minAtrPct) return null;
+
+  const ext = (p - e50) / atr;                 // растяжение в ATR, знак = сторона
+  const TH = cfg.mrExt || 2.5;                 // порог растяжения
+  let dir = null;
+  if (ext > TH && cfg.side !== "long") dir = "SHORT";       // задрали — жмём вниз
+  else if (ext < -TH && cfg.side !== "short") dir = "LONG";  // укатали — жмём вверх
+  if (!dir) return null;
+
+  // требуем признак остановки: последний бар против растяжения
+  if (dir === "SHORT" && !(p < x.c[i - 1])) return null;
+  if (dir === "LONG"  && !(p > x.c[i - 1])) return null;
+
+  const volRatio = x.volSma[i] > 0 ? x.v[i] / x.volSma[i] : 0;
+
+  // стоп за крайней точкой растяжения
+  const SL_LOOK = 6;
+  let sl;
+  if (dir === "LONG") { let lo = Infinity; for (let k = Math.max(0, i - SL_LOOK); k <= i; k++) if (x.l[k] < lo) lo = x.l[k]; sl = lo - atr * 0.2; }
+  else { let hi = -Infinity; for (let k = Math.max(0, i - SL_LOOK); k <= i; k++) if (x.h[k] > hi) hi = x.h[k]; sl = hi + atr * 0.2; }
+
+  let dist = Math.abs(p - sl);
+  const minD = atr * 0.8, maxD = Math.min(atr * 3.5, p * 0.08);
+  if (dist < minD) { dist = minD; sl = dir === "LONG" ? p - dist : p + dist; }
+  if (dist > maxD) return null;
+
+  const cc = costCheck(p, dist, cfg); if (!cc) return null;
+
+  const j = x.iCtx[i];
+  const adx = j >= 0 ? x.ctxAdx[j] : 0;
+  const tier = Math.abs(ext) >= TH + 1 ? "A" : Math.abs(ext) >= TH + 0.5 ? "B" : "C";
+
+  return {
+    playbook: "PB4", dir, entry: p, sl, dist, tier, regime,
+    tp: dir === "LONG" ? p + dist * cfg.rr : p - dist * cfg.rr,
+    meta: { adx: adx || 0, volRatio, rsi: x.rsi[i], atrPct: atr / p * 100, stopPct: cc.stopPct, costR: cc.costR }
+  };
+}
+
 /* ---------- контекст индикаторов (копия v2 + новые поля BTC приходят снаружи) ---------- */
 function buildCtx(sym, base, ctx, conf, cfg) {
   const msBase = MS[cfg.baseTF];
@@ -676,6 +803,8 @@ function backtestSymbol(sym, base, ctx, conf, cfg, B) {
     let sig = null;
     if (cfg.pb1) sig = pb1(x, i, cfg, regime);
     if (!sig && cfg.pb2) sig = pb2(x, i, cfg, regime);
+    if (!sig && cfg.pb3) sig = pb3(x, i, cfg, regime);
+    if (!sig && cfg.pb4) sig = pb4(x, i, cfg, regime);
     if (!sig) continue;
 
     // ФИЛЬТР ОТКАТА (гипотеза «лонг на мелком откате»).
@@ -879,7 +1008,8 @@ function readCfg(){
     rr:num("cfgRR"), cool:Math.round(num("cfgCool")),
     slip:num("cfgSlip"), fee:num("cfgFee"), side:$("cfgSide").value,
     minStopPct:num("cfgMinStop"), minAtrPct:num("cfgMinAtr"), maxCostPct:num("cfgMaxCost"),
-    pb1:$("pb1").checked, pb2:$("pb2").checked, useConf:$("cfgConf").checked,
+    pb1:$("pb1").checked, pb2:$("pb2").checked, pb3:$("pb3").checked, pb4:$("pb4").checked,
+    mrExt:parseFloat($("cfgMrExt").value), useConf:$("cfgConf").checked,
     allowRange:$("cfgRange").checked, allowParabola:$("cfgParabola").checked,
     btcFilter:$("cfgBtcFilter").value, early:$("cfgEarly").value==="on",
     earlyN:Math.round(num("cfgEarlyN")), earlyR:num("cfgEarlyR"),
@@ -906,7 +1036,7 @@ function spanDates(){
 async function run(){
   if(!DIR){log("сначала выбери папку","e");return;}
   const cfg=readCfg();
-  if(!cfg.pb1&&!cfg.pb2){log("включи хотя бы один плейбук","e");return;}
+  if(!cfg.pb1&&!cfg.pb2&&!cfg.pb3&&!cfg.pb4){log("включи хотя бы один плейбук","e");return;}
   const dir1h=await haveDir(DIR,"klines_1h");
   if(!dir1h){log("нет klines_1h в папке","e");return;}
 
@@ -978,7 +1108,16 @@ async function run(){
   }
 
   // разметка train/holdout по времени входа
-  if(cfg.holdout>0&&all.length){
+  const cvOn=$("cfgCV").value==="on";
+  if(cvOn&&all.length){
+    // три равные трети по времени; каждая по очереди — «заповедник»
+    const times=all.map(t=>t.tEntry).sort((a,b)=>a-b);
+    const lo=times[0],hi=times[times.length-1],span=hi-lo;
+    const c1=lo+span/3,c2=lo+2*span/3;
+    for(const t of all)t._third=t.tEntry<c1?0:t.tEntry<c2?1:2;
+    LAST={all,cfg,from,to,cut:null,cv:{c1,c2}};
+    log(`кросс-проверка: три трети рубежами ${iso(c1)} и ${iso(c2)}`,"w");
+  }else if(cfg.holdout>0&&all.length){
     const times=all.map(t=>t.tEntry).sort((a,b)=>a-b);
     const lo=times[0], hi=times[times.length-1];
     const cut=hi-(hi-lo)*cfg.holdout/100;
@@ -1014,9 +1153,38 @@ function table(title,rows){
 }
 
 function render(L){
-  const {all,cfg,cut}=L;
+  const {all,cfg,cut,cv}=L;
   const R=$("results");
   if(!all.length){R.innerHTML=`<div class="panel err"><div class="panel-t">Ноль сделок</div><div class="note" style="color:var(--t2)">Ослабь фильтры или расширь период.</div></div>`;return;}
+
+  // КРОСС-ПРОВЕРКА: три трети, каждая как заповедник
+  if(cv){
+    const thirds=[0,1,2].map(k=>all.filter(t=>t._third===k));
+    const names=["1-я треть (ранняя)","2-я треть (средняя)","3-я треть (поздняя)"];
+    let allPos=true, rows="";
+    thirds.forEach((g,k)=>{
+      const m=mm(g); if(m.avgR==null||m.avgR<=0)allPos=false;
+      rows+=`<tr><td>${names[k]}</td><td>${m.n}</td>${cell(m,"avgR",3,true)}${cell(m,"wr",1)}${cell(m,"sumR",1,true)}${cell(m,"pf",2)}${cell(m,"maxDD",1)}</tr>`;
+    });
+    const mAll=mm(all);
+    let html=`<div class="cards">
+      <div class="card"><div class="k">Сделок</div><div class="v amb">${all.length}</div><div class="s">всего</div></div>
+      <div class="card"><div class="k">ср.R общий</div><div class="v ${mAll.avgR>0?"up":"dn"}">${fmt(mAll.avgR,3)}</div><div class="s">весь период</div></div>
+      <div class="card"><div class="k">Вердикт</div><div class="v ${allPos?"up":"dn"}" style="font-size:15px">${allPos?"КАМЕНЬ":"НЕ УСТОЯЛ"}</div><div class="s">${allPos?"плюс на всех третях":"минус хотя бы на одной"}</div></div>
+    </div>`;
+    html+=`<div class="panel"><div class="panel-t">Кросс-проверка третей <span class="hl">— сигнал должен быть в плюсе на КАЖДОЙ</span></div>
+      <div class="tw"><table><thead><tr><th>Треть года (как заповедник)</th><th>N</th><th>ср.R</th><th>Винрейт</th><th>Σ R</th><th>PF</th><th>maxDD</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>
+      <div class="note">Каждая треть проверяется на данных, которые фильтр при настройке не подстраивал. ${allPos?'<b style="color:var(--up)">Плюс на всех трёх — сигнал устойчив во времени, это камень.</b>':'<b style="color:var(--dn)">Минус хотя бы на одной трети — сигнал нестабилен, зависит от периода. Это ещё не камень.</b>'}</div></div>`;
+    // направление/причина как обычно ниже
+    html+=table("По направлению",
+      mrow(`<span class="up">LONG</span>`,all.filter(t=>t.dir==="LONG"))+
+      mrow(`<span class="dn">SHORT</span>`,all.filter(t=>t.dir==="SHORT")));
+    const byReason={};for(const t of all)(byReason[t.reason]=byReason[t.reason]||[]).push(t);
+    html+=table("По причине выхода",["TP","SL","TIME"].map(r=>byReason[r]?mrow(r,byReason[r]):"").join(""));
+    R.innerHTML=html;
+    return;
+  }
 
   const train=all.filter(t=>t._split==="train"), hold=all.filter(t=>t._split==="hold");
   const mAll=mm(all), mTr=mm(train), mHo=mm(hold);
