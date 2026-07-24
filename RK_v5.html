@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RK v5 — сжатие → расширение → трейлинг</title>
+<style>
+:root{
+  --bg:#0e1013; --panel:#161a1f; --panel2:#1b2027; --line:#252b34;
+  --tx:#d8dee7; --tx2:#8b95a3; --tx3:#5c6674;
+  --up:#2bb673; --dn:#e2504e; --warn:#d99b2b; --acc:#4a8fd4;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:13px/1.5 -apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:1280px;margin:0 auto;padding:18px}
+h1{font-size:15px;font-weight:600;margin:0 0 2px;letter-spacing:.02em}
+.sub{color:var(--tx3);font-size:12px;margin:0 0 16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;margin-bottom:12px}
+.card h2{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tx2);margin:0 0 10px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.f{display:flex;flex-direction:column;gap:3px}
+.f label{font-size:11px;color:var(--tx3)}
+select,input{background:var(--panel2);border:1px solid var(--line);color:var(--tx);border-radius:4px;padding:5px 7px;font:12px var(--mono)}
+input[type=number]{width:76px} input[type=text]{width:120px}
+button{background:var(--panel2);border:1px solid #303845;color:var(--tx);border-radius:4px;padding:6px 13px;font-size:12px;cursor:pointer}
+button:hover:not(:disabled){background:#222833;border-color:#3d4757}
+button:disabled{opacity:.35;cursor:default}
+button.pri{background:#1c3450;border-color:#2c5a8a;color:#cfe3f8}
+button.pri:hover:not(:disabled){background:#234064}
+.state{font-family:var(--mono);font-size:11px;color:var(--tx2)}
+.state b{color:var(--tx);font-weight:500}
+#pbw{height:3px;background:var(--panel2);border-radius:2px;overflow:hidden;margin-top:10px}
+#pb{height:100%;width:0;background:var(--acc);transition:width .2s}
+#log{font-family:var(--mono);font-size:11px;max-height:160px;overflow-y:auto;background:#0b0d10;border:1px solid var(--line);border-radius:4px;padding:8px;color:var(--tx3)}
+#log .o{color:var(--up)} #log .w{color:var(--warn)} #log .e{color:var(--dn)}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px}
+th{text-align:right;padding:5px 7px;color:var(--tx3);font-weight:500;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td{text-align:right;padding:5px 7px;border-bottom:1px solid #1c2129;white-space:nowrap}
+tr:hover td{background:#191e25}
+.pos{color:var(--up)} .neg{color:var(--dn)} .mut{color:var(--tx3)}
+.note{font-size:11.5px;color:var(--tx3);line-height:1.6;margin-top:9px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:880px){.grid2{grid-template-columns:1fr}}
+.stage{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.stg{flex:1;min-width:180px;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:8px 10px}
+.stg b{display:block;font-size:11px;color:var(--acc);font-weight:600;margin-bottom:2px}
+.stg span{font-size:11px;color:var(--tx3);line-height:1.45}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>RK v5 — сжатие → расширение → трейлинг</h1>
+<p class="sub">Один движок, два источника. Стоп структурный, выход только трейлинг. Ничего не отсекаем — помечаем.</p>
+
+<div class="card">
+  <h2>Форма машины</h2>
+  <div class="stage">
+    <div class="stg"><b>1 · Отбор</b><span>Кто способен пойти далеко. Сжатие ATR относительно собственной нормы + порог ликвидности.</span></div>
+    <div class="stg"><b>2 · Триггер</b><span>Первый выход за коробку сжатия с расширением диапазона. Направление — из пробоя. Стоп — противоположная грань.</span></div>
+    <div class="stg"><b>3 · Трейлинг</b><span>Ни безубытка, ни таймаута, ни фиксированной цели. Только скользящий стоп. Хвост не режется.</span></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Источник данных</h2>
+  <div class="row">
+    <button id="btnDir" class="pri">Подключить папку RK_DATA</button>
+    <span id="dirState" class="state">папка не подключена</span>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <div class="f"><label>сверка с биржей: символ</label><input type="text" id="cSym" value="BTCUSDT"></div>
+    <button id="btnLive">Прогнать этот символ с биржи</button>
+    <span class="state mut">тот же движок, источник — fapi.binance.com</span>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Параметры</h2>
+  <div class="row">
+    <div class="f"><label>окно нормы, ч</label><input type="number" id="pWin" value="720" step="24"></div>
+    <div class="f"><label>порог сжатия</label><input type="number" id="pSq" value="0.70" step="0.05"></div>
+    <div class="f"><label>коробка, баров</label><input type="number" id="pBox" value="24" step="4"></div>
+    <div class="f"><label>расширение ×ATR</label><input type="number" id="pExp" value="1.5" step="0.1"></div>
+    <div class="f"><label>трейлинг ×ATR</label><input type="number" id="pTrl" value="2.0" step="0.25"></div>
+    <div class="f"><label>стоп</label><select id="pSl">
+      <option value="edge">грань пробоя (тесный)</option>
+      <option value="far">противоположная грань</option></select></div>
+    <div class="f"><label>ликвидн. $/час</label><input type="number" id="pLiq" value="200000" step="50000" style="width:96px"></div>
+    <div class="f"><label>горизонт, ч</label><input type="number" id="pHor" value="720" step="48"></div>
+    <div class="f"><label>цель пометки, R</label><input type="number" id="pTgt" value="2.5" step="0.1"></div>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <div class="f"><label>период</label><select id="cSpan">
+      <option value="all">весь архив</option><option value="t1">треть 1</option>
+      <option value="t2">треть 2</option><option value="t3">треть 3</option></select></div>
+    <div class="f"><label>инструменты</label><select id="cKind">
+      <option value="all">все</option><option value="crypto">только крипта</option>
+      <option value="equity">только акции</option></select></div>
+    <div class="f"><label>часы входа UTC</label><select id="cSess">
+      <option value="any">любые</option><option value="in">14–20 (сессия США)</option>
+      <option value="out">вне 14–20</option></select></div>
+    <div class="f"><label>сторона</label><select id="cSide">
+      <option value="both">обе</option><option value="long">лонг</option><option value="short">шорт</option></select></div>
+    <div class="f"><label>монет, макс</label><input type="number" id="cMax" value="200" step="10"></div>
+    <button id="btnRun" disabled>Прогнать архив</button>
+    <button id="btnStop" disabled>Стоп</button>
+    <button id="btnCsv" disabled>CSV</button>
+  </div>
+  <div id="pbw"><div id="pb"></div></div>
+</div>
+
+<div class="card"><h2>Журнал</h2><div id="log"></div></div>
+<div id="out"></div>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const fmt=(v,d=2)=>(v==null||!isFinite(v))?"—":(+v).toFixed(d);
+const pct=v=>(v==null||!isFinite(v))?"—":(v*100).toFixed(1)+"%";
+function log(m,c){const el=$("log"),d=document.createElement("div");if(c)d.className=c;
+  d.textContent=new Date().toTimeString().slice(0,8)+"  "+m;el.appendChild(d);
+  while(el.childNodes.length>400)el.removeChild(el.firstChild);el.scrollTop=el.scrollHeight;}
+const setProg=p=>$("pb").style.width=Math.max(0,Math.min(100,p))+"%";
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ═══════════ ИНДИКАТОРЫ (дословно из v3) ═══════════ */
+function emaArr(a,p){const out=new Array(a.length).fill(null);if(a.length<p)return out;
+  let s=0;for(let i=0;i<p;i++)s+=a[i];let v=s/p;out[p-1]=v;const k=2/(p+1);
+  for(let i=p;i<a.length;i++){v=a[i]*k+v*(1-k);out[i]=v}return out}
+function atrArr(h,l,c,p=14){const out=new Array(c.length).fill(null);if(c.length<p+1)return out;
+  const tr=[0];for(let i=1;i<c.length;i++)tr.push(Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1])));
+  let s=0;for(let i=1;i<=p;i++)s+=tr[i];let v=s/p;out[p]=v;
+  for(let i=p+1;i<c.length;i++){v=(v*(p-1)+tr[i])/p;out[i]=v}return out}
+function smaArr(a,p){const out=new Array(a.length).fill(null);let s=0,cnt=0;
+  for(let i=0;i<a.length;i++){const v=a[i]==null?0:a[i];s+=v;cnt++;
+    if(i>=p){s-=(a[i-p]==null?0:a[i-p]);cnt--}
+    if(i>=p-1)out[i]=s/p}return out}
+function medRoll(a,p){ // скользящая медиана через сортировку окна, вызывается редко
+  const out=new Array(a.length).fill(null);
+  for(let i=p-1;i<a.length;i++){const w=a.slice(i-p+1,i+1).filter(v=>v!=null&&isFinite(v));
+    if(!w.length)continue;w.sort((x,y)=>x-y);out[i]=w[Math.floor(w.length/2)]}
+  return out}
+
+/* ═══════════ ПОДГОТОВКА СЕРИИ ═══════════ */
+function prep(s,P){
+  const n=s.t.length,x={...s};
+  x.atr=atrArr(s.h,s.l,s.c,14);
+  // натр = ATR в долях цены; сжатие = натр / его собственная норма за окно
+  const natr=new Array(n).fill(null);
+  for(let i=0;i<n;i++) natr[i]=(x.atr[i]!=null&&s.c[i]>0)?x.atr[i]/s.c[i]:null;
+  x.natr=natr;
+  x.natrNorm=smaArr(natr,P.win);
+  x.squeeze=new Array(n).fill(null);
+  for(let i=0;i<n;i++) if(natr[i]!=null&&x.natrNorm[i]) x.squeeze[i]=natr[i]/x.natrNorm[i];
+  // ликвидность: медианный часовой оборот за неделю
+  x.liq=medRoll(s.q,168);
+  // коробка сжатия: экстремумы предыдущих P.box баров (текущий бар НЕ включён)
+  x.boxHi=new Array(n).fill(null); x.boxLo=new Array(n).fill(null);
+  for(let i=P.box;i<n;i++){
+    let hi=-Infinity,lo=Infinity;
+    for(let k=i-P.box;k<i;k++){if(s.h[k]>hi)hi=s.h[k];if(s.l[k]<lo)lo=s.l[k]}
+    x.boxHi[i]=hi;x.boxLo[i]=lo;
+  }
+  x.ema50=emaArr(s.c,50);
+  return x;
+}
+
+/* ═══════════ БЕТА К BTC И ОСТАТОЧНЫЙ ИМПУЛЬС (пометка, не фильтр) ═══════════ */
+function residualMomentum(x,btcMap,W=168,M=24){
+  const n=x.t.length,out=new Array(n).fill(null),beta=new Array(n).fill(null);
+  const rc=new Array(n).fill(0),rb=new Array(n).fill(0);
+  for(let i=1;i<n;i++){
+    rc[i]=x.c[i-1]>0?Math.log(x.c[i]/x.c[i-1]):0;
+    const b0=btcMap.get(x.t[i-1]),b1=btcMap.get(x.t[i]);
+    rb[i]=(b0&&b1&&b0>0)?Math.log(b1/b0):0;
+  }
+  let sxy=0,sxx=0;
+  for(let i=1;i<n;i++){
+    sxy+=rc[i]*rb[i]; sxx+=rb[i]*rb[i];
+    if(i>W){sxy-=rc[i-W]*rb[i-W]; sxx-=rb[i-W]*rb[i-W]}
+    if(i>=W){beta[i]=sxx>1e-12?sxy/sxx:0;
+      let ac=0,ab=0;
+      for(let k=i-M+1;k<=i;k++){ac+=rc[k];ab+=rb[k]}
+      out[i]=ac-beta[i]*ab;}
+  }
+  return {resid:out,beta};
+}
+
+/* ═══════════ СИГНАЛ: сжатие → расширение ═══════════ */
+function signal(x,i,P,cfg){
+  if(i<P.box+2)return null;
+  const sq=x.squeeze[i-1];                      // сжатие по ПРЕДЫДУЩЕМУ бару
+  if(sq==null||sq>P.sqThr)return null;          // ещё не пружина
+  if(x.liq[i-1]==null||x.liq[i-1]<P.liq)return null;
+  const atr=x.atr[i-1]; if(!atr)return null;
+  const hi=x.boxHi[i],lo=x.boxLo[i];
+  if(hi==null||lo==null||hi<=lo)return null;
+  const p=x.c[i];
+  // расширение: истинный диапазон бара >= exp × ATR
+  const tr=Math.max(x.h[i]-x.l[i],Math.abs(x.h[i]-x.c[i-1]),Math.abs(x.l[i]-x.c[i-1]));
+  if(tr<P.exp*atr)return null;
+  let dir=null;
+  if(p>hi&&x.c[i-1]<=hi&&cfg.side!=="short")dir="LONG";
+  else if(p<lo&&x.c[i-1]>=lo&&cfg.side!=="long")dir="SHORT";
+  if(!dir)return null;
+  // Стоп — у ГРАНИ ПРОБОЯ, а не у противоположной: «вернулись в коробку — пробой не состоялся».
+  // Именно это делает риск структурно тесным. Противоположная грань включала бы всю коробку
+  // плюс вылет пробойного бара, и теснота терялась.
+  const buf=Math.max(atr*0.30,(hi-lo)*0.10);
+  const edge=dir==="LONG"?hi:lo;
+  const sl=P.slMode==="far"?(dir==="LONG"?lo-buf:hi+buf)
+                           :(dir==="LONG"?edge-buf:edge+buf);
+  const dist=Math.abs(p-sl);
+  if(dist<=0)return null;
+  const stopPct=dist/p*100;
+  if(stopPct<0.15||stopPct>12)return null;      // защита от мусорных котировок
+  // ПОМЕТКА, не фильтр: насколько далеко от грани закрылся пробойный бар («догоняем ли»)
+  const chase=Math.abs(p-edge)/atr;
+  return {dir,entry:p,sl,dist,stopPct,squeeze:sq,boxH:(hi-lo)/p*100,chase,
+          liq:x.liq[i-1],atrPct:atr/p*100};
+}
+
+/* ═══════════ ПРОХОД ВПЕРЁД: путь + трейлинг одновременно ═══════════ */
+const KGRID=[0.3,0.5,0.7,1.0,1.5];
+function walk(x,i,sig,P){
+  const risk=sig.dist,p=sig.entry,L=sig.dir==="LONG";
+  const n=x.t.length,end=Math.min(n-1,i+P.hor);
+  const mfeK=new Array(KGRID.length).fill(0),aliveK=new Array(KGRID.length).fill(true);
+  let mfe=0,mae=0,tMax=0;
+  let stop=sig.sl,exitR=null,exitBar=null,exitWhy="горизонт";
+  for(let j=i+1;j<=end;j++){
+    const adv=(L?(p-x.l[j]):(x.h[j]-p))/risk;
+    const fav=(L?(x.h[j]-p):(p-x.l[j]))/risk;
+    if(adv>mae)mae=adv;
+    if(fav>mfe){mfe=fav;tMax=j-i}
+    for(let k=0;k<KGRID.length;k++){
+      if(!aliveK[k])continue;
+      if(adv>=KGRID[k]){aliveK[k]=false;continue}
+      if(fav>mfeK[k])mfeK[k]=fav;
+    }
+    if(exitR===null){
+      // выход проверяется ДО подтяжки — внутри бара порядок неизвестен, берём пессимизм
+      if(L?x.l[j]<=stop:x.h[j]>=stop){
+        exitR=(L?(stop-p):(p-stop))/risk;exitBar=j-i;exitWhy="трейлинг";
+      }else{
+        const a=x.atr[j]||x.atr[i-1];
+        if(L){const c=x.h[j]-P.trail*a;if(c>stop)stop=c}
+        else {const c=x.l[j]+P.trail*a;if(c<stop)stop=c}
+      }
+    }
+  }
+  if(exitR===null){
+    const last=x.c[end];
+    exitR=(L?(last-p):(p-last))/risk;exitBar=end-i;
+  }
+  return {mfe,mae,tMax,mfeK,exitR,exitBar,exitWhy,bars:end-i};
+}
+
+/* ═══════════ ИСТОЧНИК 1: АРХИВ ═══════════ */
+const MAGIC=0x31424B52,COLS=7,HEAD=32;
+let DIR=null,STOP=false,LAST=null,KIND={};
+function idb(mode,fn){return new Promise((res,rej)=>{const rq=indexedDB.open("rk_v5",1);
+  rq.onupgradeneeded=()=>rq.result.createObjectStore("kv");rq.onerror=()=>rej(rq.error);
+  rq.onsuccess=()=>{const db=rq.result,tx=db.transaction("kv",mode),st=tx.objectStore("kv");
+  const r=fn(st);tx.oncomplete=()=>{db.close();res(r&&r.result!==undefined?r.result:undefined)};
+  tx.onerror=()=>{db.close();rej(tx.error)}}})}
+async function haveDir(p,n){try{return await p.getDirectoryHandle(n)}catch{return null}}
+async function readFile(d,n){try{return await(await d.getFileHandle(n)).getFile()}catch{return null}}
+function unpackBars(buf){
+  if(!buf||buf.byteLength<HEAD)return null;
+  const dv=new DataView(buf);
+  if(dv.getUint32(0,true)!==MAGIC)return null;
+  const cols=dv.getUint32(8,true),n=dv.getUint32(12,true);
+  if(cols<COLS||HEAD+n*cols*8>buf.byteLength)return null;
+  const a=new Float64Array(buf,HEAD,n*cols),t=[],o=[],h=[],l=[],c=[],v=[],q=[];
+  for(let i=0;i<n;i++){const b=i*cols;t.push(a[b]);o.push(a[b+1]);h.push(a[b+2]);
+    l.push(a[b+3]);c.push(a[b+4]);v.push(a[b+5]);q.push(a[b+6])}
+  return {t,o,h,l,c,v,q};
+}
+async function useDir(handle,silent){
+  const q=await handle.queryPermission({mode:"read"});
+  if(q!=="granted"){const r=await handle.requestPermission({mode:"read"});
+    if(r!=="granted"){if(!silent)log("доступ к папке не выдан","e");return false}}
+  DIR=handle;
+  const d=await haveDir(DIR,"klines_1h");
+  if(!d){log("нет klines_1h — собери часовые в data manager","e");return false}
+  let n=0;for await(const e of d.values())if(e.name.endsWith(".bin"))n++;
+  $("dirState").innerHTML=`папка: <b>${handle.name}</b> · часовых файлов: <b>${n}</b>`;
+  $("btnRun").disabled=false;log(`папка подключена, ${n} монет`,"o");return true;
+}
+$("btnDir").onclick=async()=>{
+  try{const h=await window.showDirectoryPicker({mode:"read",id:"rkdata"});
+    if(await useDir(h)){try{await idb("readwrite",st=>st.put(h,"dir"))}catch(e){}}}
+  catch(e){if(e.name!=="AbortError")log("выбор папки: "+e.message,"e")}};
+(async()=>{try{const h=await idb("readonly",st=>st.get("dir"));if(h)await useDir(h,true)}catch(e){}})();
+
+/* ═══════════ ИСТОЧНИК 2: БИРЖА (тот же движок) ═══════════ */
+async function fetchLive(sym,limit=1000){
+  const url=`https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=1h&limit=${limit}`;
+  const r=await fetch(url);
+  if(!r.ok)throw new Error("биржа ответила "+r.status);
+  const k=await r.json();
+  const t=[],o=[],h=[],l=[],c=[],v=[],q=[];
+  for(const b of k){t.push(+b[0]);o.push(+b[1]);h.push(+b[2]);l.push(+b[3]);
+    c.push(+b[4]);v.push(+b[5]);q.push(+b[7])}
+  // формирующийся бар не берём
+  if(t.length&&t[t.length-1]+3600000>Date.now()){[t,o,h,l,c,v,q].forEach(a=>a.pop())}
+  return {t,o,h,l,c,v,q};
+}
+$("btnLive").onclick=async()=>{
+  const sym=$("cSym").value.trim().toUpperCase();
+  if(!sym)return;
+  $("btnLive").disabled=true;
+  try{
+    const P=readParams(),cfg={side:$("cSide").value};
+    log(`биржа: качаю ${sym} 1h ×1000…`);
+    const s=await fetchLive(sym);
+    if(s.t.length<P.win+P.box+50){log(`мало баров (${s.t.length}) — увеличь окно или возьми другой символ`,"w");}
+    const x=prep(s,P);
+    const out=[];
+    for(let i=P.box+2;i<x.t.length-1;i++){
+      const g=signal(x,i,P,cfg); if(!g)continue;
+      const w=walk(x,i,g,P);
+      out.push({t:x.t[i],...g,...w});
+    }
+    log(`${sym}: баров ${s.t.length}, сигналов ${out.length}`,"o");
+    if(out.length){
+      const last=out.slice(-8).reverse();
+      $("out").innerHTML=`<div class="card"><h2>${sym} — с биржи, тот же движок</h2><table><thead><tr>`+
+        `<th>время UTC</th><th>сторона</th><th>сжатие</th><th>стоп %</th><th>MFE R</th><th>MAE R</th><th>итог R</th><th>баров</th><th>выход</th></tr></thead><tbody>`+
+        last.map(r=>`<tr><td>${new Date(r.t).toISOString().slice(0,16).replace("T"," ")}</td>`+
+          `<td class="${r.dir==="LONG"?"pos":"neg"}">${r.dir}</td><td>${fmt(r.squeeze)}</td>`+
+          `<td>${fmt(r.stopPct)}</td><td>${fmt(r.mfe)}</td><td>${fmt(r.mae)}</td>`+
+          `<td class="${r.exitR>0?"pos":"neg"}">${fmt(r.exitR)}</td><td>${r.exitBar}</td><td class="mut">${r.exitWhy}</td></tr>`).join("")+
+        `</tbody></table><div class="note">Последние ${last.length} сигналов. Это тот же код signal() и walk(), что бежит по архиву — отличается только источник баров.</div></div>`;
+    }else{
+      $("out").innerHTML=`<div class="card"><div class="note">${sym}: сигналов нет. Ослабь порог сжатия или расширения.</div></div>`;
+    }
+  }catch(e){log("биржа: "+e.message,"e");}
+  $("btnLive").disabled=false;
+};
+
+/* ═══════════ КЛАССИФИКАЦИЯ ЮНИВЕРСА ═══════════ */
+function sessionShare(s){
+  let inS=0,tot=0;
+  for(let i=0;i<s.t.length;i++){const h=new Date(s.t[i]).getUTCHours(),w=s.q[i]||0;
+    tot+=w; if(h>=14&&h<20)inS+=w}
+  return tot>0?inS/tot:null;
+}
+const SESS_THR=0.45;
+
+/* ═══════════ ПРОГОН АРХИВА ═══════════ */
+function readParams(){return{
+  win:+$("pWin").value, sqThr:+$("pSq").value, box:+$("pBox").value,
+  exp:+$("pExp").value, trail:+$("pTrl").value, liq:+$("pLiq").value,
+  hor:+$("pHor").value, tgt:+$("pTgt").value, slMode:$("pSl").value};}
+
+$("btnStop").onclick=()=>{STOP=true;log("остановка запрошена","w")};
+$("btnRun").onclick=async()=>{
+  STOP=false;$("btnRun").disabled=true;$("btnStop").disabled=false;$("btnCsv").disabled=true;
+  $("out").innerHTML="";setProg(0);
+  const P=readParams();
+  const cfg={span:$("cSpan").value,kind:$("cKind").value,sess:$("cSess").value,
+             side:$("cSide").value,max:+$("cMax").value};
+  try{await run(P,cfg)}catch(e){log("сбой: "+e.message,"e");console.error(e)}
+  $("btnRun").disabled=false;$("btnStop").disabled=true;setProg(0);
+};
+
+async function run(P,cfg){
+  const d=await haveDir(DIR,"klines_1h");
+  const names=[];
+  for await(const e of d.values())if(e.name.endsWith(".bin"))names.push(e.name.replace(".bin",""));
+  names.sort();
+  const syms=names.slice(0,cfg.max);
+  log(`старт: ${syms.length} монет · сжатие ≤${P.sqThr} · коробка ${P.box} · расширение ${P.exp}×ATR · трейлинг ${P.trail}×ATR`);
+
+  const cache={};let tMin=Infinity,tMax=-Infinity;
+  for(let i=0;i<syms.length;i++){
+    if(STOP)break;
+    const f=await readFile(d,syms[i]+".bin");if(!f)continue;
+    const s=unpackBars(await f.arrayBuffer());if(!s||s.t.length<P.win+200)continue;
+    cache[syms[i]]=s;
+    if(s.t[0]<tMin)tMin=s.t[0];
+    if(s.t[s.t.length-1]>tMax)tMax=s.t[s.t.length-1];
+    if(i%15===0){setProg(i/syms.length*30);await sleep(0)}
+  }
+  const live=Object.keys(cache);
+  if(!live.length){log("не прочитано ни одной монеты — проверь папку","e");return}
+  log(`прочитано ${live.length}, период ${new Date(tMin).toISOString().slice(0,10)} … ${new Date(tMax).toISOString().slice(0,10)}`);
+
+  let nEq=0;
+  for(const sym of live){const sh=sessionShare(cache[sym]);
+    KIND[sym]=(sh!=null&&sh>=SESS_THR)?"акция":"крипта";if(KIND[sym]==="акция")nEq++}
+  log(`юниверс: акций ${nEq}, крипты ${live.length-nEq}`,"o");
+
+  // карта BTC для остаточного импульса
+  const btcSym=live.find(s=>s==="BTCUSDT")||null;
+  let btcMap=new Map();
+  if(btcSym){const b=cache[btcSym];for(let i=0;i<b.t.length;i++)btcMap.set(b.t[i],b.c[i]);
+    log("BTC найден — остаточный импульс считается");}
+  else log("BTCUSDT в папке нет — остаточный импульс не пишется","w");
+
+  const third=(tMax-tMin)/3;
+  const from=cfg.span==="t2"?tMin+third:cfg.span==="t3"?tMin+2*third:tMin;
+  const to  =cfg.span==="t1"?tMin+third:cfg.span==="t2"?tMin+2*third:tMax;
+
+  const trades=[];
+  for(let si=0;si<live.length;si++){
+    if(STOP)break;
+    const sym=live[si];
+    if(cfg.kind==="crypto"&&KIND[sym]!=="крипта")continue;
+    if(cfg.kind==="equity"&&KIND[sym]!=="акция")continue;
+    const x=prep(cache[sym],P);
+    const rm=btcMap.size?residualMomentum(x,btcMap):{resid:[],beta:[]};
+    const n=x.t.length;let lastI=-99;
+    for(let i=P.box+2;i<n-2;i++){
+      if(x.t[i]<from||x.t[i]>to)continue;
+      if(i-lastI<P.box)continue;                 // одна ставка на коробку
+      const h=new Date(x.t[i]).getUTCHours(),inSess=h>=14&&h<20;
+      if(cfg.sess==="in"&&!inSess)continue;
+      if(cfg.sess==="out"&&inSess)continue;
+      const g=signal(x,i,P,cfg);if(!g)continue;
+      const w=walk(x,i,g,P);
+      if(w.bars<12)continue;
+      lastI=i;
+      // ПОМЕТКИ, не фильтры
+      const roomR=g.boxH>0?(g.boxH/g.stopPct):null;   // высота коробки в единицах риска
+      trades.push({sym,kind:KIND[sym],t:x.t[i],
+        third:x.t[i]<tMin+third?1:x.t[i]<tMin+2*third?2:3,
+        inSess,dir:g.dir,squeeze:g.squeeze,stopPct:g.stopPct,boxH:g.boxH,chase:g.chase,
+        liq:g.liq,atrPct:g.atrPct,roomR,
+        resid:rm.resid[i]!=null?rm.resid[i]:null,beta:rm.beta[i]!=null?rm.beta[i]:null,
+        ...w});
+    }
+    setProg(30+si/live.length*70);
+    if(si%4===0)await sleep(0);
+  }
+  log(`сигналов записано: ${trades.length}`,"o");
+  LAST={trades,P,cfg};$("btnCsv").disabled=!trades.length;
+  render(trades,P);
+}
+
+/* ═══════════ ВЫВОД ═══════════ */
+const hitRate=(a,tgt)=>a.length?a.filter(t=>t.mfe>=tgt).length/a.length:null;
+const avg=(a,f)=>a.length?a.reduce((s,t)=>s+f(t),0)/a.length:null;
+function seOf(a,f){if(a.length<2)return null;const m=avg(a,f);
+  const v=a.reduce((s,t)=>s+Math.pow(f(t)-m,2),0)/(a.length-1);return Math.sqrt(v/a.length)}
+
+function splitTable(trades,keyfn,label,tgt){
+  const g={};for(const t of trades){const k=keyfn(t);if(k==null)continue;(g[k]=g[k]||[]).push(t)}
+  const keys=Object.keys(g).sort();
+  return `<table><thead><tr><th>${label}</th><th>сделок</th><th>P(MFE≥${tgt}R)</th>`+
+    `<th>ср. итог R</th><th>±SE</th><th>ср. MFE</th><th>медиана баров</th></tr></thead><tbody>`+
+    keys.map(k=>{const a=g[k],e=avg(a,t=>t.exitR),se=seOf(a,t=>t.exitR);
+      const bars=a.map(t=>t.exitBar).sort((p,q)=>p-q)[Math.floor(a.length/2)];
+      return `<tr><td>${k}</td><td>${a.length}</td><td>${pct(hitRate(a,tgt))}</td>`+
+        `<td class="${e>0?'pos':'neg'}">${fmt(e,3)}</td><td class="mut">${fmt(se,3)}</td>`+
+        `<td>${fmt(avg(a,t=>t.mfe))}</td><td>${bars}</td></tr>`}).join("")+`</tbody></table>`;
+}
+function bucket(v,edges){if(v==null)return null;
+  for(let i=0;i<edges.length;i++)if(v<edges[i])return (i===0?"<":edges[i-1]+"–")+edges[i];
+  return "≥"+edges[edges.length-1]}
+
+function render(trades,P){
+  if(!trades.length){$("out").innerHTML=`<div class="card"><div class="note">Сигналов нет. Ослабь порог сжатия или расширения.</div></div>`;return}
+  const tgt=P.tgt,e=avg(trades,t=>t.exitR),se=seOf(trades,t=>t.exitR);
+  const hit=hitRate(trades,tgt);
+  const win=trades.filter(t=>t.exitR>0).length/trades.length;
+
+  let html=`<div class="card"><h2>Итог</h2><table><thead><tr>`+
+    `<th>сделок</th><th>P(MFE≥${tgt}R)</th><th>ср. итог, R</th><th>±SE</th><th>t</th>`+
+    `<th>доля плюсовых</th><th>ср. MFE</th><th>ср. MAE</th><th>медиана баров</th></tr></thead><tbody><tr>`+
+    `<td>${trades.length}</td><td>${pct(hit)}</td>`+
+    `<td class="${e>0?'pos':'neg'}">${fmt(e,3)}</td><td class="mut">${fmt(se,3)}</td>`+
+    `<td class="${Math.abs(e/se)>2?'pos':'mut'}">${fmt(e/se,1)}</td>`+
+    `<td>${pct(win)}</td><td>${fmt(avg(trades,t=>t.mfe))}</td>`+
+    `<td>${fmt(avg(trades,t=>t.mae))}</td>`+
+    `<td>${trades.map(t=>t.exitBar).sort((a,b)=>a-b)[Math.floor(trades.length/2)]}</td>`+
+    `</tr></tbody></table><div class="note">Итог R — по трейлингу, без издержек. Столбец t — отношение среднего к своей ошибке;
+     ниже 2 результат неотличим от нуля, сколько бы сделок ни было.</div></div>`;
+
+  html+=`<div class="card"><h2>Срезы</h2><div class="grid2">`+
+    `<div>${splitTable(trades,t=>"треть "+t.third,"период",tgt)}</div>`+
+    `<div>${splitTable(trades,t=>t.kind,"инструмент",tgt)}</div>`+
+    `<div>${splitTable(trades,t=>t.inSess?"14–20 UTC":"вне сессии","часы входа",tgt)}</div>`+
+    `<div>${splitTable(trades,t=>t.dir,"сторона",tgt)}</div>`+
+    `<div>${splitTable(trades,t=>bucket(t.squeeze,[0.4,0.5,0.6,0.7]),"сжатие на входе",tgt)}</div>`+
+    `<div>${splitTable(trades,t=>bucket(t.roomR,[1,1.5,2.5,4]),"пометка: коробка в R",tgt)}</div>`+
+    `<div>${splitTable(trades,t=>bucket(t.chase,[0.25,0.5,1,2]),"пометка: вылет за грань, ATR",tgt)}</div>`+
+    `</div><div class="note">Кросс-проверка третей обязательна: гипотеза жива только если плюс во всех трёх.
+     Пометка «коробка в R» — та самая метка вместо отсечения: сделки со структурой ниже ${tgt}R остаются в выборке,
+     видно, отличаются ли они по исходу.</div></div>`;
+
+  const bins=[-99,-1,-0.5,0,0.5,1,1.5,2.5,4,99];
+  const cnt=new Array(bins.length-1).fill(0);
+  for(const t of trades)for(let b=0;b<bins.length-1;b++)
+    if(t.exitR>=bins[b]&&t.exitR<bins[b+1]){cnt[b]++;break}
+  html+=`<div class="card"><h2>Распределение итога по трейлингу</h2><table><thead><tr>`+
+    `<th>итог, R</th><th>сделок</th><th>доля</th><th>вклад в сумму R</th><th></th></tr></thead><tbody>`+
+    cnt.map((c,b)=>{const inB=trades.filter(t=>t.exitR>=bins[b]&&t.exitR<bins[b+1]);
+      const sum=inB.reduce((s,t)=>s+t.exitR,0);
+      const w=Math.round(c/trades.length*240);
+      return `<tr><td>${bins[b]===-99?"−∞":bins[b]} … ${bins[b+1]===99?"+∞":bins[b+1]}</td>`+
+        `<td>${c}</td><td>${pct(c/trades.length)}</td>`+
+        `<td class="${sum>0?'pos':'neg'}">${fmt(sum,1)}</td>`+
+        `<td style="text-align:left"><div style="height:8px;width:${w}px;background:${bins[b]>=tgt?'var(--up)':bins[b]>=0?'#39424f':'#4a2b2b'};border-radius:2px"></div></td></tr>`}).join("")+
+    `</tbody></table><div class="note">Столбец «вклад в сумму R» — главный. Если весь плюс делает верхняя корзина,
+     форма работает как задумано: много мелких минусов, редкий длинный хвост.</div></div>`;
+
+  $("out").innerHTML=html;
+}
+
+$("btnCsv").onclick=()=>{
+  if(!LAST)return;
+  const cols=["symbol","kind","utc_time","third","in_session","dir","squeeze","stop_pct",
+    "box_pct","room_R","chase_atr","liq_usd_h","atr_pct","resid_mom","beta_btc",
+    "mfe_R","mae_R","t_to_mfe","exit_R","exit_bars","exit_why",...KGRID.map(k=>"mfe_at_stop_"+k)];
+  const L=[cols.join(",")];
+  for(const t of LAST.trades)L.push([t.sym,t.kind,new Date(t.t).toISOString(),t.third,
+    t.inSess?1:0,t.dir,fmt(t.squeeze,3),fmt(t.stopPct,3),fmt(t.boxH,3),fmt(t.roomR,3),fmt(t.chase,3),
+    fmt(t.liq,0),fmt(t.atrPct,3),fmt(t.resid,5),fmt(t.beta,3),
+    fmt(t.mfe,3),fmt(t.mae,3),t.tMax,fmt(t.exitR,3),t.exitBar,t.exitWhy,
+    ...t.mfeK.map(v=>fmt(v,3))].join(","));
+  const b=new Blob(["\uFEFF"+L.join("\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(b);
+  a.download="RK_v5_"+new Date().toISOString().slice(0,10)+".csv";a.click();
+  log("CSV: "+LAST.trades.length+" строк","o");
+};
+</script>
+</body>
+</html>
