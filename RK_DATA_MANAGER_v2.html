@@ -215,6 +215,7 @@ summary:hover{color:var(--amb)}
   <div class="row" style="margin-top:0">
     <button class="btn-sm" id="btnScan" disabled>Пересчитать по диску</button>
     <button class="btn-sm" id="btnCheck" disabled>Проверка целостности</button>
+    <button class="btn-sm" id="btnProbe" disabled>Проверить дельту</button>
     <button class="btn-sm" id="btnForget">Забыть папку</button>
   </div>
   <div class="tw" style="margin-top:12px"><table id="tblSym"><tbody><tr><td class="mut">папка не выбрана</td></tr></tbody></table></div>
@@ -952,6 +953,7 @@ async function useDir(handle, silent) {
   if (UNI) setStat("uniState", `<b>${UNI.symbols.length}</b> монет · от <b>${(UNI.minVol/1e6).toFixed(0)}</b> млн $ · собран ${iso(UNI.collected)}`);
   log(`папка подключена: ${handle.name}`, "o");
   lockUI(false);
+  const pb=$("btnProbe"); if(pb) pb.disabled=false;
   await scanDisk();
   return true;
 }
@@ -1062,6 +1064,37 @@ $("btnMetr").addEventListener("click", () => downloadMetrics().catch(e => { log(
 $("btnScan").addEventListener("click", scanDisk);
 $("btnCheck").addEventListener("click", integrityCheck);
 $("btnStop").addEventListener("click", () => { STOP = true; log("останавливаю после текущего блока…", "w"); });
+$("btnProbe").addEventListener("click", async () => {
+  if (!DIR) return;
+  const root1 = await haveDir(DIR, "klines_1h");
+  if (!root1) { toast("нет klines_1h — собери часовые"); return; }
+  let picked = null;
+  for await (const e of root1.values()) { if (e.name.endsWith(".bin")) { picked = e.name; break; } }
+  if (!picked) { toast("часовых файлов нет"); return; }
+  const f = await readFile(root1, picked);
+  const u = unpackBars(await f.arrayBuffer());
+  if (!u) { log("файл не читается", "e"); return; }
+  log(`— проба дельты: ${picked} —`, "w");
+  log(`колонок в файле: ${u.cols}  (7 = старый формат без дельты, 9 = с дельтой)`, u.cols>=9?"o":"e");
+  if (u.cols < 9) { log("ДЕЛЬТЫ НЕТ. Часовые собраны из старого 5m-сырья. Перекачай 5m и пересобери 1H.", "e"); toast("дельты нет"); return; }
+  // проверим что колонки 6 (quoteVol) и 7 (takerBuyQuote) не нули и taker<=quote
+  let nz=0, bad=0, sampBuy=0, sampTot=0, sampTrd=0, ns=0;
+  for (let j=0;j<u.n;j++){
+    const o=j*u.cols, qv=u.a[o+6], tbq=u.a[o+7], trd=u.a[o+8];
+    if (tbq>0) nz++;
+    if (tbq>qv+1) bad++;
+    if (j<200 && qv>0){ sampBuy+=tbq; sampTot+=qv; sampTrd+=trd; ns++; }
+  }
+  const share = sampTot>0 ? sampBuy/sampTot : 0;
+  log(`баров всего: ${u.n} · с ненулевым тейкер-объёмом: ${nz} (${(nz/u.n*100).toFixed(1)}%)`, nz>u.n*0.9?"o":"e");
+  log(`доля тейкер-байя (первые 200 баров): ${(share*100).toFixed(1)}%  — норма 40–60%, ровно 0 или 100 = битые данные`, (share>0.2&&share<0.8)?"o":"e");
+  log(`среднее число сделок в баре: ${ns?Math.round(sampTrd/ns):0}`, "o");
+  if (bad>0) log(`ВНИМАНИЕ: в ${bad} барах тейкер-объём больше полного — данные повреждены`, "e");
+  const ok = u.cols>=9 && nz>u.n*0.9 && share>0.2 && share<0.8 && bad===0;
+  log(ok ? "✓ дельта на месте, можно писать v5.2" : "✗ дельта под вопросом — покажи мне эти строки", ok?"o":"e");
+  toast(ok ? "дельта на месте" : "проверь лог");
+});
+
 $("btnForget").addEventListener("click", async () => {
   await dirForget(); DIR = null; MAN = null; UNI = null; PENDING = null;
   setStat("dirState", "папка не выбрана"); lockUI(false);
