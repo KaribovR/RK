@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RK XSEC v1 — Momentum·Breakout·Maker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sora:wght@400;600;700&display=swap');
+:root{--bg:#04070d;--bg1:#080c16;--bg2:#0c1220;--bg3:#101828;--bd:#182035;
+--t1:#d4e2f4;--t2:#4e6a84;--t3:#8aa8c5;--up:#00e5a0;--dn:#ff3a5e;--warn:#ffb700;--blue:#38bdf8;--pu:#a78bfa;
+--fm:'JetBrains Mono',monospace;--fs:'Sora',sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--fs);font-size:14px;overflow:hidden}
+body{display:flex;flex-direction:column}
+header{background:rgba(4,7,13,.98);border-bottom:1px solid var(--bd);padding:9px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
+.logo{font-family:var(--fm);font-weight:700;font-size:14px;color:var(--blue);letter-spacing:2px}
+.logo em{color:var(--t2);font-style:normal;font-size:10px}
+.btn{background:var(--bg2);border:1px solid var(--bd);color:var(--t1);padding:6px 13px;border-radius:5px;font-family:var(--fm);font-size:12px;font-weight:700;cursor:pointer;text-transform:uppercase}
+.btn:hover{border-color:var(--blue);color:var(--blue)}
+.btn-go{background:linear-gradient(135deg,#0c4a8a,#1d40af);border:none}
+.btn-go:disabled{opacity:.35;cursor:default}
+.btn.on{background:rgba(0,229,160,.1);border-color:var(--up);color:var(--up)}
+.lbl{font-size:10px;color:var(--t2);font-family:var(--fm);text-transform:uppercase;letter-spacing:.6px}
+.stat{margin-left:auto;display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.stat b{font-family:var(--fm);font-weight:700}
+.ws-ok{color:var(--up)}.ws-err{color:var(--dn)}.ws-off{color:var(--t2)}
+.prog{height:2px;background:var(--bd);flex-shrink:0}
+.prog>div{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--pu));transition:width .2s}
+.wrap{flex:1;display:flex;overflow:hidden}
+.col{overflow:auto;-webkit-overflow-scrolling:touch}
+.col-sig{flex:1;border-right:1px solid var(--bd)}
+.col-sim{width:340px;flex-shrink:0;display:flex;flex-direction:column}
+table{width:100%;border-collapse:collapse}
+th{position:sticky;top:0;padding:7px 8px;color:var(--t2);font-family:var(--fm);font-size:10px;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bd);background:var(--bg1);text-align:left;z-index:5}
+td{padding:8px;border-bottom:1px solid rgba(24,32,53,.5);font-family:var(--fm);font-size:12px}
+tr.lead>td:first-child{border-left:3px solid var(--up)}
+tr.lag>td:first-child{border-left:3px solid var(--dn)}
+tr.fire td{background:rgba(255,183,0,.06)}
+tr.intrade td{background:rgba(56,189,248,.05)}
+.sym{color:#fff;font-weight:700}
+.pill{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700}
+.p-lead{background:rgba(0,229,160,.12);color:var(--up)}
+.p-lag{background:rgba(255,58,94,.12);color:var(--dn)}
+.p-long{background:rgba(0,229,160,.16);color:var(--up)}
+.p-short{background:rgba(255,58,94,.16);color:var(--dn)}
+.p-watch{background:var(--bg3);color:var(--t3)}
+.p-in{background:rgba(56,189,248,.16);color:var(--blue)}
+.up{color:var(--up)}.dn{color:var(--dn)}.dim{color:var(--t2)}
+.simhd{padding:10px 12px;border-bottom:1px solid var(--bd);background:var(--bg1)}
+.simhd .big{font-family:var(--fm);font-size:15px;font-weight:700}
+.simrow{display:flex;justify-content:space-between;font-family:var(--fm);font-size:11px;padding:2px 0;color:var(--t3)}
+.simlist{flex:1;overflow:auto;padding:6px 10px}
+.trade{border:1px solid var(--bd);border-radius:5px;padding:6px 8px;margin-bottom:5px;font-family:var(--fm);font-size:11px}
+.trade .r1{display:flex;justify-content:space-between}
+.trade .r2{display:flex;justify-content:space-between;color:var(--t2);margin-top:2px;font-size:10px}
+.cfg{padding:8px 12px;border-top:1px solid var(--bd);background:var(--bg1);font-family:var(--fm);font-size:10px;color:var(--t2);line-height:1.7}
+.cfg input{width:52px;background:var(--bg2);border:1px solid var(--bd);color:#fff;border-radius:4px;padding:2px 5px;font-family:var(--fm);font-size:11px}
+.simbtns{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--bd)}
+.simbtns .btn{flex:1;padding:6px}
+.empty{color:var(--t2);font-family:var(--fm);font-size:11px;text-align:center;padding:20px}
+.banner{display:none;padding:7px 14px;background:rgba(255,183,0,.08);border-bottom:1px solid rgba(255,183,0,.25);font-family:var(--fm);font-size:11px;color:var(--warn)}
+.banner.show{display:block}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">RK·XSEC <em>v1</em></div>
+  <button class="btn btn-go" id="scanBtn" onclick="fullScan()">Скан</button>
+  <button class="btn" id="liveBtn" onclick="toggleLive()">Live ○</button>
+  <button class="btn on" id="autoBtn" onclick="toggleAuto()">Авто-сим ●</button>
+  <span class="lbl" id="uinfo">юниверс —</span>
+  <div class="stat">
+    <span class="lbl">WS <b id="ws" class="ws-off">off</b></span>
+    <span class="lbl">Ранг обновлён <b id="rankTs">—</b></span>
+    <span class="lbl">Сигналов <b id="sigCnt" class="up">0</b></span>
+  </div>
+</header>
+<div class="prog"><div id="pf"></div></div>
+<div class="banner" id="banner"></div>
+<div class="wrap">
+  <div class="col col-sig">
+    <table>
+      <thead><tr>
+        <th>Монета</th><th>Сторона</th><th>7д моментум</th><th>Цена</th><th>До пробоя</th><th>Статус · Мейкер-вход</th>
+      </tr></thead>
+      <tbody id="sigBody"><tr><td colspan="6" class="empty">Нажми «Скан» — соберу юниверс, посчитаю 7-дневный ранг и границы пробоя.</td></tr></tbody>
+    </table>
+  </div>
+  <div class="col-sim">
+    <div class="simhd">
+      <div class="big">СИМ <span id="simRoi" class="dim">+0.00%</span></div>
+      <div class="simrow"><span>Сделок / WR</span><b id="simWR">0 · —</b></div>
+      <div class="simrow"><span>Σ доходность (нетто)</span><b id="simSum">+0.00%</b></div>
+      <div class="simrow"><span>Ср/сделку · Лонг · Шорт</span><b id="simAvg">— · — · —</b></div>
+      <div class="simrow"><span>Открыто</span><b id="simOpen">0</b></div>
+    </div>
+    <div class="simlist" id="simList"><div class="empty">Сделки появятся здесь.<br>Форвард-тест: держим ~8ч, вход мейкером.</div></div>
+    <div class="cfg">
+      ранг&nbsp;<input id="cfgRank" value="168">ч&nbsp; пробой&nbsp;<input id="cfgBrk" value="24">ч&nbsp; держ&nbsp;<input id="cfgHold" value="8">ч<br>
+      квинтиль&nbsp;<input id="cfgQ" value="0.20">&nbsp; стоп%&nbsp;<input id="cfgStop" value="">&nbsp;(пусто=off)&nbsp; мейкер%&nbsp;<input id="cfgFee" value="0.09">
+    </div>
+    <div class="simbtns">
+      <button class="btn" onclick="exportCSV()">CSV</button>
+      <button class="btn" onclick="resetSim()">Сброс</button>
+    </div>
+  </div>
+</div>
+<script>
+const BASE='https://fapi.binance.com';
+const WS_MINI='wss://fstream.binance.com/ws/!miniTicker@arr';
+const TOP_N=150, KLIMIT=200, CONC=5;
+let CFG={rank:168,brk:24,hold:8,q:0.20,stop:null,fee:0.0009};
+let coins={};          // sym -> {mom,price,hh,ll,isLead,isLag,armedUp,armedDn,inTrade}
+let syms=[];
+let liveOn=false, autoSim=true, ws=null, rankTimer=null, exitTimer=null;
+let SIM={bal:0,trades:[],open:[]};  // returns tracked in % (per-trade), bal in cumulative %
+const $=id=>document.getElementById(id);
+
+function readCfg(){
+  CFG.rank=+$('cfgRank').value||168; CFG.brk=+$('cfgBrk').value||24; CFG.hold=+$('cfgHold').value||8;
+  CFG.q=Math.min(.45,Math.max(.05,+$('cfgQ').value||.2));
+  const s=parseFloat($('cfgStop').value); CFG.stop=isNaN(s)?null:Math.abs(s)/100;
+  CFG.fee=(Math.abs(parseFloat($('cfgFee').value)||0.09))/100;
+}
+function setBanner(t){const b=$('banner'); if(t){b.textContent=t;b.classList.add('show');}else b.classList.remove('show');}
+async function fetchJSON(url){const r=await fetch(url); if(!r.ok) throw new Error(r.status); return r.json();}
+
+// ---- concurrency queue ----
+async function pool(items, worker, onProg){
+  let idx=0, done=0; const out=new Array(items.length);
+  async function run(){ while(idx<items.length){ const i=idx++; try{out[i]=await worker(items[i]);}catch(e){out[i]=null;} done++; onProg&&onProg(done/items.length);} }
+  await Promise.all(Array.from({length:CONC},run)); return out;
+}
+
+async function fullScan(){
+  readCfg(); setBanner(''); $('scanBtn').disabled=true; $('scanBtn').textContent='...';
+  try{
+    const tk=await fetchJSON(`${BASE}/fapi/v1/ticker/24hr`);
+    const uni=tk.filter(t=>t.symbol.endsWith('USDT')&&+t.quoteVolume>5000000)
+               .sort((a,b)=>+b.quoteVolume-+a.quoteVolume).slice(0,TOP_N).map(t=>t.symbol);
+    $('uinfo').textContent=`юниверс ${uni.length}`;
+    const need=CFG.rank+CFG.brk+5;
+    const res=await pool(uni, async sym=>{
+      const k=await fetchJSON(`${BASE}/fapi/v1/klines?symbol=${sym}&interval=1h&limit=${Math.max(KLIMIT,need)}`);
+      if(k.length<need) return null;
+      const c=k.map(x=>+x[4]), h=k.map(x=>+x[2]), l=k.map(x=>+x[3]);
+      const n=c.length;
+      const mom=c[n-1]/c[n-1-CFG.rank]-1;                       // 7d momentum
+      const hh=Math.max(...h.slice(n-1-CFG.brk,n-1));            // prior brk-h high (excl forming)
+      const ll=Math.min(...l.slice(n-1-CFG.brk,n-1));
+      return {sym,mom,hh,ll,price:c[n-1]};
+    }, p=>{$('pf').style.width=(p*100)+'%';});
+    const rows=res.filter(Boolean);
+    // cross-sectional quintiles by momentum (demean = same order)
+    const sorted=[...rows].sort((a,b)=>a.mom-b.mom);
+    const k=Math.max(1,Math.floor(sorted.length*CFG.q));
+    const lagSet=new Set(sorted.slice(0,k).map(r=>r.sym));
+    const leadSet=new Set(sorted.slice(-k).map(r=>r.sym));
+    const prev=coins; coins={}; syms=[];
+    for(const r of rows){
+      const isLead=leadSet.has(r.sym), isLag=lagSet.has(r.sym);
+      const p=r.price;
+      coins[r.sym]={...r, isLead,isLag,
+        armedUp: p<r.hh, armedDn: p>r.ll,
+        inTrade: prev[r.sym]?prev[r.sym].inTrade:false};
+      if(isLead||isLag) syms.push(r.sym);
+    }
+    $('rankTs').textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+    $('pf').style.width='0%'; render();
+  }catch(e){ setBanner('Ошибка загрузки: '+e.message+' — нужен запуск с https (GitHub Pages), не file://'); }
+  $('scanBtn').disabled=false; $('scanBtn').textContent='Скан';
+}
+
+function distBrk(c){
+  if(c.isLead) return (c.hh-c.price)/c.price*100;   // % up to long breakout
+  if(c.isLag)  return (c.price-c.ll)/c.price*100;   // % down to short breakout
+  return null;
+}
+function render(){
+  const arr=syms.map(s=>coins[s]).filter(Boolean)
+    .sort((a,b)=>{ const da=Math.abs(distBrk(a)??9), db=Math.abs(distBrk(b)??9); return da-db;});
+  let sig=0, html='';
+  for(const c of arr){
+    const side=c.isLead?'<span class="pill p-lead">ЛИДЕР</span>':'<span class="pill p-lag">ЛУЗЕР</span>';
+    const d=distBrk(c);
+    let status,rowc=c.isLead?'lead':'lag', maker='';
+    if(c.inTrade){ status='<span class="pill p-in">В СДЕЛКЕ</span>'; rowc+=' intrade'; }
+    else if(c.isLead && c.price>c.hh){ status='<span class="pill p-long">LONG</span>'; maker=` <span class="dim">лимит ${fmt(c.hh)}</span>`; rowc+=' fire'; sig++; }
+    else if(c.isLag && c.price<c.ll){ status='<span class="pill p-short">SHORT</span>'; maker=` <span class="dim">лимит ${fmt(c.ll)}</span>`; rowc+=' fire'; sig++; }
+    else status='<span class="pill p-watch">ждём пробой</span>';
+    const lvl=c.isLead?c.hh:c.ll;
+    html+=`<tr class="${rowc}"><td class="sym">${c.sym.replace('USDT','')}</td><td>${side}</td>`
+      +`<td class="${c.mom>=0?'up':'dn'}">${(c.mom*100).toFixed(1)}%</td>`
+      +`<td>${fmt(c.price)}</td>`
+      +`<td class="dim">${d!=null?(d>=0?d.toFixed(2)+'%':'ПРОБИТ'):'—'} <span style="opacity:.5">@${fmt(lvl)}</span></td>`
+      +`<td>${status}${maker}</td></tr>`;
+  }
+  $('sigBody').innerHTML=html||'<tr><td colspan="6" class="empty">Нет лидеров/лузеров — обнови скан.</td></tr>';
+  $('sigCnt').textContent=sig;
+}
+function fmt(p){ if(p==null)return'—'; const d=p<1?5:p<10?4:p<100?3:2; return p.toFixed(d); }
+
+// ---- live ----
+function toggleLive(){ liveOn?stopLive():startLive(); }
+function startLive(){
+  if(!syms.length){ setBanner('Сначала «Скан».'); return; }
+  liveOn=true; $('liveBtn').textContent='Live ●'; $('liveBtn').classList.add('on');
+  ws=new WebSocket(WS_MINI);
+  ws.onopen=()=>{$('ws').textContent='ok';$('ws').className='ws-ok';};
+  ws.onerror=()=>{$('ws').textContent='err';$('ws').className='ws-err';};
+  ws.onclose=()=>{$('ws').textContent='off';$('ws').className='ws-off'; if(liveOn)setTimeout(startLive,4000);};
+  ws.onmessage=ev=>{ const arr=JSON.parse(ev.data); for(const t of arr){ const c=coins[t.s]; if(!c)continue; c.price=+t.c; onTick(c);} };
+  rankTimer=setInterval(fullScan, 60*60*1000);           // re-rank hourly
+  exitTimer=setInterval(checkExits, 5000);
+  render();
+}
+function stopLive(){ liveOn=false; $('liveBtn').textContent='Live ○'; $('liveBtn').classList.remove('on'); if(ws)ws.close(); clearInterval(rankTimer); clearInterval(exitTimer); $('ws').textContent='off';$('ws').className='ws-off'; }
+function toggleAuto(){ autoSim=!autoSim; $('autoBtn').textContent='Авто-сим '+(autoSim?'●':'○'); $('autoBtn').classList.toggle('on',autoSim); }
+
+let renderThrottle=0;
+function onTick(c){
+  // breakout state machine, one position per coin
+  if(!c.inTrade){
+    if(c.isLead){
+      if(c.price<c.hh) c.armedUp=true;
+      else if(c.armedUp && c.price>c.hh){ c.armedUp=false; if(autoSim) openTrade(c,'LONG'); else flagRender(); }
+    }
+    if(c.isLag){
+      if(c.price>c.ll) c.armedDn=true;
+      else if(c.armedDn && c.price<c.ll){ c.armedDn=false; if(autoSim) openTrade(c,'SHORT'); else flagRender(); }
+    }
+  }
+  const now=Date.now(); if(now-renderThrottle>1500){ renderThrottle=now; render(); }
+}
+function flagRender(){ const now=Date.now(); if(now-renderThrottle>500){renderThrottle=now;render();} }
+
+// ---- sim ----
+function openTrade(c,dir){
+  const entry=dir==='LONG'?c.hh:c.ll;               // maker fill at the breakout edge
+  c.inTrade=true;
+  SIM.open.push({sym:c.sym,dir,entry,ts:Date.now(),
+    stop: CFG.stop? (dir==='LONG'?entry*(1-CFG.stop):entry*(1+CFG.stop)) : null,
+    mom:c.mom});
+  saveSim(); render(); renderSim();
+}
+function checkExits(){
+  const now=Date.now(), holdMs=CFG.hold*3600*1000;
+  for(let i=SIM.open.length-1;i>=0;i--){
+    const t=SIM.open[i]; const c=coins[t.sym]; const px=c?c.price:null; if(px==null)continue;
+    let exit=null,reason='';
+    if(t.stop!=null){ if(t.dir==='LONG'&&px<=t.stop){exit=t.stop;reason='STOP';} else if(t.dir==='SHORT'&&px>=t.stop){exit=t.stop;reason='STOP';} }
+    if(exit==null && now-t.ts>=holdMs){ exit=px; reason=CFG.hold+'ч'; }
+    if(exit!=null) closeTrade(i,exit,reason);
+  }
+  renderSim();
+}
+function closeTrade(i,exit,reason){
+  const t=SIM.open.splice(i,1)[0];
+  const gross=(t.dir==='LONG'?(exit-t.entry):(t.entry-exit))/t.entry;
+  const net=gross - CFG.fee;                          // maker round-trip
+  SIM.bal+=net;
+  SIM.trades.push({...t,exit,reason,net,closed:Date.now()});
+  if(coins[t.sym]) coins[t.sym].inTrade=false;
+  saveSim(); render();
+}
+function renderSim(){
+  const tr=SIM.trades, wins=tr.filter(t=>t.net>0).length;
+  const sum=SIM.bal*100;
+  $('simRoi').textContent=(sum>=0?'+':'')+sum.toFixed(2)+'%';
+  $('simRoi').className=sum>=0?'up':'dn';
+  $('simSum').textContent=(sum>=0?'+':'')+sum.toFixed(2)+'%';
+  $('simWR').textContent=`${tr.length} · ${tr.length?Math.round(wins/tr.length*100)+'%':'—'}`;
+  const avg=tr.length?tr.reduce((a,t)=>a+t.net,0)/tr.length*100:0;
+  const lng=tr.filter(t=>t.dir==='LONG'), sht=tr.filter(t=>t.dir==='SHORT');
+  const av=a=>a.length?(a.reduce((s,t)=>s+t.net,0)/a.length*100).toFixed(3):'—';
+  $('simAvg').textContent=`${avg.toFixed(3)} · ${av(lng)} · ${av(sht)}`;
+  $('simOpen').textContent=SIM.open.length;
+  let html='';
+  for(const t of SIM.open){ const c=coins[t.sym],px=c?c.price:t.entry;
+    const fl=((t.dir==='LONG'?(px-t.entry):(t.entry-px))/t.entry*100);
+    const mins=Math.floor((Date.now()-t.ts)/60000);
+    html+=`<div class="trade" style="border-color:${fl>=0?'rgba(0,229,160,.4)':'rgba(255,58,94,.4)'}">`
+      +`<div class="r1"><span class="sym">${t.sym.replace('USDT','')} <span class="pill ${t.dir==='LONG'?'p-long':'p-short'}">${t.dir}</span></span>`
+      +`<span class="${fl>=0?'up':'dn'}">${fl>=0?'+':''}${fl.toFixed(2)}%</span></div>`
+      +`<div class="r2"><span>вход ${fmt(t.entry)} · ${mins}м</span><span>цель ${CFG.hold}ч${t.stop?' · стоп '+fmt(t.stop):''}</span></div></div>`;
+  }
+  const closed=[...SIM.trades].reverse().slice(0,40);
+  for(const t of closed){
+    html+=`<div class="trade" style="opacity:.75">`
+      +`<div class="r1"><span class="sym">${t.sym.replace('USDT','')} <span class="pill ${t.dir==='LONG'?'p-long':'p-short'}">${t.dir}</span></span>`
+      +`<span class="${t.net>=0?'up':'dn'}">${t.net>=0?'+':''}${(t.net*100).toFixed(2)}%</span></div>`
+      +`<div class="r2"><span>${fmt(t.entry)}→${fmt(t.exit)}</span><span>${t.reason}</span></div></div>`;
+  }
+  $('simList').innerHTML=html||'<div class="empty">Сделок пока нет.</div>';
+}
+function saveSim(){ try{localStorage.setItem('rk_xsec_v1',JSON.stringify(SIM));}catch(e){} }
+function restoreSim(){ try{const s=localStorage.getItem('rk_xsec_v1'); if(s){SIM=JSON.parse(s); renderSim();}}catch(e){} }
+function resetSim(){ if(!confirm('Сбросить сим-историю?'))return; SIM={bal:0,trades:[],open:[]}; for(const s in coins)coins[s].inTrade=false; saveSim(); render(); renderSim(); }
+function exportCSV(){
+  let csv='sym,dir,status,entry,exit,net%,reason,mom7d%,opened,closed\n';
+  const fmtT=ms=>new Date(ms).toISOString();
+  for(const t of SIM.trades) csv+=`${t.sym},${t.dir},CLOSED,${t.entry},${t.exit},${(t.net*100).toFixed(3)},${t.reason},${(t.mom*100).toFixed(1)},${fmtT(t.ts)},${fmtT(t.closed)}\n`;
+  for(const t of SIM.open){ const c=coins[t.sym],px=c?c.price:t.entry; const fl=(t.dir==='LONG'?(px-t.entry):(t.entry-px))/t.entry-CFG.fee;
+    csv+=`${t.sym},${t.dir},OPEN,${t.entry},${px},${(fl*100).toFixed(3)},open,${(t.mom*100).toFixed(1)},${fmtT(t.ts)},\n`; }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='rk_xsec_v1_sim_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+}
+restoreSim();
+$('autoBtn').classList.add('on');
+</script>
+</body>
+</html>
