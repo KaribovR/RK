@@ -27,24 +27,25 @@ header{position:sticky;top:0;z-index:10;background:rgba(4,7,13,.98);border-botto
 .sect{padding:12px 12px 4px}
 .sect h2{font-family:var(--fm);font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
 .sect h2 .cnt{color:var(--blue)}
-.simwrap{display:flex;gap:10px;padding:0 12px 8px;flex-wrap:wrap}
-.simbox{flex:1;min-width:210px;border:1px solid var(--bd);border-radius:7px;padding:7px 10px;background:var(--bg1);font-family:var(--fm);font-size:11px}
+.simwrap{display:flex;gap:8px;padding:0 12px 8px;flex-wrap:wrap}
+.simbox{flex:1;min-width:150px;border:1px solid var(--bd);border-radius:7px;padding:7px 10px;background:var(--bg1);font-family:var(--fm);font-size:11px}
 .simbox .hd{font-weight:700;margin-bottom:4px}
-.simbox.pb .hd{color:var(--up)}.simbox.re .hd{color:var(--blue)}
-.simbox .st{display:flex;gap:14px;color:var(--t3);flex-wrap:wrap}.simbox .st b{font-size:13px}
+.simbox.pb .hd{color:var(--up)}.simbox.rea .hd{color:var(--blue)}.simbox.reb .hd{color:var(--pu)}
+.simbox .st{display:flex;gap:10px;color:var(--t3);flex-wrap:wrap}.simbox .st b{font-size:13px}
 .tcard{border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:var(--bg1)}
 .tcard.long{border-left:4px solid var(--up)}.tcard.short{border-left:4px solid var(--dn)}
-.tcard .top{display:flex;justify-content:space-between;align-items:center}
-.tcard .sym{font-family:var(--fm);font-weight:700;font-size:16px;color:#fff;cursor:pointer}
+.tcard .top{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.tcard .sym{font-family:var(--fm);font-weight:700;font-size:15px;color:#fff;cursor:pointer}
 .tcard .sym:hover{color:var(--blue)}
 .tcard .pl{font-family:var(--fm);font-weight:700;font-size:16px}
 .tcard .row2{display:flex;justify-content:space-between;font-family:var(--fm);font-size:11px;color:var(--t2);margin-top:6px;flex-wrap:wrap;gap:6px}
 .tcard .entry{color:var(--t1)}
 .tcard .cues{margin-top:7px;display:flex;gap:5px;flex-wrap:wrap;align-items:center}
-.pill{display:inline-block;padding:1px 7px;border-radius:3px;font-size:11px;font-weight:700}
+.pill{display:inline-block;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:700}
 .p-long{background:rgba(0,229,160,.16);color:var(--up)}.p-short{background:rgba(255,58,94,.16);color:var(--dn)}
 .p-pb{background:rgba(0,229,160,.14);color:var(--up);border:1px solid var(--up)}
-.p-re{background:rgba(56,189,248,.14);color:var(--blue);border:1px solid var(--blue)}
+.p-rea{background:rgba(56,189,248,.14);color:var(--blue);border:1px solid var(--blue)}
+.p-reb{background:rgba(167,139,250,.14);color:var(--pu);border:1px solid var(--pu)}
 .p-late{background:rgba(255,183,0,.12);color:var(--warn)}
 .p-tp1{background:rgba(0,229,160,.2);color:var(--up)}
 .side-long{color:var(--up);font-weight:700}.side-short{color:var(--dn);font-weight:700}
@@ -90,7 +91,7 @@ td{padding:8px;border-bottom:1px solid rgba(24,32,53,.5);font-family:var(--fm);f
 </head>
 <body>
 <header>
-  <div class="logo">RK·SANDBOX <em>входы+намерения</em></div>
+  <div class="logo">RK·SANDBOX <em>3 потока</em></div>
   <button class="btn btn-go" id="scanBtn" onclick="fullScan()">Скан</button>
   <button class="btn" id="liveBtn" onclick="toggleLive()">Live ○</button>
   <button class="btn on" id="autoBtn" onclick="toggleAuto()">Авто-сим ●</button>
@@ -106,18 +107,16 @@ td{padding:8px;border-bottom:1px solid rgba(24,32,53,.5);font-family:var(--fm);f
 
 <div class="simwrap">
   <div class="simbox pb"><div class="hd">⇡ ПРОБОЙ</div><div class="st">
-    <span>сделок <b id="pbN">0</b></span><span>WR <b id="pbWR">—</b></span><span>Σ <b id="pbSum" class="dim">0%</b></span><span>ср <b id="pbAvg">—</b></span></div></div>
-  <div class="simbox re"><div class="hd">⇊ РЕТЕСТ</div><div class="st">
-    <span>сделок <b id="reN">0</b></span><span>WR <b id="reWR">—</b></span><span>Σ <b id="reSum" class="dim">0%</b></span><span>ср <b id="reAvg">—</b></span></div></div>
+    <span>N <b id="pbN">0</b></span><span>WR <b id="pbWR">—</b></span><span>Σ <b id="pbSum" class="dim">0%</b></span><span>ср <b id="pbAvg">—</b></span></div></div>
+  <div class="simbox rea"><div class="hd">⇊ РЕТЕСТ-А</div><div class="st">
+    <span>N <b id="reaN">0</b></span><span>WR <b id="reaWR">—</b></span><span>Σ <b id="reaSum" class="dim">0%</b></span><span>ср <b id="reaAvg">—</b></span></div></div>
+  <div class="simbox reb"><div class="hd">⇊ РЕТЕСТ-Б</div><div class="st">
+    <span>N <b id="rebN">0</b></span><span>WR <b id="rebWR">—</b></span><span>Σ <b id="rebSum" class="dim">0%</b></span><span>ср <b id="rebAvg">—</b></span></div></div>
 </div>
 
 <div class="sect">
-  <h2>▸ Открытые ⇡ Пробой <span class="cnt" id="openPbCnt">0</span></h2>
-  <div id="openPb"><div class="empty">Нет открытых пробойных сделок.</div></div>
-</div>
-<div class="sect">
-  <h2>▸ Открытые ⇊ Ретест <span class="cnt" id="openReCnt">0</span></h2>
-  <div id="openRe"><div class="empty">Нет открытых ретест-сделок.</div></div>
+  <h2>▸ Открытые сделки <span class="cnt" id="openCnt">0</span> <span style="color:var(--t2);font-weight:400;text-transform:none;letter-spacing:0">— метка потока на каждой</span></h2>
+  <div id="openList"><div class="empty">Нет открытых сделок. Откроются на живом пробое / ретесте.</div></div>
 </div>
 
 <div class="sect">
@@ -142,10 +141,10 @@ td{padding:8px;border-bottom:1px solid rgba(24,32,53,.5);font-family:var(--fm);f
 <div id="logWrap"></div>
 
 <div class="legend">
-  <b>Два входа:</b> ⇡ пробой (в т.ч. догон пропущенных до 1% от уровня) · ⇊ ретест (возврат к пробитому уровню) — считаются раздельно ·
-  <b>Выход-гибрид:</b> TP1 50% на первой Фибо-цели, остаток трейлится по ATR, боковик >18ч → «протухло», потолок 72ч ·
-  <b>MFE/MAE</b> (в R) — сколько сделка прошла в плюс / просадку до закрытия (в CSV) ·
-  <b>Путь</b> fib·стена ≥90% = уперлись · <b>🔴 ПЕРЕГРЕВ</b> · <b>◈ ЗРЕЕТ/подтв.</b> разворот · <b>⏳ ОТКАТ</b> · <b>✅/⚠ пробой</b>.
+  <b>Три потока входа (раздельные книги/CSV):</b> ⇡ пробой (кросс + догон ≤1%) · ⇊ ретест-А (узкий возврат к уровню ±0.25%, пока пробит) · ⇊ ретест-Б (отход ≥0.5% и возврат в зону ±0.3% за ≤60мин, независимо от пробоя) ·
+  <b>Выход:</b> TP1 50% на ближайшем из {фибо, 1.5R}, остаток трейлится ATR, боковик >18ч → «протухло», потолок 72ч ·
+  <b>MFE/MAE</b> (R) + пик хода и время TP1 — в CSV ·
+  <b>🔴 ПЕРЕГРЕВ · ◈ разворот · ⏳ откат · ✅/⚠ пробой</b> — только метки, вход не блокируют (пишутся в отчёт).
 </div>
 
 <div class="toast" id="toast"></div>
@@ -153,9 +152,10 @@ td{padding:8px;border-bottom:1px solid rgba(24,32,53,.5);font-family:var(--fm);f
 const BASE='https://fapi.binance.com', WS_MINI='wss://fstream.binance.com/ws/!miniTicker@arr';
 const TOP_N=150, KLIMIT=260, CONC=5, CONC2=3;
 let CFG={rank:168,brk:24,q:0.20,fee:0.0009,sess:0.45,wend:0.30,per:5,
-  tp1Frac:0.5, atrStopMult:1.5, trailMult:2.0, timeStopH:18, hardCapH:72,
-  retestExtend:0.005, retestBand:0.0015, catchMaxPct:1.0};
+  tp1Frac:0.5, tp1R:1.5, atrStopMult:1.5, trailMult:2.0, timeStopH:18, hardCapH:72,
+  retestA_band:0.0025, retestB_ext:0.005, retestB_band:0.003, retestB_winMin:60, catchMaxPct:1.0};
 const ADX_FLAT=20, PULLBACK_ADX_MIN=25, EXH_VETO_HEAT=4, EXHAUST_ADX_MAX=40, MOM_LONG_RSI=40, ECHELON_4H_BARS=42;
+const STREAMS=['пробой','ретест-А','ретест-Б'];
 let coins={}, syms=[], livePx={}, liveOn=false, autoSim=true, ws=null, rankTimer=null, exitTimer=null;
 let SIM={trades:[],open:[]};
 let LOG=[]; const LOG_MAX=3000;
@@ -169,8 +169,8 @@ async function pool(items,worker,conc,onP){let i=0,d=0;const o=new Array(items.l
 /* ===================== ПРОТОКОЛ ===================== */
 function logEvent(type,sym,data){LOG.push({ts:Date.now(),type,sym:sym||null,data:data||null});if(LOG.length>LOG_MAX)LOG.splice(0,LOG.length-LOG_MAX);
   saveLog();$('logN').textContent=LOG.length;$('logN2').textContent=LOG.length;if($('logWrap').style.display==='block')renderLog();}
-function saveLog(){try{localStorage.setItem('rk_sandbox_log_v3',JSON.stringify(LOG.slice(-LOG_MAX)));}catch(e){}}
-function restoreLog(){try{const s=localStorage.getItem('rk_sandbox_log_v3');if(s)LOG=JSON.parse(s);}catch(e){LOG=[];}}
+function saveLog(){try{localStorage.setItem('rk_sandbox_log_v4',JSON.stringify(LOG.slice(-LOG_MAX)));}catch(e){}}
+function restoreLog(){try{const s=localStorage.getItem('rk_sandbox_log_v4');if(s)LOG=JSON.parse(s);}catch(e){LOG=[];}}
 function flat(d){if(d==null)return'';if(typeof d!=='object')return String(d);
   return Object.entries(d).map(([k,v])=>`${k}=${typeof v==='number'?(Number.isInteger(v)?v:v.toFixed(3)):v}`).join(' ');}
 function renderLog(){const rows=[...LOG].reverse().slice(0,400);
@@ -185,14 +185,15 @@ function csvDL(name,csv){const b=new Blob([csv],{type:'text/csv;charset=utf-8'})
 function exportLog(){let csv='\uFEFFВремя,Событие,Монета,Данные\n';
   for(const e of LOG)csv+=`"${new Date(e.ts).toISOString()}","${e.type}","${e.sym||''}","${flat(e.data).replace(/"/g,'""')}"\n`;
   csvDL('rk_sandbox_protocol.csv',csv);}
+function ts(x){return x?new Date(x).toISOString():'';}
 function exportTrades(){
-  let csv='\uFEFFСтатус,Поток,Открыта,Закрыта,Монета,Сделка,Поздний,Вход,Выход,TP1,SL,ДостигTP1,Причина,PNL%,MFE_R,MAE_R,Мин,Мом7д%,ДоПробоя%,ПутьFib%,ПутьСтена%,ПерегревHeat,Veto,Разворот,ГотовРазв%,Откат,ПробойКач,Импульс15м%,Объём×,RSI15,StochK15,MFI15,ADX1H,CVD15,StochRSI4h,StochRSI1d\n';
+  let csv='\uFEFFСтатус,Поток,Вход,Открыта,Закрыта,Монета,Сделка,Цена_входа,Выход,TP1,TP1_время,SL,ДостигTP1,Пик_цена,Пик_время,Причина,PNL%,MFE_R,MAE_R,Мин,Мом7д%,ДоПробоя%,ПутьFib%,ПутьСтена%,ПерегревHeat,Veto,Разворот,ГотовРазв%,Откат,ПробойКач,Импульс15м%,Объём×,RSI15,StochK15,MFI15,ADX1H,CVD15,StochRSI4h,StochRSI1d\n';
   const line=(st,t,exit,net,mins)=>{const s=t.snap||{};
-    return `"${st}","${t.stream}","${new Date(t.ts).toISOString()}","${t.closed?new Date(t.closed).toISOString():''}","${t.sym}","${t.dir}","${t.late?'да':''}",${t.entry},${exit??''},${t.tp1??''},${t.sl??''},"${t.tp1Hit?'да':''}","${t.reason||''}",${net!=null?(net*100).toFixed(3):''},${(t.mfe||0).toFixed(2)},${(t.mae||0).toFixed(2)},${mins??''},${(t.mom*100).toFixed(1)},${s.dist??''},${s.fibPct??''},${s.wallPct??''},${s.ohHeat??''},"${s.veto||''}","${s.rev||''}",${s.revR??''},"${s.pb||''}","${s.brk||''}",${s.imp??''},${s.vr??''},${s.rsi15??''},${s.stochK??''},${s.mf15??''},${s.adx??''},${s.cvd??''},${s.st4??''},${s.st1??''}\n`;};
+    return `"${st}","${t.stream}","${t.entryType||''}","${ts(t.ts)}","${ts(t.closed)}","${t.sym}","${t.dir}",${t.entry},${exit??''},${t.tp1??''},"${ts(t.tp1Time)}",${t.sl??''},"${t.tp1Hit?'да':''}",${t.peak??''},"${ts(t.peakTime)}","${t.reason||''}",${net!=null?(net*100).toFixed(3):''},${(t.mfe||0).toFixed(2)},${(t.mae||0).toFixed(2)},${mins??''},${(t.mom*100).toFixed(1)},${s.dist??''},${s.fibPct??''},${s.wallPct??''},${s.ohHeat??''},"${s.veto||''}","${s.rev||''}",${s.revR??''},"${s.pb||''}","${s.brk||''}",${s.imp??''},${s.vr??''},${s.rsi15??''},${s.stochK??''},${s.mf15??''},${s.adx??''},${s.cvd??''},${s.st4??''},${s.st1??''}\n`;};
   for(const t of SIM.trades)csv+=line('ЗАКРЫТА',t,t.exit,t.net,Math.round((t.closed-t.ts)/60000));
   for(const t of SIM.open){const px=pxOf(t.sym,t.entry);csv+=line('ОТКРЫТА',t,px,floatNet(t,px),Math.round((Date.now()-t.ts)/60000));}
   csvDL('rk_sandbox_trades.csv',csv);}
-const BEAT_KEY='rk_sandbox_beat_v3';
+const BEAT_KEY='rk_sandbox_beat_v4';
 function beat(){const now=Date.now();const last=+(localStorage.getItem(BEAT_KEY)||0);
   if(last&&now-last>90000)logEvent('wake',null,{простой_сек:Math.round((now-last)/1000),live:liveOn});
   try{localStorage.setItem(BEAT_KEY,now);}catch(e){}}
@@ -281,11 +282,16 @@ function classifyMove(r,macro,dir){const p=r.price;const revReadiness=calcRevRea
   if(confirmed){revState='confirmed';revDir=confirmed;}else if(brewing){revState='brewing';revDir=brewing;}
   if((revDir==='DN'&&macroResist)||(revDir==='UP'&&macroSupport))note='+макро 4h/1d';
   return{revState,revDir,revReadiness,pullback,note};}
-function breakoutQuality(r,dir,firedNow){if(!firedNow)return null;const up=dir==='UP';
-  const closedBeyond=up?(r.close15!=null&&r.close15>r.level):(r.close15!=null&&r.close15<r.level);
-  const volOk=r.vr>=1.5;const cvdOk=up?(r.cvd15>0||r.buyPct>50):(r.cvd15<0||r.buyPct<50);
-  const good=closedBeyond&&volOk&&cvdOk;const reasons=[];
-  if(!closedBeyond)reasons.push('закрытие не за уровнем');if(!volOk)reasons.push('нет объёма');if(!cvdOk)reasons.push('CVD против');
+// качество пробоя — на СВЕЧЕ-ПРОБОЕ: ищем ближайшую закрытую 15m, что закрылась за уровнем
+function breakoutQuality(rec15,avg15,level,dir,firedNow){
+  if(!firedNow||!rec15||!rec15.length)return null;const up=dir==='UP';
+  const beyond=k=>up?k.c>level:k.c<level;
+  let bo=null;                                   // свеча-ПЕРЕСЕЧЕНИЕ (перешла через уровень)
+  for(let i=rec15.length-1;i>=1;i--){if(beyond(rec15[i])&&!beyond(rec15[i-1])){bo=rec15[i];break;}}
+  if(!bo){const cands=rec15.filter(beyond);if(cands.length)bo=cands.reduce((a,b)=>b.v>a.v?b:a);}  // пробой раньше окна → сильнейшая свеча за уровнем
+  if(!bo)return{good:false,reasons:['нет закрытия за уровнем']};
+  const volOk=bo.v>=1.5*avg15;const cvdOk=up?bo.d>0:bo.d<0;const good=volOk&&cvdOk;
+  const reasons=[];if(!volOk)reasons.push('слабый объём свечи');if(!cvdOk)reasons.push('CVD свечи против');
   return{good,reasons};}
 
 /* пакет 1h */
@@ -314,7 +320,8 @@ async function fullScan(){
     const lag=new Set(sorted.slice(0,k).map(r=>r.sym)),lead=new Set(sorted.slice(-k).map(r=>r.sym));
     const prev=coins;coins={};syms=[];
     for(const r of rows){const isL=lead.has(r.sym),isB=lag.has(r.sym),p=r.price;const pv=prev[r.sym]||{};
-      coins[r.sym]={...r,isLead:isL,isLag:isB,armedUp:p<r.hh,armedDn:p>r.ll,mtf:pv.mtf||null,reExt:pv.reExt||false,handled:pv.handled||{}};
+      coins[r.sym]={...r,isLead:isL,isLag:isB,armedUp:p<r.hh,armedDn:p>r.ll,mtf:pv.mtf||null,
+        reAExt:pv.reAExt||false,reBExt:pv.reBExt||false,reBt:pv.reBt||0,handled:pv.handled||{}};
       if(isL||isB)syms.push(r.sym);}
     $('rankTs').textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
     logEvent('scan_done',null,{крипта:rows.length,лидеров:lead.size,лузеров:lag.size,мс:Date.now()-t0});
@@ -343,7 +350,7 @@ async function enrichInPlay(){const list=inPlayList();$('mtfN').textContent='0/'
 function buildMTF(c,k5,k15,k4h,k1d,depth){const ind=c.ind;
   const c5=k5.map(x=>+x[4]);const e9_5=ema(c5,9),e21_5=ema(c5,21);
   const gT=(f,s)=>{if(f==null||s==null)return'NONE';if(Math.abs(f-s)/s*100<0.15)return'NONE';return f>s?'UP':'DN';};
-  const sc_t5=gT(e9_5,e21_5);const imp5=c5.length>3?(c5[c5.length-1]-c5[c5.length-4])/c5[c5.length-4]*100:0;   // ~15м импульс из 5м-свечей
+  const sc_t5=gT(e9_5,e21_5);const imp5=c5.length>3?(c5[c5.length-1]-c5[c5.length-4])/c5[c5.length-4]*100:0;
   const H=k15.map(x=>+x[2]),L=k15.map(x=>+x[3]),C=k15.map(x=>+x[4]),V=k15.map(x=>+x[5]),TB=k15.map(x=>+x[9]),T=k15.map(x=>+x[0]);
   const cc=C.slice(0,-1),ch=H.slice(0,-1),cl=L.slice(0,-1),cv=V.slice(0,-1);
   const ra15=rsiArr(cc),rsi15=ra15[ra15.length-1];const sr=stochRSI(cc);
@@ -351,6 +358,7 @@ function buildMTF(c,k5,k15,k4h,k1d,depth){const ind=c.ind;
   const dv=divCheck(cc,ra15);const vw=calcVWAP(H,L,C,V,T);
   let cvd15=0,bV=0,sV=0;const lb=Math.max(0,C.length-20);for(let i=lb;i<C.length;i++){const b=TB[i]||0,s=(V[i]||0)-b;cvd15+=b-s;bV+=b;sV+=s;}
   const buyPct=(bV+sV)>0?bV/(bV+sV)*100:50;const avg15=V.slice(-21,-1).reduce((a,b)=>a+b,0)/20;const vr15=avg15>0?V[V.length-2]/avg15:1;
+  const rec15=[];for(let i=Math.max(1,C.length-6);i<C.length-1;i++)rec15.push({c:C[i],v:V[i],d:(2*(TB[i]||0)-(V[i]||0))});
   const h4=k4h.map(x=>+x[2]),l4=k4h.map(x=>+x[3]),c4=k4h.map(x=>+x[4]);
   const fib=calcFib(h4,l4,c4,ind.atr1h);const st4=stochRSI(c4);const e50_4h=ema(c4,50);
   const h4w=h4.slice(-ECHELON_4H_BARS),l4w=l4.slice(-ECHELON_4H_BARS);const hi4=Math.max(...h4w),lo4=Math.min(...l4w);
@@ -358,12 +366,12 @@ function buildMTF(c,k5,k15,k4h,k1d,depth){const ind=c.ind;
   const c1=k1d.map(x=>+x[4]);const st1=stochRSI(c1);
   const macro={stoch4h:st4.k,stoch4h_d:st4.d,stoch1d:st1.k,stoch1d_d:st1.d};
   const stack=stackLevels(depth.bids,depth.asks,c.price);
-  return{rsi15,stochK:sr.k,stochD:sr.d,mf15,mf15_prev,dv,vw,cvd15,buyPct,vr15,imp5,sc_t5,echelon,fib,e50_4h,st4:st4.k,st1:st1.k,macro,stack,close15:cc[cc.length-1]};}
+  return{rsi15,stochK:sr.k,stochD:sr.d,mf15,mf15_prev,dv,vw,cvd15,buyPct,vr15,imp5,sc_t5,echelon,fib,e50_4h,st4:st4.k,st1:st1.k,macro,stack,avg15,rec15};}
 function analyze(c){if(!c.mtf)return null;const dir=c.isLead?'UP':c.isLag?'DN':null;const m=c.mtf,ind=c.ind;const level=c.isLead?c.hh:c.ll;
   const r={price:c.price,rsi1h:ind.rsi,adxVal:ind.adxVal,e50:ind.e50,e200:ind.e200,atr1h:ind.atr1h,
     rsi15:m.rsi15,stochK:m.stochK,stochD:m.stochD,mf15:m.mf15,mf15_prev:m.mf15_prev,dv:m.dv,vw:m.vw,
-    cvd15:m.cvd15,buyPct:m.buyPct,vr:m.vr15,sc_t5:m.sc_t5,echelon:m.echelon,e50_4h:m.e50_4h,level,close15:m.close15};
-  return{dir,oh:exhaustionFilter(r,m.macro,dir),mv:classifyMove(r,m.macro,dir),brk:breakoutQuality(r,dir,fired(c)),
+    cvd15:m.cvd15,buyPct:m.buyPct,vr:m.vr15,sc_t5:m.sc_t5,echelon:m.echelon,e50_4h:m.e50_4h,level};
+  return{dir,oh:exhaustionFilter(r,m.macro,dir),mv:classifyMove(r,m.macro,dir),brk:breakoutQuality(m.rec15,m.avg15,level,dir,fired(c)),
     path:pathCalc(c.price,level,nearestFib(m.fib,c.price,dir).tp1,dir==='UP'?m.stack.nearAsk:m.stack.nearBid,dir),r,m};}
 function pathCalc(price,level,fibT,wall,dir){const up=dir==='UP';
   const room=t=>{if(t==null)return null;const v=up?(t>level?(price-level)/(t-level)*100:null):(t<level?(level-price)/(level-t)*100:null);return v==null?null:Math.max(0,Math.min(160,v));};
@@ -410,7 +418,7 @@ function copyT(el){const s=el.dataset.sym;const done=()=>{el.classList.add('cp')
   if(navigator.clipboard)navigator.clipboard.writeText(s).then(done).catch(()=>fb(s,done));else fb(s,done);}
 function fb(t,cb){const a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity=0;document.body.appendChild(a);a.select();try{document.execCommand('copy');cb();}catch(e){}document.body.removeChild(a);}
 
-/* ===================== LIVE + СИМ (два потока, гибрид-выход) ===================== */
+/* ===================== LIVE + СИМ (3 потока, гибрид-выход) ===================== */
 function toggleLive(){liveOn?stopLive():startLive();}
 function startLive(){if(!syms.length){toast('Сначала Скан');return;}
   liveOn=true;$('liveBtn').textContent='Live ●';$('liveBtn').classList.add('on');logEvent('live_on',null,{авто_скан_мин:CFG.per});connectWS();
@@ -425,20 +433,35 @@ function hasOpen(sym,stream){return SIM.open.some(t=>t.sym===sym&&t.stream===str
 function isHandled(c,stream,lvl){return c.handled&&c.handled[stream]===lvl;}
 function markHandled(c,stream,lvl){(c.handled||(c.handled={}))[stream]=lvl;}
 let rt=0;
-function onTick(c){const px=c.price;
-  // пробой — живое пересечение
-  if(c.isLead){if(px<c.hh)c.armedUp=true;else if(c.armedUp&&px>c.hh){c.armedUp=false;if(autoSim)openTrade(c,'LONG','пробой',c.hh,false);}}
-  if(c.isLag){if(px>c.ll)c.armedDn=true;else if(c.armedDn&&px<c.ll){c.armedDn=false;if(autoSim)openTrade(c,'SHORT','пробой',c.ll,false);}}
-  // ретест — возврат к уровню после отхода
+function throttleRender(){const n=Date.now();if(n-rt>2000){rt=n;renderHot();renderOpen();}}
+function onTick(c){const px=c.price;const dirLong=c.isLead,dirShort=c.isLag;
+  const lvl=dirLong?c.hh:dirShort?c.ll:null;if(lvl==null){throttleRender();return;}
+  const now=Date.now();
+  // arming (пробой)
+  if(dirLong&&px<c.hh)c.armedUp=true; if(dirShort&&px>c.ll)c.armedDn=true;
+  if(dirLong&&c.armedUp&&px>c.hh){c.armedUp=false;if(autoSim)openTrade(c,'LONG','пробой','кросс',c.hh);}
+  if(dirShort&&c.armedDn&&px<c.ll){c.armedDn=false;if(autoSim)openTrade(c,'SHORT','пробой','кросс',c.ll);}
+  // РЕТЕСТ-А: узкий возврат к уровню, пока пробит
   if(fired(c)){
-    if(c.isLead){const lvl=c.hh;if(px>=lvl*(1+CFG.retestExtend))c.reExt=true;else if(c.reExt&&px<=lvl*(1+CFG.retestBand)){c.reExt=false;if(autoSim)openTrade(c,'LONG','ретест',lvl,false);}}
-    if(c.isLag){const lvl=c.ll;if(px<=lvl*(1-CFG.retestExtend))c.reExt=true;else if(c.reExt&&px>=lvl*(1-CFG.retestBand)){c.reExt=false;if(autoSim)openTrade(c,'SHORT','ретест',lvl,false);}}
-  }else{if(c.handled){c.handled['пробой']=null;c.handled['ретест']=null;}c.reExt=false;}
-  const n=Date.now();if(n-rt>2000){rt=n;renderHot();renderOpen();}}
+    if(dirLong){if(px>=lvl*(1+CFG.retestA_band))c.reAExt=true;else if(c.reAExt&&px<=lvl*(1+CFG.retestA_band)){c.reAExt=false;if(autoSim)openTrade(c,'LONG','ретест-А','ретест-А',lvl);}}
+    if(dirShort){if(px<=lvl*(1-CFG.retestA_band))c.reAExt=true;else if(c.reAExt&&px>=lvl*(1-CFG.retestA_band)){c.reAExt=false;if(autoSim)openTrade(c,'SHORT','ретест-А','ретест-А',lvl);}}
+  }
+  // РЕТЕСТ-Б: отход ≥0.5% и возврат в зону ±0.3% за ≤60мин, независимо от пробоя
+  if(dirLong){
+    if(px>=lvl*(1+CFG.retestB_ext)){c.reBExt=true;c.reBt=now;}
+    else if(c.reBExt&&px<=lvl*(1+CFG.retestB_band)&&px>=lvl*(1-CFG.retestB_band)){c.reBExt=false;if(autoSim)openTrade(c,'LONG','ретест-Б','ретест-Б',lvl);}
+  }
+  if(dirShort){
+    if(px<=lvl*(1-CFG.retestB_ext)){c.reBExt=true;c.reBt=now;}
+    else if(c.reBExt&&px>=lvl*(1-CFG.retestB_band)&&px<=lvl*(1+CFG.retestB_band)){c.reBExt=false;if(autoSim)openTrade(c,'SHORT','ретест-Б','ретест-Б',lvl);}
+  }
+  if(c.reBExt&&now-c.reBt>CFG.retestB_winMin*60000)c.reBExt=false;
+  if(!fired(c)){c.reAExt=false;if(c.handled){c.handled['пробой']=null;c.handled['ретест-А']=null;c.handled['ретест-Б']=null;}}
+  throttleRender();}
 function catchMissed(){if(!autoSim)return;let n=0;
   for(const s of syms){const c=coins[s];if(!c||!fired(c))continue;const lvl=c.isLead?c.hh:c.ll;
     const beyond=Math.abs(c.price-lvl)/lvl*100;
-    if(beyond<=CFG.catchMaxPct&&!hasOpen(s,'пробой')&&!isHandled(c,'пробой',lvl)){openTrade(c,c.isLead?'LONG':'SHORT','пробой',lvl,true);n++;}}
+    if(beyond<=CFG.catchMaxPct&&!hasOpen(s,'пробой')&&!isHandled(c,'пробой',lvl)){openTrade(c,c.isLead?'LONG':'SHORT','пробой','догон',lvl);n++;}}
   if(n)logEvent('catch',null,{догнали:n});}
 function pxOf(s,f){return livePx[s]!=null?livePx[s]:(coins[s]?coins[s].price:f);}
 function snapOf(c,dir){const a=analyze(c);const i=c.ind||{};const d=distBrk(c);const imp=c.mtf?c.mtf.imp5:0;
@@ -448,24 +471,28 @@ function snapOf(c,dir){const a=analyze(c);const i=c.ind||{};const d=distBrk(c);c
     ohHeat:a.oh.heat,veto:a.oh.veto?'да':'',rev:a.mv.revState==='none'?'':a.mv.revState+' '+a.mv.revDir,revR:a.mv.revReadiness,
     pb:a.mv.pullback?'да':'',brk:a.brk?(a.brk.good?'чистый':'слабый'):'',rsi15:a.r.rsi15!=null?+a.r.rsi15.toFixed(1):null,
     stochK:a.r.stochK!=null?+a.r.stochK.toFixed(1):null,mf15:+a.r.mf15.toFixed(1),st4:a.m.st4!=null?+a.m.st4.toFixed(0):null,st1:a.m.st1!=null?+a.m.st1.toFixed(0):null,vr:a.r.vr!=null?+a.r.vr.toFixed(2):base.vr};}
-function openTrade(c,dir,stream,entry,late){
+function openTrade(c,dir,stream,entryType,entry){
   if(hasOpen(c.sym,stream))return;const lvl=c.isLead?c.hh:c.ll;if(isHandled(c,stream,lvl))return;
   const dirLong=dir==='LONG';const atr=(c.ind&&c.ind.atr1h)||entry*0.01;const risk=atr*CFG.atrStopMult;
   const sl=dirLong?entry-risk:entry+risk;const a=analyze(c);
-  let tp1=a?nearestFib(a.m.fib,entry,dirLong?'UP':'DN').tp1:null;if(!tp1)tp1=dirLong?entry+atr*2:entry-atr*2;
+  const fibT=a?nearestFib(a.m.fib,entry,dirLong?'UP':'DN').tp1:null;
+  const rT=dirLong?entry+CFG.tp1R*risk:entry-CFG.tp1R*risk;
+  let tp1;if(fibT==null)tp1=rT;else tp1=dirLong?Math.min(fibT,rT):Math.max(fibT,rT);   // ближайшее из {фибо, 1.5R}
   const snap=snapOf(c,dirLong?'UP':'DN');
-  const t={sym:c.sym,dir,stream,entry,ts:Date.now(),mom:c.mom,atr,risk,sl,tp1,tp1Hit:false,realized:0,trailPeak:entry,mfe:0,mae:0,late:!!late,snap};
+  const t={sym:c.sym,dir,stream,entryType,entry,ts:Date.now(),mom:c.mom,atr,risk,sl,tp1,tp1Hit:false,tp1Time:null,
+    realized:0,trailPeak:entry,peak:entry,peakTime:Date.now(),mfe:0,mae:0,snap};
   SIM.open.push(t);markHandled(c,stream,lvl);saveSim();
-  logEvent('trade_open',c.sym,{поток:stream,напр:dir,вход:+entry.toFixed(6),поздн:late?'да':'',tp1:+tp1.toFixed(6),sl:+sl.toFixed(6),...snap});
-  toast((stream==='ретест'?'⇊ РЕТЕСТ ':'⇡ ПРОБОЙ ')+dir+' '+c.sym.replace('USDT',''));render();}
+  logEvent('trade_open',c.sym,{поток:stream,вход:entryType,напр:dir,цена:+entry.toFixed(6),tp1:+tp1.toFixed(6),sl:+sl.toFixed(6),...snap});
+  toast(({'пробой':'⇡','ретест-А':'⇊А','ретест-Б':'⇊Б'}[stream])+' '+dir+' '+c.sym.replace('USDT',''));render();}
 function floatNet(t,px){const dirLong=t.dir==='LONG';const remFrac=t.tp1Hit?(1-CFG.tp1Frac):1;
   const rem=((dirLong?(px-t.entry):(t.entry-px))/t.entry)*remFrac;return (t.realized||0)+rem-CFG.fee;}
 function manageTrades(){const now=Date.now();
   for(let i=SIM.open.length-1;i>=0;i--){const t=SIM.open[i];const px=pxOf(t.sym,null);if(px==null)continue;const dirLong=t.dir==='LONG';
     const rNow=(dirLong?(px-t.entry):(t.entry-px))/t.risk;if(rNow>t.mfe)t.mfe=rNow;if(rNow<t.mae)t.mae=rNow;
+    if(dirLong){if(px>t.peak){t.peak=px;t.peakTime=now;}}else{if(px<t.peak){t.peak=px;t.peakTime=now;}}
     if(!t.tp1Hit){
       if(dirLong?px<=t.sl:px>=t.sl){closeTrade(t,i,t.sl,'стоп');continue;}
-      if(dirLong?px>=t.tp1:px<=t.tp1){t.tp1Hit=true;t.realized=((dirLong?(t.tp1-t.entry):(t.entry-t.tp1))/t.entry)*CFG.tp1Frac;t.trailPeak=px;
+      if(dirLong?px>=t.tp1:px<=t.tp1){t.tp1Hit=true;t.tp1Time=now;t.realized=((dirLong?(t.tp1-t.entry):(t.entry-t.tp1))/t.entry)*CFG.tp1Frac;t.trailPeak=px;
         logEvent('tp1',t.sym,{поток:t.stream,цена:+t.tp1.toFixed(6)});continue;}
       if(now-t.ts>=CFG.timeStopH*3600e3&&rNow<0.3){closeTrade(t,i,px,'протухло');continue;}
     }else{
@@ -478,30 +505,32 @@ function closeTrade(t,i,exit,reason){const net=floatNet(t,exit);
   logEvent('trade_close',t.sym,{поток:t.stream,причина:reason,достигTP1:t.tp1Hit?'да':'',чистый:+(net*100).toFixed(3),mfe:+t.mfe.toFixed(2),mae:+t.mae.toFixed(2),мин:Math.round((t.closed-t.ts)/60000)});
   SIM.trades.push(t);render();}
 
+const STPILL={'пробой':'p-pb','ретест-А':'p-rea','ретест-Б':'p-reb'};
+const STLBL={'пробой':'⇡ ПРОБОЙ','ретест-А':'⇊ РЕТЕСТ-А','ретест-Б':'⇊ РЕТЕСТ-Б'};
 function tcardHTML(t){const px=pxOf(t.sym,t.entry);const c=coins[t.sym];const fl=floatNet(t,px)*100;
   const mins=Math.floor((Date.now()-t.ts)/60000);const dirLong=t.dir==='LONG';
-  const stpill=t.stream==='ретест'?'<span class="pill p-re">⇊ РЕТЕСТ</span>':'<span class="pill p-pb">⇡ ПРОБОЙ</span>';
-  const extra=(t.late?' <span class="pill p-late">догон</span>':'')+(t.tp1Hit?' <span class="pill p-tp1">TP1✓ трейл</span>':'');
+  const stpill=`<span class="pill ${STPILL[t.stream]}">${STLBL[t.stream]}${t.entryType==='догон'?' догон':''}</span>`;
+  const tp1p=t.tp1Hit?' <span class="pill p-tp1">TP1✓ трейл</span>':'';
   return`<div class="tcard ${dirLong?'long':'short'}"><div class="top">`
-    +`<span class="sym" data-sym="${t.sym}" onclick="copyT(this)">${t.sym.replace('USDT','')} <span class="pill ${dirLong?'p-long':'p-short'}">${t.dir}</span> ${stpill}${extra}</span>`
+    +`<span class="sym" data-sym="${t.sym}" onclick="copyT(this)">${t.sym.replace('USDT','')} <span class="pill ${dirLong?'p-long':'p-short'}">${t.dir}</span> ${stpill}${tp1p}</span>`
     +`<span class="pl ${fl>=0?'up':'dn'}">${fl>=0?'+':''}${fl.toFixed(2)}%</span></div>`
     +`<div class="row2"><span class="entry">вход <b>${fmt(t.entry)}</b> · сейчас ${fmt(px)} · TP1 ${fmt(t.tp1)} · SL ${fmt(t.sl)}</span>`
     +`<span>${mins}м · MFE ${t.mfe.toFixed(2)}R · MAE ${t.mae.toFixed(2)}R</span></div>`
     +(c?`<div class="cues">${pathHTML(c)} ${velHTML(c)} ${stateHTML(c)}</div>`:'')+`</div>`;}
 function renderOpen(){
-  const pb=SIM.open.filter(t=>t.stream==='пробой'),re=SIM.open.filter(t=>t.stream==='ретест');
-  $('openPbCnt').textContent=pb.length;$('openReCnt').textContent=re.length;
-  $('openPb').innerHTML=pb.length?pb.map(tcardHTML).join(''):'<div class="empty">Нет открытых пробойных сделок.</div>';
-  $('openRe').innerHTML=re.length?re.map(tcardHTML).join(''):'<div class="empty">Нет открытых ретест-сделок.</div>';}
+  const order={'пробой':0,'ретест-А':1,'ретест-Б':2};
+  const arr=[...SIM.open].sort((a,b)=>(order[a.stream]-order[b.stream])||(a.ts-b.ts));
+  $('openCnt').textContent=arr.length;
+  $('openList').innerHTML=arr.length?arr.map(tcardHTML).join(''):'<div class="empty">Нет открытых сделок. Откроются на живом пробое / ретесте.</div>';}
 function streamStats(stream){const tr=SIM.trades.filter(t=>t.stream===stream);const w=tr.filter(t=>t.net>0).length;const sum=tr.reduce((a,t)=>a+t.net,0)*100;
   return{n:tr.length,wr:tr.length?Math.round(w/tr.length*100)+'%':'—',sum,avg:tr.length?(sum/tr.length).toFixed(3)+'%':'—'};}
-function renderSim(){for(const[stream,pfx]of[['пробой','pb'],['ретест','re']]){const s=streamStats(stream);
+function renderSim(){for(const[stream,pfx]of[['пробой','pb'],['ретест-А','rea'],['ретест-Б','reb']]){const s=streamStats(stream);
   $(pfx+'N').textContent=s.n;$(pfx+'WR').textContent=s.wr;
   $(pfx+'Sum').textContent=(s.sum>=0?'+':'')+s.sum.toFixed(2)+'%';$(pfx+'Sum').className=s.sum>=0?'up':'dn';
   $(pfx+'Avg').textContent=s.avg;}$('errline').innerHTML='';}
 function render(){renderOpen();renderHot();renderFull();renderSim();}
-function saveSim(){try{localStorage.setItem('rk_sandbox_sim_v3',JSON.stringify(SIM));}catch(e){}}
-function restoreSim(){try{const s=localStorage.getItem('rk_sandbox_sim_v3');if(s)SIM={...SIM,...JSON.parse(s)};}catch(e){}}
+function saveSim(){try{localStorage.setItem('rk_sandbox_sim_v4',JSON.stringify(SIM));}catch(e){}}
+function restoreSim(){try{const s=localStorage.getItem('rk_sandbox_sim_v4');if(s)SIM={...SIM,...JSON.parse(s)};}catch(e){}}
 
 /* ===================== СТАРТ ===================== */
 restoreLog();restoreSim();
