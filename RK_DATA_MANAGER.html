@@ -390,7 +390,7 @@ function unpackBars(buf) {
   const dv = new DataView(buf);
   if (dv.getUint32(0, true) !== MAGIC) return null;
   const cols = dv.getUint32(8, true), n = dv.getUint32(12, true);
-  if (cols !== COLS || HEAD + n*cols*8 > buf.byteLength) return null;
+  if ((cols !== 7 && cols !== 9) || HEAD + n*cols*8 > buf.byteLength) return null;
   return { n, cols, a: new Float64Array(buf, HEAD, n*cols) };
 }
 
@@ -691,7 +691,7 @@ async function buildHourly() {
       const map = new Map();
       for (const u of all) {
         for (let j = 0; j < u.n; j++) {
-          const o = j * COLS, t = u.a[o];
+          const o = j * u.cols, t = u.a[o];
           const h = Math.floor(t / MSH) * MSH;
           let b = map.get(h);
           if (!b) { map.set(h, b = [h, u.a[o+1], u.a[o+2], u.a[o+3], u.a[o+4], 0, 0, 0]); }
