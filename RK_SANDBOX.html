@@ -96,6 +96,7 @@ td{padding:8px;border-bottom:1px solid rgba(24,32,53,.5);font-family:var(--fm);f
   <button class="btn" id="liveBtn" onclick="toggleLive()">Live ○</button>
   <button class="btn on" id="autoBtn" onclick="toggleAuto()">Авто-сим ●</button>
   <button class="btn btn-sm" id="logBtn" onclick="toggleLog()">Протокол</button>
+  <button class="btn btn-sm" id="resetBtn" onclick="resetSim()">Сброс</button>
 </header>
 
 <div class="statline">
@@ -529,6 +530,15 @@ function renderSim(){for(const[stream,pfx]of[['пробой','pb'],['ретес�
   $(pfx+'Sum').textContent=(s.sum>=0?'+':'')+s.sum.toFixed(2)+'%';$(pfx+'Sum').className=s.sum>=0?'up':'dn';
   $(pfx+'Avg').textContent=s.avg;}$('errline').innerHTML='';}
 function render(){renderOpen();renderHot();renderFull();renderSim();}
+function resetSim(){
+  if(!confirm('Обнулить ВСЕ сделки сима — открытые и закрытые? Действие необратимо.'))return;
+  SIM={trades:[],open:[]};
+  saveSim();
+  for(const s in coins){coins[s].handled={};coins[s].reAExt=false;coins[s].reBExt=false;}
+  logEvent('sim_reset',null,null);
+  render();
+  toast('Сим обнулён');
+}
 function saveSim(){try{localStorage.setItem('rk_sandbox_sim_v4',JSON.stringify(SIM));}catch(e){}}
 function restoreSim(){try{const s=localStorage.getItem('rk_sandbox_sim_v4');if(s)SIM={...SIM,...JSON.parse(s)};}catch(e){}}
 
