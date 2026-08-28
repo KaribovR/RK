@@ -190,7 +190,8 @@ tr.crow{cursor:pointer}tr.crow:hover td{background:rgba(56,189,248,.04)}
   <b>Типы:</b> ПРОБИТИЕ/ДОГОН — XSEC (кросс 24ч у грани / уже за уровнем ≤1%, проверено). НАЧАЛО/СЕРЕДИНА/РАЗВОРОТ — независимый классификатор A (сжатие / трендовое продолжение / истощение, непроверено). ·
   <b>Бейдж:</b> X+A совпало · только X · только A · конфликт (метка, вход не гейтит). ·
   <b>Путь</b> ▓▓░ — доля пройденного диапазона в сторону сигнала (выше = позже, хорошей цены меньше). <b>возраст</b> — часов с пробоя. ·
-  <b>Выход сима</b> = baseline XSEC: держание 8ч, мейкер у грани, одна нога 0.09%. Клик по строке — индикаторы A.
+  <b>Выход сима</b> = baseline XSEC: держание 8ч, мейкер у грани, одна нога 0.09%. Клик по строке — индикаторы A. ·
+  <b>Сортировка:</b> клик по заголовку «Тип · уровень» листает режимы (ВХОД / ГРАНЬ / ТИП / ПУТЬ / МОМ). ВХОД — «можно войти сейчас» сверху, любой тип.
 </div>
 
 <div class="toast" id="toast"></div>
@@ -475,11 +476,15 @@ function openTrade(c,type){
   SIM.open.push(t);markHandled(c,type);saveSim();
   logEvent('trade_open',c.sym,{тип:type,напр:dir,цена:+entry.toFixed(6),conf:t.conf});
   toast(type+' '+dir+' '+c.sym.replace('USDT',''));render();}
-function catchAndNominate(){if(!autoSim)return;
+let lastType={};
+function catchAndNominate(){if(!autoSim){lastType=snapTypes();return;}
   for(const s of syms){const c=coins[s];if(!c)continue;const t=typeOf(c);if(!t||t==='УШЛА')continue;
-    // проверенные: догон (пробитие ловится на тике). непроверенные: по номинации.
-    if(t==='ДОГОН'){openTrade(c,'ДОГОН');}
-    else if(!PROVEN.has(t)){openTrade(c,t);}}}
+    if(t==='ДОГОН'){openTrade(c,'ДОГОН');}          // проверенный догон — как раньше (пробитие ловит onTick)
+    else if(!PROVEN.has(t)){                          // A-типы: вход ТОЛЬКО на переходе в новый тип
+      const seen=Object.prototype.hasOwnProperty.call(lastType,s);
+      if(seen&&lastType[s]!==t)openTrade(c,t);}}
+  lastType=snapTypes();}
+function snapTypes(){const m={};for(const s of syms){const c=coins[s];if(c){const t=typeOf(c);m[s]=t||null;}}return m;}
 function floatNet(t,px){const dirLong=t.dir==='UP';const rem=((dirLong?(px-t.entry):(t.entry-px))/t.entry);return rem-CFG.fee;}
 function pxOf(s,f){return livePx[s]!=null?livePx[s]:(coins[s]?coins[s].price:f);}
 function manageTrades(){const now=Date.now();
@@ -550,19 +555,39 @@ function detailHTML(c){const d=c.deep;let inner;
   return`<tr class="drow"><td colspan="6"><div class="detail">${inner}</div></td></tr>`;}
 function toggleRow(sym){if(expanded.has(sym))expanded.delete(sym);else expanded.add(sym);render();}
 
-function sortRank(c){
-  if(hasOpen(c.sym))return 0;
-  const t=typeOf(c);
-  if(fired(c)&&(t==='ПРОБИТИЕ'||t==='ДОГОН'))return 1;
-  const d=distBrk(c);
-  if(!fired(c)&&d!=null&&d<=CFG.armWithin)return 2;
-  if(t&&!PROVEN.has(t)&&t!=='УШЛА')return 3;
-  if(t==='УШЛА')return 5;
-  return 4;}
-function sortCmp(a,b){const ra=sortRank(a),rb=sortRank(b);if(ra!==rb)return ra-rb;
-  if(ra===1){const ba=beyondPct(a)??9,bb=beyondPct(b)??9;if(Math.abs(ba-bb)>0.01)return ba-bb;}
-  if(ra===2){const da=distBrk(a)??99,db=distBrk(b)??99;if(Math.abs(da-db)>0.01)return da-db;}
-  // тай-брейк: X+A выше
+const SORT_MODES=['ВХОД','ГРАНЬ','ТИП','ПУТЬ','МОМ'];
+let sortMode=0;
+function cycleSort(){sortMode=(sortMode+1)%SORT_MODES.length;try{localStorage.setItem('rk_merge_sort_v1',sortMode);}catch(e){}render();}
+function firedProven(c){const t=typeOf(c);return fired(c)&&(t==='ПРОБИТИЕ'||t==='ДОГОН');}
+function armingX(c){const d=distBrk(c);return !fired(c)&&!!c.side&&d!=null&&d<=CFG.armWithin;}
+function aType(c){const t=typeOf(c);return(t&&!PROVEN.has(t)&&t!=='УШЛА')?t:null;}
+// [ранг, ключ] по текущему режиму. Меньше — выше.
+function rankKey(c){const open=hasOpen(c.sym),t=typeOf(c),gone=t==='УШЛА';
+  const p=pathPct(c),bp=beyondPct(c),d=distBrk(c);
+  if(sortMode===0){                       // ВХОД: «можно войти сейчас» вперёд, любой тип
+    if(open)return[0,0];
+    if(firedProven(c))return[1,bp??9];     // пробито/догон — по близости к грани (лучшая цена)
+    const at=aType(c);if(at&&p!=null&&p<55)return[2,p];  // свежий A-сетап (прошёл <55% пути)
+    if(armingX(c))return[3,d??99];         // вот-вот пробьёт
+    if(at)return[4,p??99];                 // поздний A (уже далеко прошёл)
+    if(gone)return[6,0];
+    return[5,d??99];}
+  if(sortMode===1){                        // ГРАНЬ: сначала проверенное по близости
+    if(open)return[0,0];
+    if(firedProven(c))return[1,bp??9];
+    if(armingX(c))return[2,d??99];
+    if(aType(c))return[3,p??99];
+    if(gone)return[5,0];
+    return[4,d??99];}
+  if(sortMode===2){                        // ТИП: группами по типу
+    if(open)return[0,0];if(gone)return[99,0];
+    const idx=t?TYPES.indexOf(t):50;const key=(t==='ПРОБИТИЕ'||t==='ДОГОН')?(bp??9):(p??99);
+    return[10+idx,key];}
+  if(sortMode===3){                        // ПУТЬ: раньше движение — выше
+    if(open)return[0,0];return[1,p==null?999:p];}
+  // МОМ: сильнейший моментум выше
+  if(open)return[0,0];return[1,-(c.mom||0)];}
+function sortCmp(a,b){const A=rankKey(a),B=rankKey(b);if(A[0]!==B[0])return A[0]-B[0];if(A[1]!==B[1])return A[1]-B[1];
   const ca=confluence(a)==='BOTH'?0:1,cb=confluence(b)==='BOTH'?0:1;if(ca!==cb)return ca-cb;
   return (b.mom)-(a.mom);}
 function visibleCoins(all){const q=$('search').value.trim().toUpperCase();
@@ -576,14 +601,17 @@ function visibleCoins(all){const q=$('search').value.trim().toUpperCase();
     return true;});}
 function hotFilter(c){const t=typeOf(c);const d=distBrk(c);
   return hasOpen(c.sym)||(fired(c)&&t!=='УШЛА')||(!fired(c)&&d!=null&&d<=10)||(c.aNom&&!fired(c));}
+function theadHTML(){return '<thead><tr><th>Монета</th><th>Сторона</th><th>7д</th>'
+  +`<th class="full-hd" onclick="cycleSort()" style="color:var(--blue)" title="Клик — сменить сортировку">Тип · уровень &#8645; ${SORT_MODES[sortMode]}</th>`
+  +'<th>Путь · возраст</th><th>Conf</th></tr></thead>';}
 function renderHot(){let arr=syms.map(s=>coins[s]).filter(Boolean).filter(hotFilter);
   arr=visibleCoins(arr).sort(sortCmp);$('hotCnt').textContent=arr.length;
   if(!arr.length){$('hotWrap').innerHTML='<div class="empty">Нет кандидатов в игре.</div>';return;}
-  let h='<table><thead><tr><th>Монета</th><th>Сторона</th><th>7д</th><th>Тип · уровень</th><th>Путь · возраст</th><th>Conf</th></tr></thead><tbody>';
+  let h='<table>'+theadHTML()+'<tbody>';
   for(const c of arr)h+=rowHTML(c);$('hotWrap').innerHTML=h+'</tbody></table>';}
 function renderFull(){if($('fullWrap').style.display==='none'||!$('fullWrap').style.display)return;
   let arr=syms.map(s=>coins[s]).filter(Boolean);arr=visibleCoins(arr).sort(sortCmp);
-  let h='<table><thead><tr><th>Монета</th><th>Сторона</th><th>7д</th><th>Тип · уровень</th><th>Путь · возраст</th><th>Conf</th></tr></thead><tbody>';
+  let h='<table>'+theadHTML()+'<tbody>';
   for(const c of arr)h+=rowHTML(c);$('fullWrap').innerHTML=h+'</tbody></table>';}
 function toggleFull(){const w=$('fullWrap');const show=w.style.display==='none'||!w.style.display;w.style.display=show?'block':'none';$('fullToggle').textContent=show?'[скрыть]':'[показать]';if(show)renderFull();}
 
@@ -646,6 +674,7 @@ function beat(){const now=Date.now();const last=+(localStorage.getItem(BEAT_KEY)
 setInterval(beat,15000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)beat();});
 
 restoreLog();restoreSim();restoreTG();applyTGui();
+try{const sm=+localStorage.getItem('rk_merge_sort_v1');if(!isNaN(sm)&&sm>=0&&sm<SORT_MODES.length)sortMode=sm;}catch(e){}
 $('logN2').textContent=LOG.length;
 logEvent('session_start',null,{открыто:SIM.open.length,закрыто:SIM.trades.length});
 beat();render();
