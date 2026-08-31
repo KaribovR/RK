@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RK MERGE v2 — XSEC-сторона + ранний swing-вход</title>
+<title>RK MERGE v3 — XSEC-сторона + откатный вход</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sora:wght@400;600;700&display=swap');
 :root{--bg:#04070d;--bg1:#080c16;--bg2:#0c1220;--bg3:#101828;--bd:#182035;
@@ -43,9 +43,9 @@ header{position:sticky;top:0;z-index:20;background:rgba(4,7,13,.98);border-botto
 .tog .dot{width:7px;height:7px;border-radius:50%;background:var(--t2)}
 .tog.on .dot{background:var(--up)}
 .tog .note{font-size:9px;color:var(--t2)}
-.tog.proven .note{color:var(--up)}.tog.rejected .note{color:var(--dn)}.tog.unproven .note{color:var(--warn)}
+.tog.proven .note{color:var(--up)}.tog.unproven .note{color:var(--warn)}
 .simwrap{display:flex;gap:6px;padding:8px 12px;flex-wrap:wrap;border-bottom:1px solid var(--bd)}
-.simbox{flex:1;min-width:120px;border:1px solid var(--bd);border-radius:6px;padding:6px 9px;background:var(--bg1);font-family:var(--fm);font-size:10px}
+.simbox{flex:1;min-width:110px;border:1px solid var(--bd);border-radius:6px;padding:6px 9px;background:var(--bg1);font-family:var(--fm);font-size:10px}
 .simbox .hd{font-weight:700;margin-bottom:3px;font-size:11px}
 .simbox .st{display:flex;gap:8px;color:var(--t3);flex-wrap:wrap}.simbox .st b{font-size:12px;color:var(--t1)}
 .sect{padding:12px 12px 4px}
@@ -70,8 +70,8 @@ tr.crow{cursor:pointer}tr.crow:hover td{background:rgba(56,189,248,.04)}
 .pill{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700;white-space:nowrap}
 .p-brk{background:rgba(0,229,160,.14);color:var(--up)}
 .p-catch{background:rgba(56,189,248,.14);color:var(--blue)}
-.p-start{background:rgba(255,183,0,.12);color:var(--warn)}
-.p-mid{background:rgba(138,168,197,.14);color:var(--t3)}
+.p-pb{background:rgba(167,139,250,.18);color:var(--pu)}
+.p-arm{background:rgba(138,168,197,.1);color:var(--t3)}
 .p-gone{background:rgba(78,106,132,.14);color:var(--t2)}
 .g-go{border:1px solid var(--up);color:var(--up);padding:0 5px}
 .g-caut{border:1px solid var(--dn);color:#ff8098;padding:0 5px}
@@ -82,12 +82,16 @@ tr.crow{cursor:pointer}tr.crow:hover td{background:rgba(56,189,248,.04)}
 .drow td{background:var(--bg1);padding:0}
 .detail{padding:9px 12px;font-family:var(--fm);font-size:11px;color:var(--t3);line-height:1.7}
 .detail .grp{display:inline-block;margin-right:16px}
-.detail b{color:var(--t1)}.detail .lbl{color:var(--t2)}.detail .warnnote{color:var(--warn)}
+.detail b{color:var(--t1)}.detail .lbl{color:var(--t2)}
+.hint{font-family:var(--fm);font-size:11px;font-weight:700;padding:5px 9px;border-radius:5px;margin-bottom:7px;line-height:1.4}
+.hint-ok{background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.25);color:var(--blue)}
+.hint-warn{background:rgba(255,183,0,.08);border:1px solid rgba(255,183,0,.28);color:var(--warn)}
+.hint-go{background:rgba(0,229,160,.12);border:1px solid var(--up);color:var(--up)}
 #logWrap{max-height:340px;overflow:auto;border:1px solid var(--bd);border-radius:8px;background:var(--bg1);margin:0 12px}
 #logWrap table{font-size:10px}#logWrap td{padding:5px 8px}
 .lg-ts{color:var(--t2);white-space:nowrap}.lg-ty{font-weight:700}
-.ty-scan_done,.ty-enrich{color:var(--blue)}.ty-trade_open{color:var(--up)}
-.ty-trade_close{color:var(--t1)}.ty-wake{color:var(--pu)}.ty-scan_error,.ty-ws_err,.ty-skip{color:var(--warn)}
+.ty-scan_done,.ty-enrich{color:var(--blue)}.ty-trade_open,.ty-arm{color:var(--up)}
+.ty-trade_close{color:var(--t1)}.ty-wake{color:var(--pu)}.ty-scan_error,.ty-ws_err,.ty-skip,.ty-disarm{color:var(--warn)}
 .legend{font-family:var(--fm);font-size:9px;color:var(--t2);padding:4px 12px 10px;line-height:1.7}
 .legend b{color:var(--t3)}
 .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--up);color:var(--up);padding:8px 16px;border-radius:6px;font-family:var(--fm);font-size:12px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:100;max-width:90%;text-align:center}
@@ -96,7 +100,7 @@ tr.crow{cursor:pointer}tr.crow:hover td{background:rgba(56,189,248,.04)}
 </head>
 <body>
 <header>
-  <div class="logo">RK·MERGE <em>v2 · сторона=XSEC</em></div>
+  <div class="logo">RK·MERGE <em>v3 · откатный вход</em></div>
   <button class="btn btn-go" id="scanBtn" onclick="fullScan()">Скан</button>
   <button class="btn" id="liveBtn" onclick="toggleLive()">Live ○</button>
   <button class="btn on" id="autoBtn" onclick="toggleAuto()">Авто-сим ●</button>
@@ -111,7 +115,7 @@ tr.crow{cursor:pointer}tr.crow:hover td{background:rgba(56,189,248,.04)}
   <span>скан <b id="rankTs">—</b></span>
   <span id="uinfo">юниверс —</span>
   <span>вола <span id="volGate" class="gate-chip gate-off">—</span></span>
-  <span>в игре <b id="inplayN">0</b></span>
+  <span>взвод <b id="armN">0</b></span>
   <span>анализ <b id="mtfN">—</b></span>
   <span id="errline"></span>
 </div>
@@ -119,27 +123,24 @@ tr.crow{cursor:pointer}tr.crow:hover td{background:rgba(56,189,248,.04)}
 <div class="banner" id="banner"></div>
 
 <div class="disc">
-  <b>Исследовательский стенд (GitHub), не торговля.</b> Реальная торговля — боевой XSEC на сервере (rk-gate), отдельный контур.
-  <b>Направление ВСЕГДА от XSEC</b> (квинтиль моментума + слом структуры). Индикаторы A <b>не задают сторону</b> и не предсказывают развороты — это метки и гейт «запаса хода».
-  ПРОБИТИЕ/ДОГОН — проверенное ядро (24ч). НАЧАЛО/СЕРЕДИНА — ранний swing-вход в ту же сторону, <b>наблюдательный эксперимент</b>, до накопления данных не торговать.
+  <b>Исследовательский стенд, не торговля.</b> <b>Направление — только XSEC</b> (квинтиль моментума). Двигатель входа — структура: ПРОБИТИЕ/ДОГОН (слом 24ч, ядро) и <b>ОТКАТ</b> (слом → коррекция на 5м → вход по факту её конца, честная цена, стоп за экстремум отката).
+  Приборы (волна · цель · деньги · перегрев · запас) — <b>подсказка и данные, вход не решают.</b> До накопления статистики откатный вход не торговать.
 </div>
 
 <div id="filtPanel">
   <div class="frow">
     <span class="ftag">Слои</span>
-    <span class="tog on" id="tgEarly" onclick="tog('early')"><span class="dot"></span>Ранний вход (swing-слом) <span class="note">эксперимент</span></span>
+    <span class="tog on" id="tgPullback" onclick="tog('pullback')"><span class="dot"></span>Откатный вход <span class="note">эксперимент</span></span>
   </div>
   <div class="frow">
     <span class="ftag">Гейты</span>
-    <span class="tog unproven" id="tgGateRoom" onclick="tog('gateRoom')"><span class="dot"></span>Нужен запас хода <span class="note">гасит «перегрет+нет места»</span></span>
     <span class="tog proven" id="tgGateVol" onclick="tog('gateVol')"><span class="dot"></span>Гейт волатильности <span class="note">✓ бэктест</span></span>
   </div>
   <div class="frow">
     <span class="ftag">Типы</span>
     <span class="tog on" id="tgTПРОБИТИЕ" onclick="togType('ПРОБИТИЕ')"><span class="dot"></span>ПРОБИТИЕ</span>
     <span class="tog on" id="tgTДОГОН" onclick="togType('ДОГОН')"><span class="dot"></span>ДОГОН</span>
-    <span class="tog on" id="tgTНАЧАЛО" onclick="togType('НАЧАЛО')"><span class="dot"></span>НАЧАЛО</span>
-    <span class="tog on" id="tgTСЕРЕДИНА" onclick="togType('СЕРЕДИНА')"><span class="dot"></span>СЕРЕДИНА</span>
+    <span class="tog on" id="tgTОТКАТ" onclick="togType('ОТКАТ')"><span class="dot"></span>ОТКАТ</span>
   </div>
 </div>
 
@@ -172,10 +173,9 @@ tr.crow{cursor:pointer}tr.crow:hover td{background:rgba(56,189,248,.04)}
 <div id="logWrap"></div>
 
 <div class="legend">
-  <b>Сторона</b> — только XSEC (квинтиль 7д-моментума). <b>Тип</b>: ПРОБИТИЕ/ДОГОН — слом 24ч-диапазона (ядро). НАЧАЛО/СЕРЕДИНА — ранний слом swing-структуры в ту же сторону (по % пройденного пути). ·
-  <b>ГЕЙТ A</b>: ✓ЕСТЬ — есть запас хода до стены/фибо/уровня; ⚠ТЕСНО — перегрет и места мало (риск-ловушка); — нет данных. Метка, вход по умолчанию не блокирует. ·
-  <b>Путь</b> ▓▓░ — доля пройденного диапазона в сторону сигнала (выше = позже). <b>🔴</b> — перегрев (справка, НЕ сторона). ·
-  <b>Сортировка</b>: клик по «Тип · уровень» листает режимы. <b>Выход</b>=держание 8ч, мейкер, 0.09%. Клик по строке — детали A.
+  <b>Сторона</b> — только XSEC. <b>Тип</b>: ПРОБИТИЕ/ДОГОН — слом 24ч (ядро). ОТКАТ — вход в конце коррекции (5м) после слома. <b>взвод/откат</b> — монета ждёт конца отката. ·
+  <b>Приборы</b> (в детали и подсказке): волна N (⚠ на 3-й — ход на исходе) · цель (проекция волны + стена) · деньги (CVD) · запас хода · перегрев 🔴. Ничего не решают за вход. ·
+  <b>Путь</b> ▓▓░ — доля диапазона в сторону сигнала. <b>Сортировка</b> — клик по «Тип». <b>Выход</b>: ядро 8ч; ОТКАТ — 8ч или стоп за экстремум отката.
 </div>
 
 <div class="toast" id="toast"></div>
@@ -184,16 +184,15 @@ tr.crow{cursor:pointer}tr.crow:hover td{background:rgba(56,189,248,.04)}
 const BASE='https://fapi.binance.com', WS_MINI='wss://fstream.binance.com/ws/!miniTicker@arr';
 let CFG={rank:168,brk:24,q:0.20,fee:0.0009,sess:0.45,wend:0.30,per:5,klim:250,
   holdH:8, catchEdge:0.3, catchMax:1.0, armWithin:3.0, topN:150, volMin:5e6,
-  swN:2, swLookback:48, earlyLateCut:72, startMidCut:40, roomGo:2.0, roomTight:1.0, ech4hBars:42};
+  swN:2, swLookback:48, armLateCut:80, armTimeout:14, waveWin:80, roomGo:2.0, roomTight:1.0, zigATR:2.2, zigMinPct:0.012,
+  trendADX:22, pbStochLow:30, pbStochHigh:70};
 const CONC=5, CONC2=3;
-const TYPES=['ПРОБИТИЕ','ДОГОН','НАЧАЛО','СЕРЕДИНА'];   // типы входа (сторона у всех = XSEC)
+const TYPES=['ПРОБИТИЕ','ДОГОН','ОТКАТ'];
 const PROVEN=new Set(['ПРОБИТИЕ','ДОГОН']);
-const EARLY=new Set(['НАЧАЛО','СЕРЕДИНА']);
-const TPILL={'ПРОБИТИЕ':'p-brk','ДОГОН':'p-catch','НАЧАЛО':'p-start','СЕРЕДИНА':'p-mid','УШЛА':'p-gone'};
-let TG={early:true,gateRoom:false,gateVol:false,
-  show:{'ПРОБИТИЕ':true,'ДОГОН':true,'НАЧАЛО':true,'СЕРЕДИНА':true}};
+const TPILL={'ПРОБИТИЕ':'p-brk','ДОГОН':'p-catch','ОТКАТ':'p-pb','УШЛА':'p-gone'};
+let TG={pullback:true,gateVol:false,show:{'ПРОБИТИЕ':true,'ДОГОН':true,'ОТКАТ':true}};
 let coins={}, syms=[], livePx={}, liveOn=false, autoSim=true, ws=null, rankTimer=null, exitTimer=null;
-let volGateOn=false, expanded=new Set(), lastEarly={};
+let volGateOn=false, expanded=new Set(), ARMED={};
 let SIM={trades:[],open:[]};
 let LOG=[]; const LOG_MAX=3000;
 const $=id=>document.getElementById(id);
@@ -221,16 +220,6 @@ const calcADX=(h,l,c,p=14)=>{if(c.length<p*2)return{adx:0,pdi:0,ndi:0};let tr=[]
   let at=rma(tr,p),pd=rma(pdm,p).map((v,i)=>(v/at[i])*100),nd=rma(ndm,p).map((v,i)=>(v/at[i])*100);
   let dx=pd.map((pv,i)=>{let s=pv+nd[i];return s===0?0:Math.abs(pv-nd[i])/s*100;});let ax=rma(dx,p);
   return{adx:ax[ax.length-1]||0,pdi:pd[pd.length-1]||0,ndi:nd[nd.length-1]||0};};
-const calcBB=(c,p=20,m=2)=>{let b=c.slice(-p).reduce((a,x)=>a+x)/p;let std=Math.sqrt(c.slice(-p).reduce((a,x)=>a+Math.pow(x-b,2),0)/p);return{upper:b+std*m,lower:b-std*m,basis:b,width:(std*m*2/b)*100};};
-const calcVWAP=(h,l,c,v,t)=>{const lastT=t[t.length-1],dayStart=Math.floor(lastT/86400000)*86400000;let pv=0,sv=0,n=0;
-  for(let i=0;i<c.length;i++){if(t[i]>=dayStart){const tp=(h[i]+l[i]+c[i])/3;pv+=tp*v[i];sv+=v[i];n++;}}
-  if(n>=10&&sv>0&&!isNaN(sv))return pv/sv;const s=Math.max(0,c.length-50);pv=0;sv=0;for(let i=s;i<c.length;i++){let tp=(h[i]+l[i]+c[i])/3;pv+=tp*v[i];sv+=v[i];}return(sv===0||isNaN(sv))?c[c.length-1]:pv/sv;};
-const divCheck=(prices,rs,lb=20)=>{if(prices.length<lb)return'NONE';const cp=prices[prices.length-1],cr=rs[rs.length-1];let sH=[],sL=[];
-  for(let i=prices.length-lb+2;i<prices.length-2;i++){
-    if(prices[i]>prices[i-1]&&prices[i]>prices[i-2]&&prices[i]>prices[i+1]&&prices[i]>prices[i+2])sH.push(i);
-    if(prices[i]<prices[i-1]&&prices[i]<prices[i-2]&&prices[i]<prices[i+1]&&prices[i]<prices[i+2])sL.push(i);}
-  if(sL.length>0){const m=sL[sL.length-1];if(cp<prices[m]&&cr>rs[m]+5)return'BULL';}
-  if(sH.length>0){const m=sH[sH.length-1];if(cp>prices[m]&&cr<rs[m]-5)return'BEAR';}return'NONE';};
 const calcFib=(hArr,lArr,cArr,atr)=>{let h=Math.max(...hArr),l=Math.min(...lArr);const mi=hArr.indexOf(h),ni=lArr.indexOf(l);
   if(h-Math.max(cArr[mi],hArr[Math.max(0,mi-1)])>3*atr)h=Math.max(...cArr);
   if(Math.min(cArr[ni],lArr[Math.max(0,ni-1)])-l>3*atr)l=Math.min(...cArr);
@@ -245,32 +234,12 @@ function stackLevels(bids,asks,price){const bins={},step=price*0.004;
   const nearAsk=walls.filter(w=>w.side==='ask'&&w.p>price).sort((a,b)=>a.p-b.p)[0];
   const nearBid=walls.filter(w=>w.side==='bid'&&w.p<price).sort((a,b)=>b.p-a.p)[0];
   return{nearAsk:nearAsk?.p||null,nearBid:nearBid?.p||null};}
-/* — метки состояния A (справочные; НЕ сторона, НЕ сигнал) — */
-function exhaustionFilter(r,macro,dir){if(dir!=='UP'&&dir!=='DN')return{heat:0,veto:false,flags:[]};
-  const up=dir==='UP';let heat=0;const flags=[];
-  if(up?r.rsi1h>72:r.rsi1h<28){heat+=2;flags.push('RSI1h'+r.rsi1h.toFixed(0));}else if(up?r.rsi1h>68:r.rsi1h<32){heat+=1;}
-  if(r.stochK!=null&&(up?r.stochK>88:r.stochK<12)){heat+=1;flags.push('StochK'+r.stochK.toFixed(0));}
-  if(macro&&macro.stoch4h!=null&&(up?macro.stoch4h>80:macro.stoch4h<20)){heat+=2;flags.push('StochRSI4h');}
-  if(r.cvd15!=null&&r.buyPct!=null){if(up&&r.cvd15<0&&r.buyPct<48){heat+=2;flags.push('CVDраспр');}else if(!up&&r.cvd15>0&&r.buyPct>52){heat+=2;flags.push('CVDаккум');}}
-  if(up?r.mf15>82:r.mf15<18)heat+=1;
-  return{heat,veto:heat>=4,flags};}
-function calcRevReadiness(r){let s=0;const rx=r.rsi15<40?Math.min(100,(40-r.rsi15)*4):r.rsi15>60?Math.min(100,(r.rsi15-60)*4):0;s+=rx*0.3;
-  if(r.dv==='BULL'||r.dv==='BEAR')s+=35;if(r.stochK&&(r.stochK<25||r.stochK>75))s+=20;if(r.adxVal<20)s+=15;return Math.min(100,Math.round(s));}
-function classifyMove(r,macro,dir){const revReadiness=calcRevReadiness(r);
-  const mfiFall=r.mf15_prev!=null&&r.mf15<r.mf15_prev,mfiRise=r.mf15_prev!=null&&r.mf15>r.mf15_prev;
-  let exhaust='none';
-  if(r.rsi15>75&&(mfiFall||r.dv==='BEAR')&&r.adxVal<40)exhaust='up-exhaust';
-  else if(r.rsi15<25&&(mfiRise||r.dv==='BULL')&&r.adxVal<40)exhaust='dn-exhaust';
-  let pullback=false;const up=dir==='UP';const aligned=up?(r.e50>r.e200):(r.e50<r.e200);
-  if(dir&&aligned&&r.adxVal>=25){if(up&&r.rsi15>=40&&r.rsi15<48)pullback=true;else if(!up&&r.rsi15>52&&r.rsi15<=60)pullback=true;}
-  return{exhaust,revReadiness,pullback};}
-function breakoutQuality(rec15,avg15,level,dir,firedNow){
-  if(!firedNow||!rec15||!rec15.length)return null;const up=dir==='UP';
-  const beyond=k=>up?k.c>level:k.c<level;let bo=null;
-  for(let i=rec15.length-1;i>=1;i--){if(beyond(rec15[i])&&!beyond(rec15[i-1])){bo=rec15[i];break;}}
-  if(!bo){const cands=rec15.filter(beyond);if(cands.length)bo=cands.reduce((a,b)=>b.v>a.v?b:a);}
-  if(!bo)return{good:false};
-  const volOk=bo.v>=1.5*avg15;const cvdOk=up?bo.d>0:bo.d<0;return{good:volOk&&cvdOk};}
+function exhaustion(r,dir){if(dir!=='UP'&&dir!=='DN')return{heat:0,veto:false};const up=dir==='UP';let heat=0;
+  if(up?r.rsi1h>72:r.rsi1h<28)heat+=2;else if(up?r.rsi1h>68:r.rsi1h<32)heat+=1;
+  if(r.stochK!=null&&(up?r.stochK>88:r.stochK<12))heat+=1;
+  if(r.st4!=null&&(up?r.st4>80:r.st4<20))heat+=2;
+  if(r.cvd15!=null&&r.buyPct!=null){if(up&&r.cvd15<0&&r.buyPct<48)heat+=2;else if(!up&&r.cvd15>0&&r.buyPct>52)heat+=2;}
+  return{heat,veto:heat>=4};}
 
 /* ================= ФИЛЬТР АКЦИЙ ================= */
 function isStock(k){let inW=0,tot=0,wend=0,wc=0,wday=0,dc=0;
@@ -279,21 +248,47 @@ function isStock(k){let inW=0,tot=0,wend=0,wc=0,wday=0,dc=0;
   const sess=tot>0?inW/tot:1;const wendAvg=wc>0?wend/wc:0,wdayAvg=dc>0?wday/dc:1;const wratio=wdayAvg>0?wendAvg/wdayAvg:1;
   return (sess>=CFG.sess)||(wratio<CFG.wend);}
 
-/* ================= SWING-СТРУКТУРА (фрактал, 1 параметр) ================= */
-function recentSwings(h,l,n){let swHigh=null,swLow=null;
-  for(let i=n-1-CFG.swN;i>=Math.max(CFG.swN,n-1-CFG.swLookback);i--){
-    let isH=true,isL=true;
-    for(let j=1;j<=CFG.swN;j++){if(h[i]<h[i-j]||h[i]<h[i+j])isH=false;if(l[i]>l[i-j]||l[i]>l[i+j])isL=false;}
-    if(isH&&swHigh==null)swHigh=h[i];
-    if(isL&&swLow==null)swLow=l[i];
-    if(swHigh!=null&&swLow!=null)break;}
+/* ================= SWING + ВОЛНЫ (фрактал, геометрия) ================= */
+function swingSeq(h,l,n,win){const pts=[];const N=CFG.swN;
+  for(let i=Math.max(N,n-1-win);i<=n-1-N;i++){let isH=true,isL=true;
+    for(let j=1;j<=N;j++){if(h[i]<h[i-j]||h[i]<h[i+j])isH=false;if(l[i]>l[i-j]||l[i]>l[i+j])isL=false;}
+    if(isH)pts.push({i,t:'H',p:h[i]});if(isL)pts.push({i,t:'L',p:l[i]});}
+  return pts;}
+function recentSwings(pts){let swHigh=null,swLow=null,swLowFloor=null,swHighCeil=null;
+  for(let k=pts.length-1;k>=0;k--){if(pts[k].t==='H'&&swHigh==null)swHigh=pts[k].p;if(pts[k].t==='L'&&swLow==null)swLow=pts[k].p;if(swHigh!=null&&swLow!=null)break;}
   return{swHigh,swLow};}
+// волна по значимым разворотам (зигзаг, порог = множитель ATR) — отсекает мелкую рябь
+function zigzag(h,l,thr){const n=h.length;const piv=[];if(n<3||!(thr>0))return piv;
+  let dir=0,extIdx=0,extP=h[0],hiIdx=0,hiP=h[0],loIdx=0,loP=l[0];
+  for(let i=1;i<n;i++){
+    if(dir===0){
+      if(h[i]>hiP){hiP=h[i];hiIdx=i;}if(l[i]<loP){loP=l[i];loIdx=i;}
+      if(hiP-loP>thr){dir=(hiIdx>loIdx)?1:-1;
+        if(dir===1){piv.push({i:loIdx,t:'L',p:loP});extP=hiP;extIdx=hiIdx;}
+        else{piv.push({i:hiIdx,t:'H',p:hiP});extP=loP;extIdx=loIdx;}}
+    }else if(dir===1){
+      if(h[i]>extP){extP=h[i];extIdx=i;}
+      if(extP-l[i]>thr){piv.push({i:extIdx,t:'H',p:extP});dir=-1;extP=l[i];extIdx=i;}
+    }else{
+      if(l[i]<extP){extP=l[i];extIdx=i;}
+      if(h[i]-extP>thr){piv.push({i:extIdx,t:'L',p:extP});dir=1;extP=h[i];extIdx=i;}}}
+  if(dir!==0)piv.push({i:extIdx,t:dir===1?'H':'L',p:extP});
+  return piv;}
+// какая по счёту волна в текущем тренде + длина последней завершённой ноги
+function waveInfoZ(piv,dir,n,win){if(!piv||!piv.length)return{wave:0,legLen:null};
+  const recent=piv.filter(p=>p.i>=n-1-win);
+  const wave=recent.filter(p=>dir==='UP'?p.t==='H':p.t==='L').length;
+  let legLen=null;
+  for(let k=piv.length-1;k>=1;k--){
+    if(dir==='UP'&&piv[k].t==='H'){for(let m=k-1;m>=0;m--){if(piv[m].t==='L'){legLen=piv[k].p-piv[m].p;break;}}break;}
+    if(dir==='DN'&&piv[k].t==='L'){for(let m=k-1;m>=0;m--){if(piv[m].t==='H'){legLen=piv[m].p-piv[k].p;break;}}break;}}
+  return{wave,legLen};}
 
 /* ================= ПРОТОКОЛ ================= */
 function logEvent(type,sym,data){LOG.push({ts:Date.now(),type,sym:sym||null,data:data||null});if(LOG.length>LOG_MAX)LOG.splice(0,LOG.length-LOG_MAX);
   saveLog();$('logN2').textContent=LOG.length;if($('logWrap').style.display==='block')renderLog();}
-function saveLog(){try{localStorage.setItem('rk_merge_log_v2',JSON.stringify(LOG.slice(-LOG_MAX)));}catch(e){}}
-function restoreLog(){try{const s=localStorage.getItem('rk_merge_log_v2');if(s)LOG=JSON.parse(s);}catch(e){LOG=[];}}
+function saveLog(){try{localStorage.setItem('rk_merge_log_v3',JSON.stringify(LOG.slice(-LOG_MAX)));}catch(e){}}
+function restoreLog(){try{const s=localStorage.getItem('rk_merge_log_v3');if(s)LOG=JSON.parse(s);}catch(e){LOG=[];}}
 function flat(d){if(d==null)return'';if(typeof d!=='object')return String(d);
   return Object.entries(d).map(([k,v])=>`${k}=${typeof v==='number'?(Number.isInteger(v)?v:v.toFixed(3)):v}`).join(' ');}
 function renderLog(){const rows=[...LOG].reverse().slice(0,400);
@@ -310,7 +305,7 @@ function exportLog(){let csv='\uFEFFВремя,Событие,Монета,Да�
   csvDL('rk_merge_protocol.csv',csv);}
 function tsISO(x){return x?new Date(x).toISOString():'';}
 
-/* ================= СКАН — слой 0 ================= */
+/* ================= СКАН ================= */
 async function fullScan(){
   $('scanBtn').disabled=true;$('scanBtn').textContent='...';$('banner').classList.remove('show');
   const t0=Date.now();logEvent('scan_start',null,{live:liveOn});
@@ -323,14 +318,15 @@ async function fullScan(){
       if(k.length<need)return null;if(isStock(k)){stocks++;return{sym,stock:true};}
       const c=k.map(x=>+x[4]),h=k.map(x=>+x[2]),l=k.map(x=>+x[3]),v=k.map(x=>+x[5]),n=c.length;
       const hh=Math.max(...h.slice(n-1-CFG.brk,n-1)),ll=Math.min(...l.slice(n-1-CFG.brk,n-1));
-      const rsi1h=(a=>a[a.length-1])(rsiArr(c)),ad=calcADX(h,l,c);
-      const e50=ema(c,50),e200=ema(c,200),atr1h=calcATR(h,l,c);
-      const sw=recentSwings(h,l,n);
+      const rsi1h=(a=>a[a.length-1])(rsiArr(c)),ad=calcADX(h,l,c),atr1h=calcATR(h,l,c);
+      const e50=ema(c,50),e200=ema(c,200);
+      const pts=swingSeq(h,l,n,CFG.waveWin);const sw=recentSwings(pts);
+      const piv=zigzag(h,l,Math.max(CFG.zigATR*atr1h,c[n-1]*CFG.zigMinPct));
       const w=Math.min(168,n-1),lo=Math.min(...l.slice(n-1-w,n-1)),hi=Math.max(...h.slice(n-1-w,n-1));
       let volNow=0;for(let i=n-24;i<n;i++)volNow+=Math.abs(c[i]/c[i-1]-1);volNow/=24;
       const pj=n-1-168;let vp=0,vc=0;for(let i=Math.max(1,pj-24);i<pj;i++){vp+=Math.abs(c[i]/c[i-1]-1);vc++;}const volPast=vc>0?vp/vc:0;
-      const ind={rsi1h,adx1h:ad.adx,e50,e200,atr1h};
-      return{sym,price:c[n-1],mom:c[n-1]/c[n-1-CFG.rank]-1,hh,ll,lo168:lo,hi168:hi,swHigh:sw.swHigh,swLow:sw.swLow,c,ind,volNow,volPast};
+      return{sym,price:c[n-1],mom:c[n-1]/c[n-1-CFG.rank]-1,hh,ll,lo168:lo,hi168:hi,swHigh:sw.swHigh,swLow:sw.swLow,pivots:piv,nbars:n,
+        ind:{rsi1h,adx1h:ad.adx,atr1h,e50,e200},volNow,volPast};
     },CONC,p=>$('pf').style.width=(p*100)+'%');
     const rows=res.filter(r=>r&&!r.stock);
     $('uinfo').innerHTML=`крипта <b>${rows.length}</b> · акций <b>${stocks}</b>`;
@@ -344,50 +340,59 @@ async function fullScan(){
     const prev=coins;coins={};syms=[];
     for(const r of rows){const isL=lead.has(r.sym),isB=lag.has(r.sym);const pv=prev[r.sym]||{};
       const side=isL?'UP':isB?'DN':null;const level=isL?r.hh:isB?r.ll:null;
-      let age=null;if(level!=null&&side){const n=r.c.length,cr=r.c;
-        for(let i=n-2;i>=Math.max(1,n-72);i--){const cx=side==='UP'?(cr[i]>level&&cr[i-1]<=level):(cr[i]<level&&cr[i-1]>=level);if(cx){age=n-1-i;break;}}
-        if(age==null&&((side==='UP'&&r.price>level)||(side==='DN'&&r.price<level)))age=0;}
+      const wv=side?waveInfoZ(r.pivots,side,r.nbars,CFG.waveWin):{wave:0,legLen:null};
       coins[r.sym]={sym:r.sym,price:r.price,mom:r.mom,hh:r.hh,ll:r.ll,lo168:r.lo168,hi168:r.hi168,swHigh:r.swHigh,swLow:r.swLow,
-        ind:r.ind,side,level,isLead:isL,isLag:isB,age,deep:pv.deep||null,handled:pv.handled||{}};
+        ind:r.ind,side,level,isLead:isL,isLag:isB,wave:wv.wave,legLen:wv.legLen,deep:pv.deep||null,handled:pv.handled||{}};
       syms.push(r.sym);}
     $('rankTs').textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
     logEvent('scan_done',null,{крипта:rows.length,лид:lead.size,луз:lag.size,гейт:volGateOn?'расш':'сжат',мс:Date.now()-t0});
     $('pf').style.width='0%';
-    openEntries();render();
+    updateArming();openCore();render();
     await enrichInPlay();
   }catch(e){$('banner').textContent='Ошибка: '+e.message+' — нужен https (GitHub Pages)';$('banner').classList.add('show');logEvent('scan_error',null,{msg:String(e.message)});}
   $('scanBtn').disabled=false;$('scanBtn').textContent='Скан';
 }
 
-/* ================= ГЕОМЕТРИЯ СИГНАЛА (сторона = ТОЛЬКО XSEC) ================= */
+/* ================= ГЕОМЕТРИЯ (сторона = ТОЛЬКО XSEC) ================= */
 function fired(c){return c.side==='UP'?c.price>c.hh:c.side==='DN'?c.price<c.ll:false;}
 function distBrk(c){if(c.side==='UP')return(c.hh-c.price)/c.price*100;if(c.side==='DN')return(c.price-c.ll)/c.price*100;return null;}
 function beyondPct(c){if(!fired(c))return null;return c.side==='UP'?(c.price-c.hh)/c.hh*100:(c.ll-c.price)/c.ll*100;}
 function pathPct(c){const d=c.side;if(!d)return null;const rng=c.hi168-c.lo168;if(rng<=0)return null;
   let e=(c.price-c.lo168)/rng*100;e=Math.max(0,Math.min(100,e));return d==='DN'?100-e:e;}
-// ранний слом swing-структуры В СТОРОНУ XSEC, пока 24ч не пробит
-function earlyBreak(c){if(!c.side||fired(c))return null;const up=c.side==='UP';
-  const lvl=up?c.swHigh:c.swLow;if(lvl==null)return null;
-  const broke=up?(c.price>lvl):(c.price<lvl);if(!broke)return null;
-  const p=pathPct(c);if(p==null||p>CFG.earlyLateCut)return null;
-  return p<CFG.startMidCut?'НАЧАЛО':'СЕРЕДИНА';}
-function typeOf(c){if(!c.side)return null;
-  if(fired(c)){const b=beyondPct(c);if(b<=CFG.catchEdge)return'ПРОБИТИЕ';if(b<=CFG.catchMax)return'ДОГОН';return'УШЛА';}
-  if(TG.early){const eb=earlyBreak(c);if(eb)return eb;}return null;}
-function typeDir(c){return c.side;}   // направление ВСЕГДА XSEC
-// гейт «запаса хода» из глубины (наблюдательный)
-function gateOf(c){const d=c.deep;if(!d||d.roomAhead==null)return'NONE';
-  const hot=d.oh&&d.oh.veto;
-  if(hot&&d.roomAhead<CFG.roomTight)return'CAUT';       // перегрет + места мало = ловушка
-  if(d.roomAhead>=CFG.roomGo&&!hot)return'GO';          // есть запас, не перегрет
-  return'NEU';}
 
-/* ================= СЛОЙ 3 — глубина A по in-play ================= */
+/* ===== ВЗВОД: слом swing в сторону XSEC → монета ждёт отката ===== */
+function updateArming(){let n=0;
+  for(const s of syms){const c=coins[s];if(!c||!c.side){delete ARMED[s];continue;}
+    if(fired(c)){delete ARMED[s];continue;}                 // пробила 24ч — это уже ядро, не откат
+    const up=c.side==='UP';const swLvl=up?c.swHigh:c.swLow;
+    const a=ARMED[s];
+    if(a){
+      a.scans++;
+      const cancel=up?(c.price<a.floor):(c.price>a.floor);  // структура сломана против тренда
+      if(cancel){logEvent('disarm',s,{причина:'структура'});delete ARMED[s];continue;}
+      if(a.scans>CFG.armTimeout){logEvent('disarm',s,{причина:'таймаут'});delete ARMED[s];continue;}
+      n++;
+    } else {
+      if(swLvl==null)continue;
+      const broke=up?(c.price>swLvl):(c.price<swLvl);
+      const p=pathPct(c);
+      // «старшие в силе»: есть тренд (ADX) и цена по стороне EMA-стека — иначе это чоп, не взводим
+      const e50=c.ind.e50,e200=c.ind.e200;
+      const trend=c.ind.adx1h>=CFG.trendADX && e50!=null && e200!=null &&
+        (up?(c.price>e50&&e50>e200):(c.price<e50&&e50<e200));
+      if(!broke||p==null||p>CFG.armLateCut||!trend)continue;
+      ARMED[s]={side:c.side,breakLevel:swLvl,floor:up?c.swLow:c.swHigh,armPrice:c.price,ts:Date.now(),scans:0};
+      logEvent('arm',s,{напр:c.side,уровень:+swLvl.toFixed(6),adx:+c.ind.adx1h.toFixed(0)});n++;
+    }}
+  $('armN').textContent=n;}
+function isArmed(c){return !!ARMED[c.sym];}
+
+/* ================= СЛОЙ 3 — глубина A + сигнал конца отката (5м) ================= */
 function inPlayList(){const set=new Set(SIM.open.map(t=>t.sym));
-  for(const s of syms){const c=coins[s];if(!c||!c.side)continue;const t=typeOf(c);const d=distBrk(c);
-    if(t&&t!=='УШЛА')set.add(s);else if(d!=null&&d<=CFG.armWithin)set.add(s);}
+  for(const s of syms){const c=coins[s];if(!c||!c.side)continue;const t=coreType(c);const d=distBrk(c);
+    if(t&&t!=='УШЛА')set.add(s);else if(isArmed(c))set.add(s);else if(d!=null&&d<=CFG.armWithin)set.add(s);}
   return[...set].filter(s=>coins[s]);}
-async function enrichInPlay(){const list=inPlayList();$('mtfN').textContent='0/'+list.length;$('inplayN').textContent=list.length;let done=0;
+async function enrichInPlay(){const list=inPlayList();$('mtfN').textContent='0/'+list.length;let done=0;
   await pool(list,async sym=>{try{
       const[k5,k15,k4h,depth]=await Promise.all([
         fetchJSON(`${BASE}/fapi/v1/klines?symbol=${sym}&interval=5m&limit=60`),
@@ -396,95 +401,119 @@ async function enrichInPlay(){const list=inPlayList();$('mtfN').textContent='0/'
         fetchJSON(`${BASE}/fapi/v1/depth?symbol=${sym}&limit=100`)]);
       coins[sym].deep=deepAnalyze(coins[sym],k5,k15,k4h,depth);
     }catch(e){}done++;$('mtfN').textContent=done+'/'+list.length;},CONC2);
-  logEvent('enrich',null,{монет:list.length});render();}
+  logEvent('enrich',null,{монет:list.length});openPullback();render();}
+
+// конец отката: младшие (5м) разгрузились StochRSI и развернулись обратно к тренду + подтверждение ценой + старшие (4ч) не против
+function pullbackSignal(k5,side,st4k,st4d){const o=k5.map(x=>+x[1]),h=k5.map(x=>+x[2]),l=k5.map(x=>+x[3]),c=k5.map(x=>+x[4]);
+  const n=c.length;if(n<40)return{pulled:false,ready:false,stop:null,sr5:null};
+  const sr=stochRSI(c.slice(0,-1)),srp=stochRSI(c.slice(0,-2));const i=n-2;   // последний ЗАКРЫТЫЙ 5м-бар
+  const k=sr.k,d=sr.d,kp=srp.k;const macroOk=side==='UP'?(st4k==null||st4k>=st4d):(st4k==null||st4k<=st4d);
+  if(side==='UP'){
+    const dipped=Math.min(l[i-1],l[i-2],l[i-3])<Math.min(o[i-2],o[i-3]);       // цена откатывала вниз
+    const wasLow=(kp!=null&&kp<CFG.pbStochLow)||(k!=null&&k<CFG.pbStochLow+8);  // StochRSI 5м разгрузился
+    const turnUp=k!=null&&d!=null&&k>d&&(kp==null||k>kp);                       // StochRSI 5м развернулся вверх
+    const priceUp=c[i]>o[i]&&c[i]>h[i-1];                                       // цена подтвердила
+    const stop=Math.min(l[i],l[i-1],l[i-2],l[i-3]);
+    return{pulled:dipped&&wasLow,ready:dipped&&wasLow&&turnUp&&priceUp&&macroOk,stop,sr5:k};
+  } else {
+    const popped=Math.max(h[i-1],h[i-2],h[i-3])>Math.max(o[i-2],o[i-3]);
+    const wasHigh=(kp!=null&&kp>CFG.pbStochHigh)||(k!=null&&k>CFG.pbStochHigh-8);
+    const turnDn=k!=null&&d!=null&&k<d&&(kp==null||k<kp);
+    const priceDn=c[i]<o[i]&&c[i]<l[i-1];
+    const stop=Math.max(h[i],h[i-1],h[i-2],h[i-3]);
+    return{pulled:popped&&wasHigh,ready:popped&&wasHigh&&turnDn&&priceDn&&macroOk,stop,sr5:k};
+  }}
 function deepAnalyze(c,k5,k15,k4h,depth){const ind=c.ind;const dir=c.side;
   const c5=k5.map(x=>+x[4]);const imp5=c5.length>3?(c5[c5.length-1]-c5[c5.length-4])/c5[c5.length-4]*100:0;
-  const H=k15.map(x=>+x[2]),L=k15.map(x=>+x[3]),C=k15.map(x=>+x[4]),V=k15.map(x=>+x[5]),TB=k15.map(x=>+x[9]),T=k15.map(x=>+x[0]);
+  const H=k15.map(x=>+x[2]),L=k15.map(x=>+x[3]),C=k15.map(x=>+x[4]),V=k15.map(x=>+x[5]),TB=k15.map(x=>+x[9]);
   const cc=C.slice(0,-1),ch=H.slice(0,-1),cl=L.slice(0,-1),cv=V.slice(0,-1);
-  const ra15=rsiArr(cc),rsi15=ra15[ra15.length-1];const sr=stochRSI(cc);
-  const mf15=mfi(ch,cl,cc,cv),mf15_prev=mfi(ch.slice(0,-1),cl.slice(0,-1),cc.slice(0,-1),cv.slice(0,-1));
-  const dv=divCheck(cc,ra15);
+  const ra15=rsiArr(cc),rsi15=ra15[ra15.length-1];const sr=stochRSI(cc);const mf15=mfi(ch,cl,cc,cv);
   let cvd15=0,bV=0,sV=0;const lb=Math.max(0,C.length-20);for(let i=lb;i<C.length;i++){const b=TB[i]||0,s=(V[i]||0)-b;cvd15+=b-s;bV+=b;sV+=s;}
   const buyPct=(bV+sV)>0?bV/(bV+sV)*100:50;const avg15=V.slice(-21,-1).reduce((a,b)=>a+b,0)/20;const vr15=avg15>0?V[V.length-2]/avg15:1;
-  const rec15=[];for(let i=Math.max(1,C.length-6);i<C.length-1;i++)rec15.push({c:C[i],v:V[i],d:(2*(TB[i]||0)-(V[i]||0))});
   const h4=k4h.map(x=>+x[2]),l4=k4h.map(x=>+x[3]),c4=k4h.map(x=>+x[4]);
-  const fib=calcFib(h4,l4,c4,ind.atr1h);const st4=stochRSI(c4);const macro={stoch4h:st4.k};
-  const stack=stackLevels(depth.bids,depth.asks,c.price);
-  const r={price:c.price,rsi1h:ind.rsi1h,adxVal:ind.adx1h,e50:ind.e50,e200:ind.e200,atr1h:ind.atr1h,
-    rsi15,stochK:sr.k,stochD:sr.d,mf15,mf15_prev,dv,cvd15,buyPct,vr:vr15};
-  const up=dir==='UP';
-  // запас хода: до ближайшего препятствия впереди (стена/фибо/24ч-уровень для раннего входа), в %
-  const px=c.price;const obst=[];
-  const wall=up?stack.nearAsk:stack.nearBid;if(wall!=null)obst.push(Math.abs(wall-px)/px*100);
-  const fibT=nearestFib(fib,px,up?'UP':'DN');if(fibT!=null)obst.push(Math.abs(fibT-px)/px*100);
-  if(!fired(c)&&c.level!=null){const dl=up?(c.level-px):(px-c.level);if(dl>0)obst.push(dl/px*100);} // до 24ч-грани (для раннего)
+  const fib=calcFib(h4,l4,c4,ind.atr1h);const s4=stochRSI(c4);const st4=s4.k;
+  const stack=stackLevels(depth.bids,depth.asks,c.price);const up=dir==='UP';const px=c.price;
+  const wall=up?stack.nearAsk:stack.nearBid;
+  const fibT=nearestFib(fib,px,up?'UP':'DN');
+  // запас хода до ближайшего препятствия
+  const obst=[];if(wall!=null)obst.push(Math.abs(wall-px)/px*100);if(fibT!=null)obst.push(Math.abs(fibT-px)/px*100);
+  if(!fired(c)&&c.level!=null){const dl=up?(c.level-px):(px-c.level);if(dl>0)obst.push(dl/px*100);}
   const roomAhead=obst.length?Math.min(...obst):null;
-  const oh=exhaustionFilter(r,macro,dir),mv=classifyMove(r,macro,dir);
-  const brk=breakoutQuality(rec15,avg15,c.level,dir,fired(c));
-  const d={imp5,rsi15,stochK:sr.k,mf15,dv,cvd15,buyPct,vr15,st4:st4.k,oh,mv,brk,
-    roomWall:wall!=null?Math.abs(wall-px)/px*100:null,roomFib:fibT!=null?Math.abs(fibT-px)/px*100:null,roomAhead};
-  d.gate=(function(){if(d.roomAhead==null)return'NONE';const hot=oh.veto;
-    if(hot&&d.roomAhead<CFG.roomTight)return'CAUT';if(d.roomAhead>=CFG.roomGo&&!hot)return'GO';return'NEU';})();
+  // ПРИБОР: проекция цели = длина прошлой ноги от текущей + ближайшая стена
+  const targetProjPct=c.legLen!=null?(c.legLen/px*100):null;
+  const targetWallPct=wall!=null?Math.abs(wall-px)/px*100:null;
+  // ПРИБОР: деньги
+  const money=(buyPct>57&&cvd15>0)?'входят':(buyPct<43&&cvd15<0)?'выходят':'вяло';
+  const oh=exhaustion({rsi1h:ind.rsi1h,stochK:sr.k,st4,cvd15,buyPct},dir);
+  const pb=pullbackSignal(k5,dir,s4.k,s4.d);
+  const d={imp5,rsi15,stochK:sr.k,mf15,cvd15,buyPct,vr15,st4,st4d:s4.d,sr5:pb.sr5,wall,fibT,roomAhead,
+    roomWall:wall!=null?Math.abs(wall-px)/px*100:null,roomFib:fibT!=null?Math.abs(fibT-px)/px*100:null,
+    targetProjPct,targetWallPct,money,oh,pb};
+  d.gate=(roomAhead==null)?'NONE':(oh.veto&&roomAhead<CFG.roomTight)?'CAUT':(roomAhead>=CFG.roomGo&&!oh.veto)?'GO':'NEU';
   return d;}
 
-/* ================= СИМ (baseline XSEC: 8ч, мейкер, одна нога) ================= */
+/* ================= ТИПЫ / СОСТОЯНИЕ ================= */
+function coreType(c){if(!c.side||!fired(c))return null;const b=beyondPct(c);
+  if(b<=CFG.catchEdge)return'ПРОБИТИЕ';if(b<=CFG.catchMax)return'ДОГОН';return'УШЛА';}
+function pbReady(c){return isArmed(c)&&c.deep&&c.deep.pb&&c.deep.pb.ready;}
+function typeOf(c){if(!c.side)return null;const ct=coreType(c);if(ct)return ct;if(isArmed(c))return'ОТКАТ';return null;}
+function armPhase(c){if(!isArmed(c))return null;if(pbReady(c))return'готов';if(c.deep&&c.deep.pb&&c.deep.pb.pulled)return'откат';return'взвод';}
+function gateOf(c){const d=c.deep;if(!d||d.roomAhead==null)return'NONE';return d.gate;}
+
+/* ================= СИМ ================= */
 function hasOpen(sym){return SIM.open.some(t=>t.sym===sym);}
 function isHandled(c,type){return c.handled&&c.handled[type]===c.level;}
 function markHandled(c,type){(c.handled||(c.handled={}))[type]=c.level;}
-function snapOf(c){const d=c.deep;if(!d)return{};const o=d.oh||{},m=d.mv||{};
-  return{heat:o.heat,veto:o.veto?'да':'',exhaust:m.exhaust&&m.exhaust!=='none'?m.exhaust:'',pull:m.pullback?'да':'',
-    brk:d.brk?(d.brk.good?'чистый':'слабый'):'',gate:d.gate,roomAhead:d.roomAhead!=null?+d.roomAhead.toFixed(2):null,
-    roomWall:d.roomWall!=null?+d.roomWall.toFixed(2):null,roomFib:d.roomFib!=null?+d.roomFib.toFixed(2):null,
-    rsi15:d.rsi15!=null?+d.rsi15.toFixed(0):null,stochK:d.stochK!=null?+d.stochK.toFixed(0):null,
-    mf15:d.mf15!=null?+d.mf15.toFixed(0):null,cvd:d.cvd15!=null?Math.round(d.cvd15):null,
-    st4:d.st4!=null?+d.st4.toFixed(0):null,imp:d.imp5!=null?+d.imp5.toFixed(1):null,vr:d.vr15!=null?+d.vr15.toFixed(1):null};}
-function canOpen(c,type){
-  if(!TG.show[type])return{ok:false};
-  if(EARLY.has(type)&&!TG.early)return{ok:false};
+function snapOf(c){const d=c.deep;if(!d)return{};
+  return{gate:d.gate,roomAhead:d.roomAhead!=null?+d.roomAhead.toFixed(2):null,roomWall:d.roomWall!=null?+d.roomWall.toFixed(2):null,
+    wave:c.wave,targetProj:d.targetProjPct!=null?+d.targetProjPct.toFixed(2):null,targetWall:d.targetWallPct!=null?+d.targetWallPct.toFixed(2):null,
+    money:d.money,heat:d.oh?d.oh.heat:null,veto:d.oh&&d.oh.veto?'да':'',adx:c.ind.adx1h!=null?+c.ind.adx1h.toFixed(0):null,rsi15:d.rsi15!=null?+d.rsi15.toFixed(0):null,
+    stochK:d.stochK!=null?+d.stochK.toFixed(0):null,cvd:d.cvd15!=null?Math.round(d.cvd15):null,st4:d.st4!=null?+d.st4.toFixed(0):null,
+    imp:d.imp5!=null?+d.imp5.toFixed(1):null,vr:d.vr15!=null?+d.vr15.toFixed(1):null};}
+function canOpen(c,type){if(!TG.show[type])return{ok:false};
+  if(type==='ОТКАТ'&&!TG.pullback)return{ok:false};
   if(TG.gateVol&&PROVEN.has(type)&&!volGateOn)return{ok:false,skip:'вола-сжатие'};
-  if(TG.gateRoom&&c.deep&&c.deep.gate==='CAUT')return{ok:false,skip:'тесно(перегрев+нет места)'};
   return{ok:true};}
-function openTrade(c,type){
-  if(hasOpen(c.sym)||isHandled(c,type))return;
-  const chk=canOpen(c,type);if(!chk.ok){if(chk.skip)logEvent('skip',c.sym,{тип:type,причина:chk.skip});return;}
-  const dir=c.side;                                   // направление = XSEC, точка
-  const entry=PROVEN.has(type)?c.level:(dir==='UP'?c.swHigh:c.swLow)||c.price;
-  const t={sym:c.sym,type,dir,entry,ts:Date.now(),mom:c.mom,gate:c.deep?c.deep.gate:'NONE',
-    path:pathPct(c),age:c.age,mfe:0,mae:0,snap:snapOf(c)};
-  SIM.open.push(t);markHandled(c,type);saveSim();
-  logEvent('trade_open',c.sym,{тип:type,напр:dir,цена:+(+entry).toFixed(6),гейт:t.gate});
+function openTrade(c,type,entryPx,stop){
+  if(hasOpen(c.sym))return;const chk=canOpen(c,type);if(!chk.ok){if(chk.skip)logEvent('skip',c.sym,{тип:type,причина:chk.skip});return;}
+  const dir=c.side;const entry=entryPx!=null?entryPx:(PROVEN.has(type)?c.level:c.price);
+  const t={sym:c.sym,type,dir,entry,stop:stop!=null?stop:null,ts:Date.now(),mom:c.mom,gate:c.deep?c.deep.gate:'NONE',
+    wave:c.wave,path:pathPct(c),mfe:0,mae:0,snap:snapOf(c)};
+  SIM.open.push(t);if(PROVEN.has(type))markHandled(c,type);saveSim();
+  logEvent('trade_open',c.sym,{тип:type,напр:dir,цена:+(+entry).toFixed(6),стоп:stop!=null?+stop.toFixed(6):'',волна:c.wave,гейт:t.gate});
   toast(type+' '+(dir==='UP'?'ЛОНГ':'ШОРТ')+' '+c.sym.replace('USDT',''));render();}
-function snapEarly(){const m={};for(const s of syms){const c=coins[s];if(c&&c.side&&!fired(c))m[s]=!!earlyBreak(c);}return m;}
-function openEntries(){if(!autoSim){lastEarly=snapEarly();return;}
-  for(const s of syms){const c=coins[s];if(!c||!c.side)continue;
-    if(fired(c)){const b=beyondPct(c);
-      if(b<=CFG.catchEdge)openTrade(c,'ПРОБИТИЕ');else if(b<=CFG.catchMax)openTrade(c,'ДОГОН');}
-    else if(TG.early){const eb=earlyBreak(c);
-      if(eb){const was=lastEarly[s];if(!was)openTrade(c,eb);}}}   // ранний вход — только на переходе слома
-  lastEarly=snapEarly();}
+function openCore(){if(!autoSim)return;
+  for(const s of syms){const c=coins[s];if(!c||!c.side||!fired(c))continue;const b=beyondPct(c);
+    if(b<=CFG.catchEdge&&!isHandled(c,'ПРОБИТИЕ'))openTrade(c,'ПРОБИТИЕ');
+    else if(b>CFG.catchEdge&&b<=CFG.catchMax&&!isHandled(c,'ДОГОН'))openTrade(c,'ДОГОН');}}
+function openPullback(){if(!autoSim||!TG.pullback)return;
+  for(const s of Object.keys(ARMED)){const c=coins[s];if(!c||hasOpen(s))continue;
+    if(pbReady(c)){openTrade(c,'ОТКАТ',c.price,c.deep.pb.stop);delete ARMED[s];}}   // вход по текущей цене, стоп за экстремум отката; один вход на взвод
+  $('armN').textContent=Object.keys(ARMED).length;}
 function floatNet(t,px){const dirLong=t.dir==='UP';return((dirLong?(px-t.entry):(t.entry-px))/t.entry)-CFG.fee;}
 function pxOf(s,f){return livePx[s]!=null?livePx[s]:(coins[s]?coins[s].price:f);}
 function manageTrades(){const now=Date.now();
   for(let i=SIM.open.length-1;i>=0;i--){const t=SIM.open[i];const px=pxOf(t.sym,null);if(px==null)continue;const dirLong=t.dir==='UP';
     const r=(dirLong?(px-t.entry):(t.entry-px))/t.entry;if(r>t.mfe)t.mfe=r;if(r<t.mae)t.mae=r;
+    if(t.stop!=null&&(dirLong?px<=t.stop:px>=t.stop)){closeTrade(t,i,px,'стоп');continue;}   // стоп только у ОТКАТ
     if(now-t.ts>=CFG.holdH*3600e3)closeTrade(t,i,px,'8ч');}}
 function closeTrade(t,i,exit,reason){const net=floatNet(t,exit);
   t.exit=exit;t.net=net;t.closed=Date.now();t.reason=reason;SIM.open.splice(i,1);saveSim();
   logEvent('trade_close',t.sym,{тип:t.type,причина:reason,чистый:+(net*100).toFixed(3),mfe:+(t.mfe*100).toFixed(2),mae:+(t.mae*100).toFixed(2)});
   SIM.trades.push(t);render();}
-function saveSim(){try{localStorage.setItem('rk_merge_sim_v2',JSON.stringify(SIM));}catch(e){}}
-function restoreSim(){try{const s=localStorage.getItem('rk_merge_sim_v2');if(s)SIM={...SIM,...JSON.parse(s)};}catch(e){}}
+function saveSim(){try{localStorage.setItem('rk_merge_sim_v3',JSON.stringify(SIM));}catch(e){}}
+function restoreSim(){try{const s=localStorage.getItem('rk_merge_sim_v3');if(s)SIM={...SIM,...JSON.parse(s)};}catch(e){}}
 function resetSim(){if(!confirm('Обнулить ВСЕ сделки сима? Необратимо.'))return;
-  SIM={trades:[],open:[]};saveSim();for(const s in coins)coins[s].handled={};lastEarly={};logEvent('sim_reset',null,null);render();toast('Сим обнулён');}
+  SIM={trades:[],open:[]};saveSim();for(const s in coins)coins[s].handled={};ARMED={};logEvent('sim_reset',null,null);render();toast('Сим обнулён');}
 
-/* ================= CSV сделок ================= */
+/* ================= CSV ================= */
 function exportTrades(){
-  let csv='\uFEFFСтатус,Тип,Направление,ГейтA,Открыта,Закрыта,Монета,Цена_входа,Выход,Причина,PNL%,MFE%,MAE%,Мом7д%,Путь%,Возраст_ч,'
-    +'ЗапасХода%,ДоСтены%,ДоФибо%,ПерегревHeat,Veto,Истощение,Откат,КачПробоя,RSI15,StochK,MFI15,CVD15,StochRSI4h,Импульс5м%,Объём×\n';
+  let csv='\uFEFFСтатус,Тип,Направление,ГейтA,Открыта,Закрыта,Монета,Цена_входа,Стоп,Выход,Причина,PNL%,MFE%,MAE%,Мом7д%,Путь%,'
+    +'Волна,ЦельПроекция%,ЦельСтена%,Деньги,ЗапасХода%,ADX1h,ПерегревHeat,Veto,RSI15,StochK,CVD15,StochRSI4h,Импульс5м%,Объём×\n';
   const line=(st,t,exit,net)=>{const s=t.snap||{};
-    return `"${st}","${t.type}","${t.dir}","${t.gate||''}","${tsISO(t.ts)}","${tsISO(t.closed)}","${t.sym}",${t.entry},${exit??''},"${t.reason||''}",`
-      +`${net!=null?(net*100).toFixed(3):''},${(t.mfe*100).toFixed(2)},${(t.mae*100).toFixed(2)},${(t.mom*100).toFixed(1)},${t.path!=null?t.path.toFixed(0):''},${t.age??''},`
-      +`${s.roomAhead??''},${s.roomWall??''},${s.roomFib??''},${s.heat??''},"${s.veto||''}","${s.exhaust||''}","${s.pull||''}","${s.brk||''}",${s.rsi15??''},${s.stochK??''},${s.mf15??''},${s.cvd??''},${s.st4??''},${s.imp??''},${s.vr??''}\n`;};
+    return `"${st}","${t.type}","${t.dir}","${t.gate||''}","${tsISO(t.ts)}","${tsISO(t.closed)}","${t.sym}",${t.entry},${t.stop??''},${exit??''},"${t.reason||''}",`
+      +`${net!=null?(net*100).toFixed(3):''},${(t.mfe*100).toFixed(2)},${(t.mae*100).toFixed(2)},${(t.mom*100).toFixed(1)},${t.path!=null?t.path.toFixed(0):''},`
+      +`${t.wave??''},${s.targetProj??''},${s.targetWall??''},"${s.money||''}",${s.roomAhead??''},${s.adx??''},${s.heat??''},"${s.veto||''}",${s.rsi15??''},${s.stochK??''},${s.cvd??''},${s.st4??''},${s.imp??''},${s.vr??''}\n`;};
   for(const t of SIM.trades)csv+=line('ЗАКРЫТА',t,t.exit,t.net);
   for(const t of SIM.open){const px=pxOf(t.sym,t.entry);csv+=line('ОТКРЫТА',t,px,floatNet(t,px));}
   csvDL('rk_merge_trades.csv',csv);}
@@ -492,33 +521,41 @@ function exportTrades(){
 /* ================= СОРТИРОВКА ================= */
 const SORT_MODES=['ВХОД','ГРАНЬ','ТИП','ПУТЬ','МОМ'];
 let sortMode=0;
-function cycleSort(){sortMode=(sortMode+1)%SORT_MODES.length;try{localStorage.setItem('rk_merge_sort_v2',sortMode);}catch(e){}render();}
-function firedProven(c){const t=typeOf(c);return fired(c)&&(t==='ПРОБИТИЕ'||t==='ДОГОН');}
-function armingX(c){const d=distBrk(c);return !fired(c)&&!!c.side&&d!=null&&d<=CFG.armWithin;}
-function aType(c){const t=typeOf(c);return(t&&EARLY.has(t))?t:null;}
-function rankKey(c){const open=hasOpen(c.sym),t=typeOf(c),gone=t==='УШЛА';
+function cycleSort(){sortMode=(sortMode+1)%SORT_MODES.length;try{localStorage.setItem('rk_merge_sort_v3',sortMode);}catch(e){}render();}
+function firedProven(c){const t=coreType(c);return t==='ПРОБИТИЕ'||t==='ДОГОН';}
+function armingNear(c){const d=distBrk(c);return !fired(c)&&!!c.side&&d!=null&&d<=CFG.armWithin;}
+function rankKey(c){const open=hasOpen(c.sym),t=typeOf(c),gone=coreType(c)==='УШЛА';
   const p=pathPct(c),bp=beyondPct(c),d=distBrk(c);
   if(sortMode===0){
     if(open)return[0,0];
-    if(firedProven(c))return[1,bp??9];
-    const at=aType(c);if(at&&p!=null&&p<55)return[2,p];
-    if(armingX(c))return[3,d??99];
-    if(at)return[4,p??99];
+    if(pbReady(c))return[1,0];                       // готовый откат — вход прямо сейчас
+    if(firedProven(c))return[2,bp??9];
+    if(isArmed(c))return[3,p??99];                   // взвод/откат ждут
+    if(armingNear(c))return[4,d??99];
     if(gone)return[6,0];return[5,d??99];}
   if(sortMode===1){
-    if(open)return[0,0];
-    if(firedProven(c))return[1,bp??9];
-    if(armingX(c))return[2,d??99];
-    if(aType(c))return[3,p??99];
-    if(gone)return[5,0];return[4,d??99];}
-  if(sortMode===2){
-    if(open)return[0,0];if(gone)return[99,0];
-    const idx=t?TYPES.indexOf(t):50;const key=PROVEN.has(t)?(bp??9):(p??99);return[10+idx,key];}
+    if(open)return[0,0];if(firedProven(c))return[1,bp??9];if(armingNear(c))return[2,d??99];if(isArmed(c))return[3,p??99];if(gone)return[5,0];return[4,d??99];}
+  if(sortMode===2){if(open)return[0,0];if(gone)return[99,0];const idx=t?TYPES.indexOf(t):50;return[10+idx,PROVEN.has(t)?(bp??9):(p??99)];}
   if(sortMode===3){if(open)return[0,0];return[1,p==null?999:p];}
   if(open)return[0,0];return[1,-(c.mom||0)];}
 function sortCmp(a,b){const A=rankKey(a),B=rankKey(b);if(A[0]!==B[0])return A[0]-B[0];if(A[1]!==B[1])return A[1]-B[1];
-  const ga=gateOf(a)==='GO'?0:1,gb=gateOf(b)==='GO'?0:1;if(ga!==gb)return ga-gb;
-  return (b.mom)-(a.mom);}
+  const ga=gateOf(a)==='GO'?0:1,gb=gateOf(b)==='GO'?0:1;if(ga!==gb)return ga-gb;return (b.mom)-(a.mom);}
+
+/* ================= ПОДСКАЗКА (приборы, без направления) ================= */
+function buildHint(c){const d=c.deep;if(!d)return{text:'анализ загружается…',caution:false,ready:false};
+  const up=c.side==='UP';const arrow=up?'↑':'↓';const P=[];let caution=false;const adx=c.ind.adx1h;const trend=adx>=25;
+  const ready=pbReady(c);
+  if(ready)P.push('▶ ГОТОВ ВХОД');
+  else if(isArmed(c)){P.push(armPhase(c)==='откат'?'откат выдыхается':'взвод · ждём отката');}
+  if(adx>=40)P.push('сильный тренд '+arrow);else if(trend)P.push('тренд '+arrow);else if(adx<18){P.push('флэт/чоп');caution=true;}
+  if(d.oh&&d.oh.veto){P.push('перегрет');caution=true;}
+  if(trend&&c.wave>=3){P.push('волна '+c.wave+'/поздно');caution=true;}
+  if(d.roomAhead!=null&&d.roomAhead<1){P.push('уперся');caution=true;}
+  if(d.money==='входят')P.push('деньги входят');else if(d.money==='выходят'){P.push('деньги выходят');caution=true;}
+  if(d.targetProjPct!=null){const near=d.targetWallPct!=null&&Math.abs(d.targetProjPct-d.targetWallPct)/Math.max(0.1,d.targetProjPct)<0.25;
+    P.push('цель ~'+d.targetProjPct.toFixed(1)+'%'+(near?'≈стена':''));}
+  if(!P.length)return{text:'спокойно',caution:false,ready:false};
+  return{text:P.slice(0,5).join(' · '),caution,ready};}
 
 /* ================= РЕНДЕР ================= */
 function fmt(p){if(p==null)return'—';const d=p<1?5:p<10?4:p<100?3:2;return p.toFixed(d);}
@@ -526,18 +563,18 @@ function pathBar(c){const p=pathPct(c);if(p==null)return'<span class="dim">—</
   const n=Math.round(p/20);let s='';for(let i=0;i<5;i++)s+=i<n?'<span style="color:var(--blue)">▓</span>':'<span style="color:var(--bd)">░</span>';
   return`${s} ${p.toFixed(0)}%`;}
 function gatePill(c){const g=gateOf(c);if(g==='NONE')return'<span class="pill g-neu">—</span>';
-  if(g==='GO')return'<span class="pill g-go">✓ЕСТЬ</span>';
-  if(g==='CAUT')return'<span class="pill g-caut">⚠ТЕСНО</span>';return'<span class="pill g-neu">·</span>';}
+  if(g==='GO')return'<span class="pill g-go">✓ЕСТЬ</span>';if(g==='CAUT')return'<span class="pill g-caut">⚠ТЕСНО</span>';return'<span class="pill g-neu">·</span>';}
 function typePill(c){const t=typeOf(c);if(!t)return'';return`<span class="pill ${TPILL[t]}">${t}</span>`;}
 function sideHTML(c){const d=c.side;return d==='UP'?'<span class="side-long">ЛОНГ ↑</span>':d==='DN'?'<span class="side-short">ШОРТ ↓</span>':'<span class="dim">—</span>';}
-function heatMark(c){if(c.deep&&c.deep.oh&&c.deep.oh.veto)return' <span class="heat" title="перегрев — справка, НЕ сторона">🔴</span>';return'';}
-function col4(c){const t=typeOf(c);
-  if(fired(c)&&t&&t!=='УШЛА')return`${typePill(c)} <span class="dim">@${fmt(c.level)}</span>${heatMark(c)}`;
-  if(t&&EARLY.has(t)){const lvl=c.side==='UP'?c.swHigh:c.swLow;return`${typePill(c)} <span class="dim">свинг ${fmt(lvl)}</span>${heatMark(c)}`;}
+function heatMark(c){if(c.deep&&c.deep.oh&&c.deep.oh.veto)return' <span class="heat" title="перегрев — справка">🔴</span>';return'';}
+function col4(c){const ct=coreType(c);
+  if(ct&&ct!=='УШЛА')return`${typePill(c)} <span class="dim">@${fmt(c.level)}</span>${heatMark(c)}`;
+  if(isArmed(c)){const ph=armPhase(c);
+    if(ph==='готов')return`<span class="pill p-pb">ОТКАТ ${c.side==='UP'?'↑':'↓'}</span> <span class="dim">вход</span>${heatMark(c)}`;
+    return`<span class="pill p-arm">${ph}</span> <span class="dim">ждём конца отката</span>${heatMark(c)}`;}
   const d=distBrk(c);if(d!=null)return`<span class="dim">до грани ${d.toFixed(2)}%</span>${heatMark(c)}`;
   return`<span class="dim">—</span>`;}
-function col5(c){if(fired(c)){const age=c.age!=null?` · <span class="dim">${c.age}ч</span>`:'';return pathBar(c)+age;}
-  if(typeOf(c))return pathBar(c);return'<span class="dim">—</span>';}
+function col5(c){if(fired(c)||isArmed(c))return pathBar(c);const d=distBrk(c);return d!=null?pathBar(c):'<span class="dim">—</span>';}
 function rowHTML(c){const exp=expanded.has(c.sym);
   let h=`<tr class="crow" onclick="toggleRow('${c.sym}')">`
     +`<td><span class="sym-c" data-sym="${c.sym}" onclick="event.stopPropagation();copyT(this)">${c.sym.replace('USDT','')}</span></td>`
@@ -545,22 +582,22 @@ function rowHTML(c){const exp=expanded.has(c.sym);
     +`<td>${col4(c)}</td><td>${col5(c)}</td><td>${gatePill(c)}</td></tr>`;
   if(exp)h+=detailHTML(c);return h;}
 function detailHTML(c){const d=c.deep;let inner;
-  if(!d)inner='<span class="dim">анализ A ещё не загружен…</span>';
-  else{const o=d.oh||{},m=d.mv||{};const g=(l,v)=>`<span class="grp"><span class="lbl">${l}</span> <b>${v}</b></span>`;
-    inner=g('запас хода',d.roomAhead!=null?d.roomAhead.toFixed(2)+'%':'—')+g('до стены',d.roomWall!=null?d.roomWall.toFixed(2)+'%':'—')+g('до фибо',d.roomFib!=null?d.roomFib.toFixed(2)+'%':'—')
-      +'<br>'+g('RSI15',d.rsi15?.toFixed(0)??'—')+g('StochK',d.stochK?.toFixed(0)??'—')+g('MFI',d.mf15?.toFixed(0)??'—')+g('ADX1h',c.ind.adx1h.toFixed(0))+g('StochRSI4h',d.st4?.toFixed(0)??'—')+g('импульс5м',d.imp5!=null?d.imp5.toFixed(1)+'%':'—')
-      +'<br>'+g('перегрев',(o.heat||0)+(o.veto?' ⚠':''))+g('истощение',m.exhaust&&m.exhaust!=='none'?m.exhaust:'—')+g('откат',m.pullback?'да':'—')+g('кач.пробоя',d.brk?(d.brk.good?'чистый':'слабый'):'—');
-    inner+='<br><span class="warnnote">Перегрев/истощение — справка, НЕ направление. Сторона задаётся только XSEC. Развороты по перегреву не торгуются.</span>';}
+  if(!d)inner='<span class="dim">анализ ещё не загружен…</span>';
+  else{const g=(l,v)=>`<span class="grp"><span class="lbl">${l}</span> <b>${v}</b></span>`;const hint=buildHint(c);const hc=hint.ready?'hint-go':(hint.caution?'hint-warn':'hint-ok');
+    inner=`<div class="hint ${hc}">${hint.text}</div>`
+      +g('волна',c.wave||'—')+g('цель-проекц',d.targetProjPct!=null?d.targetProjPct.toFixed(1)+'%':'—')+g('цель-стена',d.targetWallPct!=null?d.targetWallPct.toFixed(1)+'%':'—')+g('деньги',d.money||'—')
+      +'<br>'+g('запас хода',d.roomAhead!=null?d.roomAhead.toFixed(2)+'%':'—')+g('RSI15',d.rsi15?.toFixed(0)??'—')+g('StochK15',d.stochK?.toFixed(0)??'—')+g('StochK5м',d.sr5!=null?d.sr5.toFixed(0):'—')+g('StochRSI4h',d.st4?.toFixed(0)??'—')+g('ADX1h',c.ind.adx1h.toFixed(0))+g('импульс5м',d.imp5!=null?d.imp5.toFixed(1)+'%':'—')
+      +'<br>'+g('перегрев',(d.oh?d.oh.heat:0)+(d.oh&&d.oh.veto?' ⚠':''))+g('CVD15',d.cvd15!=null?Math.round(d.cvd15):'—')+g('объём','×'+(d.vr15?d.vr15.toFixed(1):'—'))+(isArmed(c)?g('стоп-отката',d.pb&&d.pb.stop?fmt(d.pb.stop):'—'):'');}
   return`<tr class="drow"><td colspan="6"><div class="detail">${inner}</div></td></tr>`;}
 function toggleRow(sym){if(expanded.has(sym))expanded.delete(sym);else expanded.add(sym);render();}
 function visibleCoins(all){const q=$('search').value.trim().toUpperCase();
   return all.filter(c=>{if(q&&!c.sym.includes(q))return false;const t=typeOf(c);
     if(t&&t!=='УШЛА'&&!TG.show[t])return false;return true;});}
-function hotFilter(c){if(!c.side)return false;const t=typeOf(c);const d=distBrk(c);
-  return hasOpen(c.sym)||(fired(c)&&t!=='УШЛА')||(t&&EARLY.has(t))||(d!=null&&d<=10);}
+function hotFilter(c){if(!c.side)return false;const t=coreType(c);const d=distBrk(c);
+  return hasOpen(c.sym)||(fired(c)&&t!=='УШЛА')||isArmed(c)||(d!=null&&d<=10);}
 function theadHTML(){return '<thead><tr><th>Монета</th><th>Сторона</th><th>7д</th>'
-  +`<th class="full-hd" onclick="cycleSort()" style="color:var(--blue)" title="Клик — сменить сортировку">Тип · уровень &#8645; ${SORT_MODES[sortMode]}</th>`
-  +'<th>Путь · возраст</th><th>Гейт A</th></tr></thead>';}
+  +`<th class="full-hd" onclick="cycleSort()" style="color:var(--blue)" title="Клик — сортировка">Тип · уровень &#8645; ${SORT_MODES[sortMode]}</th>`
+  +'<th>Путь</th><th>Гейт A</th></tr></thead>';}
 function renderHot(){let arr=syms.map(s=>coins[s]).filter(Boolean).filter(hotFilter);
   arr=visibleCoins(arr).sort(sortCmp);$('hotCnt').textContent=arr.length;
   if(!arr.length){$('hotWrap').innerHTML='<div class="empty">Нет кандидатов в игре.</div>';return;}
@@ -571,12 +608,12 @@ function renderFull(){if($('fullWrap').style.display==='none'||!$('fullWrap').st
 function toggleFull(){const w=$('fullWrap');const show=w.style.display==='none'||!w.style.display;w.style.display=show?'block':'none';$('fullToggle').textContent=show?'[скрыть]':'[показать]';if(show)renderFull();}
 function tcardHTML(t){const px=pxOf(t.sym,t.entry);const fl=floatNet(t,px)*100;const mins=Math.floor((Date.now()-t.ts)/60000);
   const left=Math.max(0,CFG.holdH*60-mins);const dirLong=t.dir==='UP';
-  const gp={GO:'g-go',CAUT:'g-caut',NEU:'g-neu',NONE:'g-neu'}[t.gate]||'g-neu';const gt={GO:'✓ЕСТЬ',CAUT:'⚠ТЕСНО',NEU:'·',NONE:'—'}[t.gate]||'—';
+  const stopTxt=t.stop!=null?` · стоп ${fmt(t.stop)}`:'';
   return`<div class="tcard ${dirLong?'long':'short'}"><div class="top">`
     +`<span class="sym" data-sym="${t.sym}" onclick="copyT(this)">${t.sym.replace('USDT','')} `
-    +`<span class="pill ${dirLong?'p-brk':'p-catch'}">${dirLong?'ЛОНГ':'ШОРТ'}</span> <span class="pill ${TPILL[t.type]}">${t.type}</span> <span class="pill ${gp}">${gt}</span></span>`
+    +`<span class="pill ${dirLong?'p-brk':'p-catch'}">${dirLong?'ЛОНГ':'ШОРТ'}</span> <span class="pill ${TPILL[t.type]}">${t.type}</span>${t.wave?` <span class="pill p-arm">в${t.wave}</span>`:''}</span>`
     +`<span class="pl ${fl>=0?'up':'dn'}">${fl>=0?'+':''}${fl.toFixed(2)}%</span></div>`
-    +`<div class="row2"><span class="entry">вход <b>${fmt(t.entry)}</b> · сейчас ${fmt(px)}</span>`
+    +`<div class="row2"><span class="entry">вход <b>${fmt(t.entry)}</b> · сейчас ${fmt(px)}${stopTxt}</span>`
     +`<span>${mins}м · до 8ч ${left}м · MFE ${(t.mfe*100).toFixed(2)}% MAE ${(t.mae*100).toFixed(2)}%</span></div></div>`;}
 function renderOpen(){const arr=[...SIM.open].sort((a,b)=>a.ts-b.ts);$('openCnt').textContent=arr.length;
   $('openList').innerHTML=arr.length?arr.map(tcardHTML).join(''):'<div class="empty">Нет открытых сделок.</div>';}
@@ -601,7 +638,7 @@ function connectWS(){ws=new WebSocket(WS_MINI);
 function stopLive(){liveOn=false;$('liveBtn').textContent='Live ○';$('liveBtn').classList.remove('on');if(ws)ws.close();clearInterval(rankTimer);clearInterval(exitTimer);$('ws').textContent='off';logEvent('live_off',null,null);}
 function toggleAuto(){autoSim=!autoSim;$('autoBtn').textContent='Авто-сим '+(autoSim?'●':'○');$('autoBtn').classList.toggle('on',autoSim);}
 let rt=0;function throttleRender(){const n=Date.now();if(n-rt>2000){rt=n;renderHot();renderOpen();}}
-function onTick(c){if(!c.side){return;}
+function onTick(c){if(!c.side)return;
   if(autoSim&&fired(c)){const b=beyondPct(c);if(b<=CFG.catchMax&&!hasOpen(c.sym)){
     if(b<=CFG.catchEdge&&!isHandled(c,'ПРОБИТИЕ'))openTrade(c,'ПРОБИТИЕ');
     else if(b>CFG.catchEdge&&!isHandled(c,'ДОГОН'))openTrade(c,'ДОГОН');}}
@@ -612,23 +649,23 @@ function onTick(c){if(!c.side){return;}
 function tog(k){TG[k]=!TG[k];$('tg'+k.charAt(0).toUpperCase()+k.slice(1)).classList.toggle('on',TG[k]);saveTG();render();}
 function togType(t){TG.show[t]=!TG.show[t];$('tgT'+t).classList.toggle('on',TG.show[t]);saveTG();render();}
 function toggleFilt(){$('filtPanel').classList.toggle('show');}
-function saveTG(){try{localStorage.setItem('rk_merge_tg_v2',JSON.stringify(TG));}catch(e){}}
-function restoreTG(){try{const s=localStorage.getItem('rk_merge_tg_v2');if(s){const o=JSON.parse(s);TG={...TG,...o,show:{...TG.show,...(o.show||{})}};}}catch(e){}}
-function applyTGui(){for(const k of['early','gateRoom','gateVol'])$('tg'+k.charAt(0).toUpperCase()+k.slice(1)).classList.toggle('on',TG[k]);
+function saveTG(){try{localStorage.setItem('rk_merge_tg_v3',JSON.stringify(TG));}catch(e){}}
+function restoreTG(){try{const s=localStorage.getItem('rk_merge_tg_v3');if(s){const o=JSON.parse(s);TG={...TG,...o,show:{...TG.show,...(o.show||{})}};}}catch(e){}}
+function applyTGui(){for(const k of['pullback','gateVol'])$('tg'+k.charAt(0).toUpperCase()+k.slice(1)).classList.toggle('on',TG[k]);
   for(const t of TYPES)$('tgT'+t).classList.toggle('on',TG.show[t]);}
 function copyT(el){const s=el.dataset.sym;const done=()=>{el.classList.add('cp');toast(s+' → буфер');setTimeout(()=>el.classList.remove('cp'),900);};
   if(navigator.clipboard)navigator.clipboard.writeText(s).then(done).catch(()=>fb(s,done));else fb(s,done);}
 function fb(t,cb){const a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity=0;document.body.appendChild(a);a.select();try{document.execCommand('copy');cb();}catch(e){}document.body.removeChild(a);}
 
 /* ================= HEARTBEAT + СТАРТ ================= */
-const BEAT_KEY='rk_merge_beat_v2';
+const BEAT_KEY='rk_merge_beat_v3';
 function beat(){const now=Date.now();const last=+(localStorage.getItem(BEAT_KEY)||0);
   if(last&&now-last>90000)logEvent('wake',null,{простой_сек:Math.round((now-last)/1000),live:liveOn});
   try{localStorage.setItem(BEAT_KEY,now);}catch(e){}}
 setInterval(beat,15000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)beat();});
 
 restoreLog();restoreSim();restoreTG();applyTGui();
-try{const sm=+localStorage.getItem('rk_merge_sort_v2');if(!isNaN(sm)&&sm>=0&&sm<SORT_MODES.length)sortMode=sm;}catch(e){}
+try{const sm=+localStorage.getItem('rk_merge_sort_v3');if(!isNaN(sm)&&sm>=0&&sm<SORT_MODES.length)sortMode=sm;}catch(e){}
 $('logN2').textContent=LOG.length;
 logEvent('session_start',null,{открыто:SIM.open.length,закрыто:SIM.trades.length});
 beat();render();
