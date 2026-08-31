@@ -185,7 +185,7 @@ const BASE='https://fapi.binance.com', WS_MINI='wss://fstream.binance.com/ws/!mi
 let CFG={rank:168,brk:24,q:0.20,fee:0.0009,sess:0.45,wend:0.30,per:5,klim:250,
   holdH:8, catchEdge:0.3, catchMax:1.0, armWithin:3.0, topN:150, volMin:5e6,
   swN:2, swLookback:48, armLateCut:80, armTimeout:14, waveWin:80, roomGo:2.0, roomTight:1.0, zigATR:2.2, zigMinPct:0.012,
-  trendADX:22, pbStochLow:30, pbStochHigh:70};
+  trendADX:22, pbStochLow:30, pbStochHigh:70, pbMacroMid:50};
 const CONC=5, CONC2=3;
 const TYPES=['ПРОБИТИЕ','ДОГОН','ОТКАТ'];
 const PROVEN=new Set(['ПРОБИТИЕ','ДОГОН']);
@@ -407,7 +407,9 @@ async function enrichInPlay(){const list=inPlayList();$('mtfN').textContent='0/'
 function pullbackSignal(k5,side,st4k,st4d){const o=k5.map(x=>+x[1]),h=k5.map(x=>+x[2]),l=k5.map(x=>+x[3]),c=k5.map(x=>+x[4]);
   const n=c.length;if(n<40)return{pulled:false,ready:false,stop:null,sr5:null};
   const sr=stochRSI(c.slice(0,-1)),srp=stochRSI(c.slice(0,-2));const i=n-2;   // последний ЗАКРЫТЫЙ 5м-бар
-  const k=sr.k,d=sr.d,kp=srp.k;const macroOk=side==='UP'?(st4k==null||st4k>=st4d):(st4k==null||st4k<=st4d);
+  const k=sr.k,d=sr.d,kp=srp.k;
+  // «старшие в силе»: 4ч StochRSI по стороне И над/под серединой (не просто отскок со дна)
+  const macroOk=side==='UP'?(st4k!=null&&st4k>=st4d&&st4k>=CFG.pbMacroMid):(st4k!=null&&st4k<=st4d&&st4k<=CFG.pbMacroMid);
   if(side==='UP'){
     const dipped=Math.min(l[i-1],l[i-2],l[i-3])<Math.min(o[i-2],o[i-3]);       // цена откатывала вниз
     const wasLow=(kp!=null&&kp<CFG.pbStochLow)||(k!=null&&k<CFG.pbStochLow+8);  // StochRSI 5м разгрузился
