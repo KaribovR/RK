@@ -87,6 +87,9 @@ tr.crow{cursor:pointer}tr.crow:hover td{background:rgba(56,189,248,.04)}
 .hint-ok{background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.25);color:var(--blue)}
 .hint-warn{background:rgba(255,183,0,.08);border:1px solid rgba(255,183,0,.28);color:var(--warn)}
 .hint-go{background:rgba(0,229,160,.12);border:1px solid var(--up);color:var(--up)}
+.alert{font-family:var(--fm);font-size:11px;padding:4px 9px;border-radius:5px;margin-bottom:7px;line-height:1.4}
+.alert-yellow{background:rgba(255,183,0,.06);border:1px solid rgba(255,183,0,.22);color:#c9a24a}
+.alert-red{background:rgba(255,58,94,.07);border:1px solid rgba(255,58,94,.25);color:#c76b7e}
 #logWrap{max-height:340px;overflow:auto;border:1px solid var(--bd);border-radius:8px;background:var(--bg1);margin:0 12px}
 #logWrap table{font-size:10px}#logWrap td{padding:5px 8px}
 .lg-ts{color:var(--t2);white-space:nowrap}.lg-ty{font-weight:700}
@@ -425,6 +428,30 @@ function pullbackSignal(k5,side,st4k,st4d){const o=k5.map(x=>+x[1]),h=k5.map(x=>
     const stop=Math.max(h[i],h[i-1],h[i-2],h[i-3]);
     return{pulled:popped&&wasHigh,ready:popped&&wasHigh&&turnDn&&priceDn&&macroOk,stop,sr5:k};
   }}
+// объёмная стена: уровень скопления объёма на 4ч (устойчивая поддержка/сопротивление, не мгновенный стакан)
+function volumeWall(kl,price,side){const H=kl.map(x=>+x[2]),L=kl.map(x=>+x[3]),V=kl.map(x=>+x[5]);
+  const lo=Math.min(...L),hi=Math.max(...H);if(!(hi>lo))return null;const nb=48,w=(hi-lo)/nb,bins=new Array(nb).fill(0);
+  for(let i=0;i<H.length;i++){const a=Math.max(0,Math.floor((L[i]-lo)/w)),b=Math.min(nb-1,Math.floor((H[i]-lo)/w));const per=V[i]/Math.max(1,b-a+1);for(let j=a;j<=b;j++)bins[j]+=per;}
+  const mx=Math.max(...bins),thr=mx*0.6,nodes=[];
+  for(let j=1;j<nb-1;j++)if(bins[j]>=thr&&bins[j]>=bins[j-1]&&bins[j]>=bins[j+1])nodes.push(lo+(j+0.5)*w);
+  if(side==='UP'){const a=nodes.filter(p=>p>price).sort((x,y)=>x-y);return a[0]||null;}
+  const b=nodes.filter(p=>p<price).sort((x,y)=>y-x);return b[0]||null;}
+// деньги: чистая дельта нормирована на объём (сравнимо между монетами) + относительно стороны сигнала
+function moneyOf(bV,sV,side){const tot=bV+sV;if(tot<=0)return{lvl:'≈',ratio:0,vs:'—'};const r=(bV-sV)/tot;
+  let lvl;if(r>=0.15)lvl='⬆⬆';else if(r>=0.05)lvl='⬆';else if(r<=-0.15)lvl='⬇⬇';else if(r<=-0.05)lvl='⬇';else lvl='≈';
+  let vs='—';if(lvl!=='≈'&&side){const up=r>0;vs=((side==='UP'&&up)||(side==='DN'&&!up))?'за':'против';}
+  return{lvl,ratio:+r.toFixed(2),vs};}
+// CVD5: чистая тейкер-дельта за последние ~3 закрытых 5м-бара (свежий поток для подтверждения разворота)
+function cvd5Dir(k5){const n=k5.length;if(n<5)return 0;let d=0;for(let i=Math.max(1,n-4);i<n-1;i++){const V=+k5[i][5],TB=+k5[i][9];d+=(2*TB-V);}return d;}
+// алерт «зона риска»: fib+стена совпали (<1%) И цена дошла/близко И (перегрев ИЛИ поздняя волна). Предупреждение, НЕ разворот.
+function riskAlert(c,d){if(!d||d.fibT==null||d.wall4h==null)return null;
+  if(Math.abs(d.fibT-d.wall4h)/c.price>=0.01)return null;                    // уровни не совпали — зоны нет
+  const zone=(d.fibT+d.wall4h)/2,dist=Math.abs(c.price-zone)/c.price*100;
+  const hot=d.oh&&d.oh.veto,late=(c.wave>=4)||(pathPct(c)!=null&&pathPct(c)>=85);
+  if(!(hot||late))return null;
+  if(dist<=0.5)return{lvl:'red',text:'в зоне риска — цена у совпавшего уровня (fib+стена), движение может выдохнуться ИЛИ прошить'};
+  if(dist<=2)return{lvl:'yellow',text:'зона риска близко — впереди совпавший уровень (fib+стена)'};
+  return null;}
 function deepAnalyze(c,k5,k15,k4h,depth){const ind=c.ind;const dir=c.side;
   const c5=k5.map(x=>+x[4]);const imp5=c5.length>3?(c5[c5.length-1]-c5[c5.length-4])/c5[c5.length-4]*100:0;
   const H=k15.map(x=>+x[2]),L=k15.map(x=>+x[3]),C=k15.map(x=>+x[4]),V=k15.map(x=>+x[5]),TB=k15.map(x=>+x[9]);
@@ -435,23 +462,25 @@ function deepAnalyze(c,k5,k15,k4h,depth){const ind=c.ind;const dir=c.side;
   const h4=k4h.map(x=>+x[2]),l4=k4h.map(x=>+x[3]),c4=k4h.map(x=>+x[4]);
   const fib=calcFib(h4,l4,c4,ind.atr1h);const s4=stochRSI(c4);const st4=s4.k;
   const stack=stackLevels(depth.bids,depth.asks,c.price);const up=dir==='UP';const px=c.price;
-  const wall=up?stack.nearAsk:stack.nearBid;
+  const microWall=up?stack.nearAsk:stack.nearBid;                 // мгновенная микро-стена (стакан)
+  const wall4h=volumeWall(k4h,px,up?'UP':'DN');                   // объёмная стена 4ч (устойчивая)
   const fibT=nearestFib(fib,px,up?'UP':'DN');
-  // запас хода до ближайшего препятствия
-  const obst=[];if(wall!=null)obst.push(Math.abs(wall-px)/px*100);if(fibT!=null)obst.push(Math.abs(fibT-px)/px*100);
+  const obst=[];[wall4h,microWall,fibT].forEach(v=>{if(v!=null)obst.push(Math.abs(v-px)/px*100);});
   if(!fired(c)&&c.level!=null){const dl=up?(c.level-px):(px-c.level);if(dl>0)obst.push(dl/px*100);}
   const roomAhead=obst.length?Math.min(...obst):null;
-  // ПРИБОР: проекция цели = длина прошлой ноги от текущей + ближайшая стена
+  // цель = проекция волны; стена = объёмная 4ч; зона подтверждения = fib и стена совпали (<1%)
   const targetProjPct=c.legLen!=null?(c.legLen/px*100):null;
-  const targetWallPct=wall!=null?Math.abs(wall-px)/px*100:null;
-  // ПРИБОР: деньги
-  const money=(buyPct>57&&cvd15>0)?'входят':(buyPct<43&&cvd15<0)?'выходят':'вяло';
+  const targetWallPct=wall4h!=null?Math.abs(wall4h-px)/px*100:null;
+  const zoneConfirm=(fibT!=null&&wall4h!=null&&Math.abs(fibT-wall4h)/px<0.01);
+  const targetZonePct=zoneConfirm?(Math.abs(((fibT+wall4h)/2)-px)/px*100):null;
+  const money=moneyOf(bV,sV,dir);const cvd5=cvd5Dir(k5);         // деньги нормир. + свежий CVD5
   const oh=exhaustion({rsi1h:ind.rsi1h,stochK:sr.k,st4,cvd15,buyPct},dir);
   const pb=pullbackSignal(k5,dir,s4.k,s4.d);
-  const d={imp5,rsi15,stochK:sr.k,mf15,cvd15,buyPct,vr15,st4,st4d:s4.d,sr5:pb.sr5,wall,fibT,roomAhead,
-    roomWall:wall!=null?Math.abs(wall-px)/px*100:null,roomFib:fibT!=null?Math.abs(fibT-px)/px*100:null,
-    targetProjPct,targetWallPct,money,oh,pb};
+  const d={imp5,rsi15,stochK:sr.k,mf15,cvd15,buyPct,vr15,st4,st4d:s4.d,sr5:pb.sr5,cvd5,
+    wall4h,microWall,fibT,roomAhead,roomWall:targetWallPct,roomFib:fibT!=null?Math.abs(fibT-px)/px*100:null,
+    targetProjPct,targetWallPct,zoneConfirm,targetZonePct,money,oh,pb};
   d.gate=(roomAhead==null)?'NONE':(oh.veto&&roomAhead<CFG.roomTight)?'CAUT':(roomAhead>=CFG.roomGo&&!oh.veto)?'GO':'NEU';
+  d.alert=riskAlert(c,d);
   return d;}
 
 /* ================= ТИПЫ / СОСТОЯНИЕ ================= */
@@ -469,7 +498,8 @@ function markHandled(c,type){(c.handled||(c.handled={}))[type]=c.level;}
 function snapOf(c){const d=c.deep;if(!d)return{};
   return{gate:d.gate,roomAhead:d.roomAhead!=null?+d.roomAhead.toFixed(2):null,roomWall:d.roomWall!=null?+d.roomWall.toFixed(2):null,
     wave:c.wave,targetProj:d.targetProjPct!=null?+d.targetProjPct.toFixed(2):null,targetWall:d.targetWallPct!=null?+d.targetWallPct.toFixed(2):null,
-    money:d.money,heat:d.oh?d.oh.heat:null,veto:d.oh&&d.oh.veto?'да':'',adx:c.ind.adx1h!=null?+c.ind.adx1h.toFixed(0):null,rsi15:d.rsi15!=null?+d.rsi15.toFixed(0):null,
+    money:d.money?d.money.lvl:'',moneyVs:d.money?d.money.vs:'',moneyR:d.money?d.money.ratio:null,cvd5:d.cvd5!=null?Math.round(d.cvd5):null,zone:d.zoneConfirm?'✓✓':'',
+    heat:d.oh?d.oh.heat:null,veto:d.oh&&d.oh.veto?'да':'',adx:c.ind.adx1h!=null?+c.ind.adx1h.toFixed(0):null,rsi15:d.rsi15!=null?+d.rsi15.toFixed(0):null,
     stochK:d.stochK!=null?+d.stochK.toFixed(0):null,cvd:d.cvd15!=null?Math.round(d.cvd15):null,st4:d.st4!=null?+d.st4.toFixed(0):null,
     imp:d.imp5!=null?+d.imp5.toFixed(1):null,vr:d.vr15!=null?+d.vr15.toFixed(1):null};}
 function canOpen(c,type){if(!TG.show[type])return{ok:false};
@@ -511,11 +541,11 @@ function resetSim(){if(!confirm('Обнулить ВСЕ сделки сима? 
 /* ================= CSV ================= */
 function exportTrades(){
   let csv='\uFEFFСтатус,Тип,Направление,ГейтA,Открыта,Закрыта,Монета,Цена_входа,Стоп,Выход,Причина,PNL%,MFE%,MAE%,Мом7д%,Путь%,'
-    +'Волна,ЦельПроекция%,ЦельСтена%,Деньги,ЗапасХода%,ADX1h,ПерегревHeat,Veto,RSI15,StochK,CVD15,StochRSI4h,Импульс5м%,Объём×\n';
+    +'Волна,ЦельПроекция%,ЦельСтена4ч%,ЗонаПодтв,Деньги,ДеньгиVs,ДеньгиRatio,CVD5,ЗапасХода%,ADX1h,ПерегревHeat,Veto,RSI15,StochK,CVD15,StochRSI4h,Импульс5м%,Объём×\n';
   const line=(st,t,exit,net)=>{const s=t.snap||{};
     return `"${st}","${t.type}","${t.dir}","${t.gate||''}","${tsISO(t.ts)}","${tsISO(t.closed)}","${t.sym}",${t.entry},${t.stop??''},${exit??''},"${t.reason||''}",`
       +`${net!=null?(net*100).toFixed(3):''},${(t.mfe*100).toFixed(2)},${(t.mae*100).toFixed(2)},${(t.mom*100).toFixed(1)},${t.path!=null?t.path.toFixed(0):''},`
-      +`${t.wave??''},${s.targetProj??''},${s.targetWall??''},"${s.money||''}",${s.roomAhead??''},${s.adx??''},${s.heat??''},"${s.veto||''}",${s.rsi15??''},${s.stochK??''},${s.cvd??''},${s.st4??''},${s.imp??''},${s.vr??''}\n`;};
+      +`${t.wave??''},${s.targetProj??''},${s.targetWall??''},"${s.zone||''}","${s.money||''}","${s.moneyVs||''}",${s.moneyR??''},${s.cvd5??''},${s.roomAhead??''},${s.adx??''},${s.heat??''},"${s.veto||''}",${s.rsi15??''},${s.stochK??''},${s.cvd??''},${s.st4??''},${s.imp??''},${s.vr??''}\n`;};
   for(const t of SIM.trades)csv+=line('ЗАКРЫТА',t,t.exit,t.net);
   for(const t of SIM.open){const px=pxOf(t.sym,t.entry);csv+=line('ОТКРЫТА',t,px,floatNet(t,px));}
   csvDL('rk_merge_trades.csv',csv);}
@@ -553,11 +583,12 @@ function buildHint(c){const d=c.deep;if(!d)return{text:'анализ загру�
   if(d.oh&&d.oh.veto){P.push('перегрет');caution=true;}
   if(trend&&c.wave>=3){P.push('волна '+c.wave+'/поздно');caution=true;}
   if(d.roomAhead!=null&&d.roomAhead<1){P.push('уперся');caution=true;}
-  if(d.money==='входят')P.push('деньги входят');else if(d.money==='выходят'){P.push('деньги выходят');caution=true;}
-  if(d.targetProjPct!=null){const near=d.targetWallPct!=null&&Math.abs(d.targetProjPct-d.targetWallPct)/Math.max(0.1,d.targetProjPct)<0.25;
-    P.push('цель ~'+d.targetProjPct.toFixed(1)+'%'+(near?'≈стена':''));}
+  if(d.money&&d.money.lvl!=='≈'){P.push('деньги '+d.money.lvl+(d.money.vs!=='—'?' '+d.money.vs:''));if(d.money.vs==='против')caution=true;}
+  if(d.imp5!=null||d.vr15!=null)P.push('⚡'+(d.imp5!=null?(d.imp5>=0?'+':'')+d.imp5.toFixed(1)+'%':'')+(d.vr15!=null?' ×'+d.vr15.toFixed(1):''));
+  if(d.zoneConfirm)P.push('цель ✓✓ ~'+d.targetZonePct.toFixed(1)+'%');
+  else if(d.targetProjPct!=null)P.push('цель ~'+d.targetProjPct.toFixed(1)+'%');
   if(!P.length)return{text:'спокойно',caution:false,ready:false};
-  return{text:P.slice(0,5).join(' · '),caution,ready};}
+  return{text:P.slice(0,6).join(' · '),caution,ready};}
 
 /* ================= РЕНДЕР ================= */
 function fmt(p){if(p==null)return'—';const d=p<1?5:p<10?4:p<100?3:2;return p.toFixed(d);}
@@ -586,10 +617,12 @@ function rowHTML(c){const exp=expanded.has(c.sym);
 function detailHTML(c){const d=c.deep;let inner;
   if(!d)inner='<span class="dim">анализ ещё не загружен…</span>';
   else{const g=(l,v)=>`<span class="grp"><span class="lbl">${l}</span> <b>${v}</b></span>`;const hint=buildHint(c);const hc=hint.ready?'hint-go':(hint.caution?'hint-warn':'hint-ok');
-    inner=`<div class="hint ${hc}">${hint.text}</div>`
-      +g('волна',c.wave||'—')+g('цель-проекц',d.targetProjPct!=null?d.targetProjPct.toFixed(1)+'%':'—')+g('цель-стена',d.targetWallPct!=null?d.targetWallPct.toFixed(1)+'%':'—')+g('деньги',d.money||'—')
-      +'<br>'+g('запас хода',d.roomAhead!=null?d.roomAhead.toFixed(2)+'%':'—')+g('RSI15',d.rsi15?.toFixed(0)??'—')+g('StochK15',d.stochK?.toFixed(0)??'—')+g('StochK5м',d.sr5!=null?d.sr5.toFixed(0):'—')+g('StochRSI4h',d.st4?.toFixed(0)??'—')+g('ADX1h',c.ind.adx1h.toFixed(0))+g('импульс5м',d.imp5!=null?d.imp5.toFixed(1)+'%':'—')
-      +'<br>'+g('перегрев',(d.oh?d.oh.heat:0)+(d.oh&&d.oh.veto?' ⚠':''))+g('CVD15',d.cvd15!=null?Math.round(d.cvd15):'—')+g('объём','×'+(d.vr15?d.vr15.toFixed(1):'—'))+(isArmed(c)?g('стоп-отката',d.pb&&d.pb.stop?fmt(d.pb.stop):'—'):'');}
+    const al=d.alert?`<div class="alert alert-${d.alert.lvl==='red'?'red':'yellow'}">${d.alert.lvl==='red'?'🔴 ':'🟡 '}${d.alert.text}</div>`:'';
+    inner=`<div class="hint ${hc}">${hint.text}</div>`+al
+      +g('волна',c.wave||'—')+g('цель-проекц',d.targetProjPct!=null?d.targetProjPct.toFixed(1)+'%':'—')+g('цель-стена4ч',d.targetWallPct!=null?d.targetWallPct.toFixed(1)+'%':'—')+(d.zoneConfirm?g('зона','✓✓ '+d.targetZonePct.toFixed(1)+'%'):'')+g('до fib',d.roomFib!=null?d.roomFib.toFixed(1)+'%':'—')
+      +'<br>'+g('деньги',(d.money?d.money.lvl:'—')+(d.money&&d.money.vs!=='—'?' '+d.money.vs:'')+(d.money?' ('+d.money.ratio+')':''))+g('сила','⚡'+(d.imp5!=null?(d.imp5>=0?'+':'')+d.imp5.toFixed(1)+'%':'—')+' ×'+(d.vr15?d.vr15.toFixed(1):'—'))+g('CVD15',d.cvd15!=null?Math.round(d.cvd15):'—')+g('CVD5',d.cvd5!=null?(d.cvd5>0?'+':'')+Math.round(d.cvd5):'—')
+      +'<br>'+g('запас хода',d.roomAhead!=null?d.roomAhead.toFixed(2)+'%':'—')+g('RSI15',d.rsi15?.toFixed(0)??'—')+g('StochK15',d.stochK?.toFixed(0)??'—')+g('StochK5м',d.sr5!=null?d.sr5.toFixed(0):'—')+g('StochRSI4h',d.st4?.toFixed(0)??'—')+g('ADX1h',c.ind.adx1h.toFixed(0))
+      +'<br>'+g('перегрев',(d.oh?d.oh.heat:0)+(d.oh&&d.oh.veto?' ⚠':''))+g('объём','×'+(d.vr15?d.vr15.toFixed(1):'—'))+(isArmed(c)?g('стоп-отката',d.pb&&d.pb.stop?fmt(d.pb.stop):'—'):'');}
   return`<tr class="drow"><td colspan="6"><div class="detail">${inner}</div></td></tr>`;}
 function toggleRow(sym){if(expanded.has(sym))expanded.delete(sym);else expanded.add(sym);render();}
 function visibleCoins(all){const q=$('search').value.trim().toUpperCase();
