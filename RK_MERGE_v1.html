@@ -495,10 +495,12 @@ function updateArming(){let n=0;
 function isArmed(c){return !!ARMED[c.sym];}
 
 /* ================= СЛОЙ 3 — глубина A + сигнал конца отката (5м) ================= */
-function inPlayList(){const set=new Set(SIM.open.map(t=>t.sym));
+function inPlayList(){const set=new Set(SIM.open.map(t=>t.sym));const near=[];
   for(const s of syms){const c=coins[s];if(!c)continue;const t=typeOf(c);const d=distBrk(c);
-    if(t)set.add(s);                                      // любой торгуемый тип (вкл. СЛОМ без side, СЖАТИЕ)
-    else if(c.side&&d!=null&&d<=CFG.armWithin)set.add(s);}// плюс близкие к грани
+    if(t){set.add(s);continue;}                          // любой тип (вкл. СЛОМ без side, СЖАТИЕ) — всегда
+    if(c.side&&d!=null&&d<=10)near.push([s,d]);}          // близкие к грани (как показываем в «ЖДЁМ»)
+  near.sort((a,b)=>a[1]-b[1]);                            // ближайшие первыми
+  for(const p of near.slice(0,28))set.add(p[0]);          // до 28 — покрыть показанное, не превысить лимит API
   return[...set].filter(s=>coins[s]);}
 async function enrichInPlay(){const list=inPlayList();$('mtfN').textContent='0/'+list.length;let done=0;
   await pool(list,async sym=>{try{
