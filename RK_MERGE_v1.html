@@ -213,7 +213,7 @@ let CFG={rank:168,brk:24,q:0.20,fee:0.0009,sess:0.45,wend:0.30,per:5,klim:250,
   holdH:8, catchEdge:0.3, catchMax:1.0, armWithin:3.0, topN:150, volMin:5e6,
   swN:2, swLookback:48, armLateCut:80, armTimeout:14, waveWin:80, roomGo:2.0, roomTight:1.0, zigATR:2.2, zigMinPct:0.012,
   trendADX:22, pbStochLow:30, pbStochHigh:70, pbMacroMid:50,
-  enterQ:0.20, holdQ:0.35, confirmScans:2, squeezeAtr:0.65, approachPct:1.0, latePath:80, lateWave:3, slomRet24:0.05, slomRet48:0.09};
+  enterQ:0.20, holdQ:0.35, confirmScans:2, squeezeAtr:0.65, approachPct:2.0, latePath:80, lateWave:3, slomRet24:0.05, slomRet48:0.09};
 const CONC=5, CONC2=3;
 // чёрный список чужеродных инструментов (не крипта: золото/сырьё/токен-акции) — дописывай по мере находок
 const BLACKLIST=new Set(['XAUTUSDT','PAXGUSDT','SPYUSDT','QQQUSDT','TSLAUSDT','AAPLUSDT','NVDAUSDT','MSTRUSDT','GLDUSDT','COINUSDT','牛来USDT']);
@@ -463,7 +463,9 @@ function edgeScore(c,setup,ready){let e=50;
 function sizeMult(edge){return +(0.3+Math.max(0,Math.min(1,(edge-40)/50))*1.2).toFixed(2);}
 function bucketOf(c){const t=typeOf(c);if(t==='СЛОМ')return'slom';if(t==='ПОЗДНО')return'late';
   if(pbReady(c)||t==='СЖАТИЕ'||t==='ПОДХОД'||t==='ПРОБИТИЕ')return'now';
-  if(t==='ОТКАТ'||t==='ДОГОН'||isArmed(c)||(distBrk(c)!=null&&distBrk(c)<=3))return'wait';return'rest';}
+  const d=distBrk(c);
+  if(t==='ОТКАТ'||t==='ДОГОН'||isArmed(c)||(c.side&&d!=null&&d<=10))return'wait';   // всё со стороной у грани — видно
+  return'rest';}
 
 /* ===== ВЗВОД: слом swing в сторону XSEC → монета ждёт отката ===== */
 function updateArming(){let n=0;
