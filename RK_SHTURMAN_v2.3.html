@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RK ШТУРМАН v2.3</title>
+<style>
+:root{--bg:#0e1116;--pan:#161a22;--ln:#232a36;--tx:#e6e9ef;--mut:#8a93a3;--up:#33b06a;--dn:#e0555f;--warn:#e0a13a;--acc:#4a9eff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:13px/1.5 system-ui,Segoe UI,Roboto,sans-serif;padding:14px}
+h1{font-size:16px;margin:0 0 2px}.sub{color:var(--mut);font-size:12px;margin:0 0 12px}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+button{background:var(--acc);color:#fff;border:0;border-radius:7px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer}
+button.sec{background:#232936;border:1px solid var(--ln)}button:disabled{opacity:.5;cursor:default}
+input{background:#0c0f14;border:1px solid var(--ln);color:var(--tx);border-radius:6px;padding:6px 8px;font:inherit;width:60px}
+label.tg{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--mut);background:#0c0f14;border:1px solid var(--ln);border-radius:6px;padding:4px 8px;cursor:pointer}
+#status{color:var(--mut);font-size:12px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{border-bottom:1px solid var(--ln);padding:6px 8px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}th{color:var(--mut);font-weight:600;font-size:11px;cursor:pointer}
+tr.row:hover{background:#1a1f29}
+.up{color:var(--up)}.dn{color:var(--dn)}.warn{color:var(--warn)}.mut{color:var(--mut)}
+.sym{cursor:pointer;font-weight:600;border-bottom:1px dotted var(--mut)}
+.exp{cursor:pointer}
+.pill{display:inline-block;padding:1px 6px;border-radius:5px;font-size:11px;font-weight:600}
+.pill.up{background:rgba(51,176,106,.15);color:var(--up)}.pill.dn{background:rgba(224,85,95,.15);color:var(--dn)}.pill.mix{background:#232936;color:var(--mut)}
+.rd{height:6px;background:#232936;border-radius:3px;overflow:hidden;width:64px;display:inline-block;vertical-align:middle}.rd>i{display:block;height:100%}
+.detail{background:#0c0f14}
+.dwrap{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.tf-tbl{font-size:11px}.tf-tbl th,.tf-tbl td{padding:3px 7px}
+.panel{background:var(--pan);border:1px solid var(--ln);border-radius:9px;padding:12px;margin-bottom:12px}
+.simrow{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;align-items:center}.simrow b{color:var(--tx);font-size:14px}
+.note{color:var(--mut);font-size:11px;line-height:1.6;margin-top:8px}.hint{font-size:11px;color:var(--mut)}
+canvas{background:#0a0d12;border:1px solid var(--ln);border-radius:6px}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#232936;border:1px solid var(--ln);color:var(--tx);padding:8px 16px;border-radius:8px;opacity:0;transition:.2s;pointer-events:none}
+#toast.show{opacity:1}
+.ls-bar{height:14px;border-radius:4px;overflow:hidden;display:flex;width:180px;border:1px solid var(--ln)}
+.ls-bar>span{display:block;height:100%}
+</style></head>
+<body>
+<h1>RK ШТУРМАН · v2.3</h1>
+<p class="sub">Штурман, не оракул. Живые потоки Binance вплетены в вердикт (не «просто показаны»), каждый с тумблером — сим покажет, работает связка или шумит. Всё локально.</p>
+
+<div class="panel">
+  <div class="bar">
+    <button id="scanBtn" onclick="startLoop()">▶ Запустить</button>
+    <button class="sec" onclick="stopLoop()">■ Стоп</button>
+    <span class="hint">воронка L1:</span><input id="l1n" type="number" value="140">
+    <span class="hint">→ отбор L2:</span><input id="l2n" type="number" value="40">
+    <span class="hint">скан, мин:</span><input id="everyMin" type="number" value="5">
+    <span class="hint">порог сим,%:</span><input id="readyTh" type="number" value="70">
+    <span id="status">простаивает</span>
+  </div>
+  <div class="bar">
+    <span class="hint">живые потоки:</span>
+    <label class="tg"><input type="checkbox" id="wsPrice" checked> цена (триггер сим между сканами)</label>
+    <label class="tg"><input type="checkbox" id="wsLiq" checked> ликвидации → зрелость</label>
+    <label class="tg"><input type="checkbox" id="wsBook" checked> стакан → слиппедж/цель</label>
+    <label class="tg"><input type="checkbox" id="useLS" checked> L/S толпа/киты → уверенность</label>
+  </div>
+  <div class="note">Первый запуск: широкий дешёвый скан L1 (~140 монет по одному запросу) → отбор перспективных → тяжёлая догрузка 5 ТФ только по ним. Не-крипта (золото, акции, форекс, стейблы) отсеивается. Если Binance не идёт из рабочей сети — открой с телефона. Живые потоки и связь я из своей среды не проверял: сломается — F12→Console, пришли ошибку.</div>
+</div>
+
+<div class="panel">
+  <div class="simrow">
+    <span>Симулятор: баланс <b id="sBal">$1000</b></span><span>сделок <b id="sN">0</b></span>
+    <span>винрейт <b id="sWr">—</b></span><span>сумма R <b id="sR">—</b></span><span>открыто <b id="sOpen">0</b></span><span>лонг/шорт <b id="sLS">0/0</b></span>
+    <button class="sec" style="margin-left:auto" onclick="exportCSV()">CSV</button>
+    <button class="sec" onclick="resetSim()">Сброс сима</button>
+  </div>
+  <div class="note">Открывает сделку при «созрел»≥порога, сторона ясна, монета живая. Выход по High/Low баров (не по close) со слиппеджем — честно ловит выбитый тенью стоп. Между сканами стоп/тейк проверяются живой ценой из WS. CSV пишет снимок всех показателей в момент входа и при выгрузке дописывает открытые сделки с текущим состоянием.</div>
+  <div id="openBox" style="margin-top:10px"></div>
+</div>
+
+<div class="panel">
+  <table id="tbl"><thead><tr>
+    <th onclick="sortBy('sym')">Монета</th><th onclick="sortBy('dir')">Сторона</th><th>Режим</th>
+    <th onclick="sortBy('readiness')">Созрел</th><th onclick="sortBy('path')">Путь</th>
+    <th onclick="sortBy('strength')">Сила</th><th onclick="sortBy('live')">Живость</th><th>Подсказка</th>
+  </tr></thead><tbody id="tb"><tr><td colspan="8" class="mut">Нажми «Запустить»</td></tr></tbody></table>
+</div>
+<div id="toast"></div>
+
+<script>
+const BASE='https://fapi.binance.com';
+let weightUsed=0,weightPaused=false;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function waitIfPaused(){while(weightPaused)await sleep(1000);}
+function jitter(b=40){return sleep(b+Math.random()*40);}
+async function fetchBo(url,weight=1,retries=4,signal){
+  if(signal&&signal.aborted)throw new DOMException('Aborted','AbortError');
+  await waitIfPaused();let delay=1000;
+  for(let i=0;i<retries;i++){try{
+    await jitter();const res=await fetch(url,signal?{signal}:undefined);
+    if(res.status===429||res.status===418){const ra=parseInt(res.headers.get('Retry-After')||'60');weightPaused=true;setStatus('rate limit, ждём '+ra+'с');await sleep(ra*1000+1500);weightPaused=false;continue;}
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    weightUsed+=weight;return await res.json();
+  }catch(e){if(e.name==='AbortError'||(signal&&signal.aborted))throw e;if(i<retries-1){await sleep(delay);delay=Math.min(delay*2,30000);}else throw e;}}
+}
+let reqQ=[],reqRun=0;const CONC=5;
+function enq(fn){return new Promise((res,rej)=>{reqQ.push({fn,res,rej});drain();});}
+async function drain(){if(reqRun>=CONC||!reqQ.length)return;reqRun++;const{fn,res,rej}=reqQ.shift();try{res(await fn());}catch(e){rej(e);}finally{reqRun--;drain();}}
+function clearQueue(){reqQ.forEach(it=>{try{it.rej(new DOMException('Aborted','AbortError'));}catch(e){}});reqQ=[];} // фикс дедлока: при отмене реджектим и чистим очередь
+
+// ---- индикаторы (с фиксами: ATR-Уайлдер, emaArr, stochRSIfull) ----
+const ema=(a,p)=>{if(a.length<p)return null;let k=2/(p+1),v=a.slice(0,p).reduce((x,y)=>x+y)/p;for(let i=p;i<a.length;i++)v=a[i]*k+v*(1-k);return v;};
+const emaArr=(a,p)=>{if(a.length<p)return[];let k=2/(p+1),v=a.slice(0,p).reduce((x,y)=>x+y)/p;const out=Array(p-1).fill(null);out.push(v);for(let i=p;i<a.length;i++){v=a[i]*k+v*(1-k);out.push(v);}return out;};
+const rsiArr=(c,p=14)=>{if(c.length<p+1)return Array(c.length).fill(50);let r=Array(p).fill(50),g=0,l=0;for(let i=1;i<=p;i++){let d=c[i]-c[i-1];d>0?g+=d:l-=d;}let ag=g/p,al=l/p;r.push(al===0?100:100-100/(1+ag/al));for(let i=p+1;i<c.length;i++){let d=c[i]-c[i-1];ag=(ag*(p-1)+Math.max(0,d))/p;al=(al*(p-1)+Math.max(0,-d))/p;r.push(al===0?100:100-100/(1+ag/al));}return r;};
+const stochRSIfull=(c,rp=14,sp=14,kp=3,dp=3)=>{if(c.length<rp+sp+kp+dp-3)return{k:null,d:null,kPrev:null};const ra=rsiArr(c,rp);let st=[];for(let i=sp-1;i<ra.length;i++){const sl=ra.slice(i-sp+1,i+1),lo=Math.min(...sl),hi=Math.max(...sl);st.push(hi===lo?50:((ra[i]-lo)/(hi-lo))*100);}const sm=(a,p)=>{let r=[];for(let i=p-1;i<a.length;i++)r.push(a.slice(i-p+1,i+1).reduce((a,b)=>a+b)/p);return r;};const ka=sm(st,kp),da=sm(ka,dp);return{k:ka.length?ka[ka.length-1]:null,kPrev:ka.length>1?ka[ka.length-2]:null,d:da.length?da[da.length-1]:null};};
+const rma=(a,p)=>{if(a.length<p)return[];let r=[a.slice(0,p).reduce((x,y)=>x+y)/p];for(let i=p;i<a.length;i++)r.push((r[r.length-1]*(p-1)+a[i])/p);return r;};
+const calcATR=(h,l,c,p=14)=>{let tr=[];for(let i=1;i<c.length;i++)tr.push(Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1])));const r=rma(tr,p);return r.length?r[r.length-1]:0;};
+const calcADX=(h,l,c,p=14)=>{if(c.length<p*2)return{adx:0,pdi:0,ndi:0};let tr=[],pdm=[],ndm=[];for(let i=1;i<c.length;i++){let u=h[i]-h[i-1],d=l[i-1]-l[i];tr.push(Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1])));pdm.push(u>d&&u>0?u:0);ndm.push(d>u&&d>0?d:0);}let at=rma(tr,p),pd=rma(pdm,p).map((v,i)=>(v/at[i])*100),nd=rma(ndm,p).map((v,i)=>(v/at[i])*100);let dx=pd.map((pv,i)=>{let s=pv+nd[i];return s===0?0:Math.abs(pv-nd[i])/s*100;});let ax=rma(dx,p);return{adx:ax[ax.length-1]||0,pdi:pd[pd.length-1]||0,ndi:nd[nd.length-1]||0};};
+const calcBB=(c,p=20,m=2)=>{let b=c.slice(-p).reduce((a,x)=>a+x)/p;let std=Math.sqrt(c.slice(-p).reduce((a,x)=>a+Math.pow(x-b,2),0)/p);return{upper:b+std*m,lower:b-std*m,basis:b,width:(std*m*2/b)*100};};
+const ADX_FLAT=20,ADX_TREND=25;
+const LIVE_DEAD=0.008,LIVE_OK=0.018; // пороги живости по среднему размаху свечи (доля цены): <0.8% труп, >1.8% живая — крути под себя
+
+// ---- отсев не-крипты ----
+const NONCRYPTO=/^(XAU|XAG|EUR|GBP|JPY|AUD|CHF|USD1|USDC|FDUSD|TUSD|USDP|BUSD|DAI)/;
+const STOCKISH=new Set(['AAPLUSDT','TSLAUSDT','NVDAUSDT','MSTRUSDT','COINUSDT','GOOGLUSDT','METAUSDT','AMZNUSDT','MSFTUSDT','PLTRUSDT','HOODUSDT','DELLUSDT','ORCLUSDT','NFLXUSDT','AMDUSDT','INTCUSDT','BABAUSDT','DISUSDT','PYPLUSDT','UBERUSDT','ABNBUSDT','SHOPUSDT','MARAUSDT','RIOTUSDT','GMEUSDT','AMCUSDT','CRCLUSDT','SMCIUSDT','AVGOUSDT','QQQUSDT','SPYUSDT']);
+function isCrypto(sym){if(STOCKISH.has(sym))return false;if(NONCRYPTO.test(sym))return false;return sym.endsWith('USDT');}
+
+// ---- вердикт по ТФ (slope через emaArr, StochK с kPrev) ----
+function tfVerdict(k){
+  const{o,h,l,c}=k;const n=c.length;if(n<60)return null;
+  const e9a=emaArr(c,9),e21=ema(c,21);const e9=e9a.length?e9a[e9a.length-1]:null;
+  const adx=calcADX(h,l,c),st=stochRSIfull(c),rsi=rsiArr(c).slice(-1)[0],bb=calcBB(c);const price=c[n-1];
+  const slope=(e9a.length>6&&e9a[e9a.length-6])?(e9-e9a[e9a.length-6])/e9a[e9a.length-6]:0;
+  let dir=0;const emaUp=e9!=null&&e21!=null&&e9>e21,emaDn=e9!=null&&e21!=null&&e9<e21;
+  if(emaUp&&adx.pdi>adx.ndi)dir=1;else if(emaDn&&adx.ndi>adx.pdi)dir=-1;
+  else if(emaUp||adx.pdi>adx.ndi)dir=0.5;else if(emaDn||adx.ndi>adx.pdi)dir=-0.5;
+  let regime=adx.adx>=ADX_TREND?'trend':adx.adx<ADX_FLAT?'range':'trans';if(bb.width<2.2)regime='squeeze';
+  const diSpread=Math.abs(adx.pdi-adx.ndi);const bbPos=(price-bb.basis)/((bb.upper-bb.lower)/2||1);
+  let strength=Math.min(40,adx.adx*1.1)+Math.min(20,diSpread*0.7)+Math.min(20,Math.abs(slope)*4000)+Math.min(20,Math.abs(bbPos)*20);
+  strength=Math.round(Math.min(100,strength));
+  let maturity=0;if(st.k!=null){if(dir>0)maturity=st.k;else if(dir<0)maturity=100-st.k;else maturity=50;}
+  if(dir>0&&rsi>70)maturity=Math.max(maturity,75+(rsi-70));if(dir<0&&rsi<30)maturity=Math.max(maturity,75+(30-rsi));
+  maturity=Math.round(Math.min(100,maturity));
+  return{dir,regime,strength,maturity,adx:adx.adx,stochK:st.k,stochKPrev:st.kPrev,rsi,bbPos,price};
+}
+function liveness(k){const h=k.h,l=k.l,c=k.c,n=c.length;if(n<20)return 0;let s=0,m=0;for(let i=Math.max(1,n-24);i<n;i++){if(c[i]>0){s+=(h[i]-l[i])/c[i];m++;}}return m?s/m:0;} // средний размах свечи в долях цены: крупные свечи = живая (то, что видит глаз)
+
+// ---- РАЗВОРОТ StochK младшего вместо уровня (конец отката) ----
+function pullbackTurn(V,side){
+  const v=V.m15||V.m5;if(!v||v.stochK==null||v.stochKPrev==null)return null;
+  const Ks=side>0?v.stochK:100-v.stochK,KsP=side>0?v.stochKPrev:100-v.stochKPrev;
+  return{turningUp:Ks>KsP,fromLow:KsP<40,notLate:Ks<70,Ks};
+}
+function shturman(sym,tfs,extra){
+  extra=extra||{};
+  const V={m5:tfVerdict(tfs.m5),m15:tfVerdict(tfs.m15),h1:tfVerdict(tfs.h1),h4:tfVerdict(tfs.h4),d1:tfVerdict(tfs.d1)};
+  const W={m5:0.5,m15:0.8,h1:1.4,h4:1.8,d1:1.2};let dsum=0,wsum=0,ssum=0;
+  for(const tf in V){if(!V[tf])continue;dsum+=V[tf].dir*W[tf];wsum+=W[tf];ssum+=V[tf].strength*W[tf];}
+  const dscore=wsum?dsum/wsum:0;const strength=wsum?Math.round(ssum/wsum):0;const live=liveness(tfs.h1);
+  const seniorRegime=(V.h4&&V.h4.regime==='trend')||(V.h1&&V.h1.regime==='trend')?'ТРЕНД':(V.h4&&(V.h4.regime==='range'||V.h4.regime==='squeeze'))?'ДИАПАЗОН':'ПЕРЕХОД';
+  let dir=dscore>0.25?'UP':dscore<-0.25?'DOWN':'MIXED';if(seniorRegime==='ДИАПАЗОН'&&Math.abs(dscore)<0.45)dir='MIXED';
+  let readiness=50,waitHint='';const bbH1=V.h1?V.h1.bbPos:0;
+  if(live<LIVE_DEAD){readiness=10;waitHint='мёртвая — свечи мелкие, пропусти';}
+  else if(seniorRegime==='ДИАПАЗОН'){const edge=Math.abs(bbH1);
+    if(edge>0.85){readiness=Math.round(60+edge*30);waitHint=bbH1<0?'низ диапазона — откуп от пола':'верх диапазона — продажа от потолка';}
+    else{readiness=Math.round(25+edge*25);waitHint='середина диапазона — жди край';}}
+  else if(dir!=='MIXED'){const side=dir==='UP'?1:-1;
+    const junAgree=((V.m5&&Math.sign(V.m5.dir)===side)?1:0)+((V.m15&&Math.sign(V.m15.dir)===side)?1:0);
+    const pt=pullbackTurn(V,side);
+    if(junAgree===0){
+      if(pt&&pt.turningUp&&pt.fromLow&&pt.notLate){readiness=72;waitHint='конец отката: StochK младшего развернулся вверх из низа';}
+      else{readiness=30;waitHint='младшие против тренда (откат идёт) — жди разворота StochK вверх';}
+    } else if(junAgree===1){readiness=58;waitHint='младшие поворачивают к тренду — почти';}
+    else{ // оба согласны
+      if(pt&&pt.Ks>85){readiness=45;waitHint='StochK младшего наверху — движение отработано, вход поздноват';}
+      else{readiness=Math.round(60+(pt?pt.Ks:60)*0.3);waitHint='созрел — младшие идут в тренд';}
+    }
+  } else {readiness=25;waitHint='ТФ спорят — сторона не ясна';}
+
+  // === ЖИВЫЕ ПОТОКИ, ВПЛЕТЁННЫЕ В ВЕРДИКТ (не «просто показаны») ===
+  const notes=[];
+  // ликвидации → зрелость: каскад ПРОТИВ младших на созревающем откате = вынос, откат выдыхается → +готовность
+  if(extra.liq && dir!=='MIXED'){
+    const side=dir==='UP'?1:-1;
+    // лонг: ликвидируют лонги (SELL-каскад) на откате = капитуляция → откат кончается → плюс к готовности
+    const favorable=(side>0&&extra.liq.side==='LONG')||(side<0&&extra.liq.side==='SHORT');
+    if(favorable&&extra.liq.usd>100000){readiness=Math.min(100,readiness+10);notes.push('💥 ликвидации в нашу сторону ('+Math.round(extra.liq.usd/1000)+'K) — откат через вынос');}
+  }
+  // L/S толпа/киты → уверенность: киты против толпы в нашу сторону = плюс; толпа с нами против китов = минус
+  if(extra.ls && dir!=='MIXED'){
+    const side=dir==='UP'?1:-1; // ls.whale>1 = киты в лонг, ls.crowd>1 = толпа в лонг
+    const whaleSide=extra.ls.whale>1?1:-1, crowdSide=extra.ls.crowd>1?1:-1;
+    if(whaleSide===side && crowdSide!==side){readiness=Math.min(100,readiness+6);notes.push('киты с нами против толпы');}
+    else if(crowdSide===side && whaleSide!==side){readiness=Math.max(0,readiness-6);notes.push('⚠ с нами только толпа, киты против');}
+  }
+  readiness=Math.max(0,Math.min(100,readiness));
+
+  let path=null;if(V.h4){const hh=Math.max(...tfs.h4.h.slice(-42)),ll=Math.min(...tfs.h4.l.slice(-42)),p=V.h4.price;if(hh>ll)path=Math.max(0,Math.min(100,dir==='DOWN'?Math.round((hh-p)/(hh-ll)*100):Math.round((p-ll)/(hh-ll)*100)));}
+  const side=dir==='UP'?1:dir==='DOWN'?-1:0;
+  const tension=(dir!=='MIXED'&&((V.m5&&Math.sign(V.m5.dir)===-side)||(V.m15&&Math.sign(V.m15.dir)===-side)));
+  const liveTxt=live>=LIVE_OK?'живая':live>=LIVE_DEAD?'вяло':'труп';
+  let atr1h=calcATR(tfs.h1.h,tfs.h1.l,tfs.h1.c);
+  // стакан → цель/слиппедж: широкий спред увеличивает издержки (сохраняем для сима)
+  const spread=extra.spread||0;
+  return{sym,dir,regime:seniorRegime,strength,readiness,waitHint,path,live:+live.toFixed(2),liveTxt,tension,notes,price:V.h1?V.h1.price:null,atr1h,spread,h1c:tfs.h1.c.slice(-100),h1h:tfs.h1.h.slice(-100),h1l:tfs.h1.l.slice(-100),m5t:tfs.m5.t,m5h:tfs.m5.h,m5l:tfs.m5.l,V};
+}
+
+// ---- живые потоки ----
+let liqData={},bookData={},livePrice={},lastPrice={},streamsOn=false,wsMini=null,wsBook=null,wsLiq=null;
+function startWS(){
+  stopWS();
+  if(document.getElementById('wsPrice').checked){wsMini=new WebSocket('wss://fstream.binance.com/ws/!miniTicker@arr');wsMini.onopen=()=>{streamsOn=true;};wsMini.onclose=()=>{streamsOn=false;};
+    wsMini.onmessage=e=>{try{const arr=JSON.parse(e.data);for(const t of arr){livePrice[t.s]=+t.c;}liveTick();}catch(x){}};}
+  if(document.getElementById('wsBook').checked){wsBook=new WebSocket('wss://fstream.binance.com/ws/!bookTicker@arr');
+    wsBook.onmessage=e=>{try{const o=JSON.parse(e.data),s=o.s;if(s){const bid=+o.b,ask=+o.a;if(bid>0)bookData[s]={bid,ask,spread:(ask-bid)/bid};}}catch(x){}};}
+  if(document.getElementById('wsLiq').checked){wsLiq=new WebSocket('wss://fstream.binance.com/ws/!forceOrder@arr');
+    wsLiq.onmessage=e=>{try{const d=JSON.parse(e.data),o=d.o||d,sym=o.s;if(!sym)return;const side=o.S,qty=+(o.q||0),price=+(o.ap||o.p||0),usd=qty*price;if(usd<20000)return;const s2=side==='SELL'?'LONG':'SHORT';const buf=liqData[sym]||(liqData[sym]=[]);buf.push({side:s2,usd,ts:Date.now()});}catch(x){}};}
+}
+function stopWS(){streamsOn=false;for(const w of[wsMini,wsBook,wsLiq]){try{if(w)w.close();}catch(e){}}wsMini=wsBook=wsLiq=null;}
+// накопительное окно ликвидаций: сумма $ по сторонам за WIN мс, возвращает доминирующую сторону и её объём (каскад, не единичное событие)
+function liqWindow(sym,WIN=300000){const buf=liqData[sym];if(!buf||!buf.length)return null;const now=Date.now();let lg=0,sh=0;const keep=[];for(const x of buf){if(now-x.ts<WIN){keep.push(x);if(x.side==='LONG')lg+=x.usd;else sh+=x.usd;}}liqData[sym]=keep;if(lg===0&&sh===0)return null;return lg>=sh?{side:'LONG',usd:lg}:{side:'SHORT',usd:sh};}
+
+// ---- двухуровневая воронка ----
+let scanAbort=null;
+async function levelOne(n,signal){
+  setStatus('L1: тикеры…');
+  const tk=await fetchBo(BASE+'/fapi/v1/ticker/24hr',40,4,signal);
+  const cands=tk.filter(t=>isCrypto(t.symbol)&&+t.quoteVolume>10000000).sort((a,b)=>(+b.quoteVolume)-(+a.quoteVolume)).slice(0,n);
+  const scored=[];let done=0;
+  for(const t of cands){
+    if(signal.aborted)throw new DOMException('Aborted','AbortError');
+    try{
+      const k15=await enq(()=>fetchBo(BASE+'/fapi/v1/klines?symbol='+t.symbol+'&interval=15m&limit=60',5,4,signal));
+      const c=k15.map(k=>+k[4]),v=k15.map(k=>+k[5]);
+      // ОТБОР ПО КРИТЕРИЮ «от полосы к полосе»: широкие полосы (амплитуда) + колебание вокруг средней (осцилляция). Сжатие больше НЕ награждается — оно противоположно тому, что нужно.
+      const bb=calcBB(c);const ampl=Math.min(15,bb.width); // ширина полос Боллинджера, % — амплитуда хода
+      const win=Math.min(40,c.length);let cross=0,prev=c[c.length-win]-bb.basis;
+      for(let i=c.length-win+1;i<c.length;i++){const d=c[i]-bb.basis;if((d>0)!==(prev>0)){cross++;}prev=d;} // пересечения средней = сколько раз сходила туда-сюда
+      const osc=cross;
+      const avgV=v.slice(-21,-1).reduce((a,b)=>a+b,0)/20,vr=v[v.length-1]/avgV;
+      // амплитуда (широкие полосы) + осцилляция (ходит от полосы к полосе) + чуть объёма. Стоячие/сжатые падают вниз.
+      const score=osc*2 + ampl*1.2 + vr*0.3;
+      scored.push({sym:t.symbol,chg24:+t.priceChangePercent,vol24:+t.quoteVolume,score});
+    }catch(e){if(e.name==='AbortError')throw e;}
+    done++;if(done%15===0){setStatus('L1 отбор '+done+'/'+cands.length);await sleep(0);}
+  }
+  scored.sort((a,b)=>b.score-a.score);
+  return scored;
+}
+const mk=d=>({o:d.map(k=>+k[1]),h:d.map(k=>+k[2]),l:d.map(k=>+k[3]),c:d.map(k=>+k[4]),v:d.map(k=>+k[5]),t:d.map(k=>+k[0])});
+async function fetchLS(sym){
+  try{const[g,tp]=await Promise.all([
+    enq(()=>fetchBo(BASE+'/futures/data/globalLongShortAccountRatio?symbol='+sym+'&period=15m&limit=1',1)),
+    enq(()=>fetchBo(BASE+'/futures/data/topLongShortPositionRatio?symbol='+sym+'&period=15m&limit=1',1))]);
+    return{crowd:g&&g[0]?+g[0].longShortRatio:null,whale:tp&&tp[0]?+tp[0].longShortRatio:null};
+  }catch(e){return null;}
+}
+async function levelTwo(sym,signal){
+  const[d5,d15,d1h,d4h,d1d]=await Promise.all([
+    enq(()=>fetchBo(BASE+'/fapi/v1/klines?symbol='+sym+'&interval=5m&limit=200',2,4,signal)),
+    enq(()=>fetchBo(BASE+'/fapi/v1/klines?symbol='+sym+'&interval=15m&limit=200',2,4,signal)),
+    enq(()=>fetchBo(BASE+'/fapi/v1/klines?symbol='+sym+'&interval=1h&limit=200',2,4,signal)),
+    enq(()=>fetchBo(BASE+'/fapi/v1/klines?symbol='+sym+'&interval=4h&limit=200',2,4,signal)),
+    enq(()=>fetchBo(BASE+'/fapi/v1/klines?symbol='+sym+'&interval=1d&limit=90',1,4,signal)),
+  ]);
+  const extra={};
+  if(document.getElementById('wsLiq').checked){const lw=liqWindow(sym);if(lw)extra.liq=lw;}
+  if(document.getElementById('wsBook').checked&&bookData[sym])extra.spread=bookData[sym].spread;
+  if(document.getElementById('useLS').checked){const ls=await fetchLS(sym);if(ls)extra.ls=ls;}
+  return shturman(sym,{m5:mk(d5),m15:mk(d15),h1:mk(d1h),h4:mk(d4h),d1:mk(d1d)},extra);
+}
+let RESULTS=[],sortKey='readiness',sortDir=-1;
+async function scanAll(){
+  scanAbort=new AbortController();const sig=scanAbort.signal;
+  try{
+    const l1n=Math.max(20,Math.min(200,+document.getElementById('l1n').value||140));
+    const l2n=Math.max(5,Math.min(l1n,+document.getElementById('l2n').value||40));
+    const ranked=await levelOne(l1n,sig);const pick=ranked.slice(0,l2n);
+    const out=[];let done=0;
+    for(const cand of pick){
+      if(sig.aborted)throw new DOMException('Aborted','AbortError');
+      try{const r=await levelTwo(cand.sym,sig);if(r)out.push(r);}catch(e){if(e.name==='AbortError')throw e;console.error(cand.sym,e);}
+      done++;if(done%5===0)setStatus('L2 '+done+'/'+pick.length+' · вес '+weightUsed);
+    }
+    weightUsed=0;RESULTS=out;runSim(out);render();
+    setStatus('готово: '+out.length+' монет · '+new Date().toLocaleTimeString('ru-RU'));
+  }catch(e){if(e.name==='AbortError')setStatus('скан прерван');else{setStatus('ошибка: '+e.message);console.error(e);}}
+}
+let loopTimer=null,loopStopped=false;
+async function startLoop(){document.getElementById('scanBtn').disabled=true;loopStopped=false;startWS();
+  setStatus('прогрев потоков…');await sleep(1500); // сокетам нужно ~0.5-1.5с на рукопожатие — иначе первый скан без потоков
+  if(loopStopped)return;
+  await scanAll();
+  if(loopStopped)return; // ЕСЛИ нажали Стоп во время скана — не взводим таймер
+  const ms=Math.max(1,+document.getElementById('everyMin').value||5)*60000;
+  loopTimer=setInterval(()=>{if(!loopStopped)scanAll();},ms);}
+function stopLoop(){loopStopped=true;if(loopTimer)clearInterval(loopTimer);loopTimer=null;if(scanAbort)scanAbort.abort();clearQueue();stopWS();document.getElementById('scanBtn').disabled=false;setStatus('остановлено');}
+
+// ---- рендер ----
+function setStatus(t){const el=document.getElementById('status');if(el)el.textContent=t;}
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1400);}
+function fallbackCopy(sym,done){try{const ta=document.createElement('textarea');ta.value=sym;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');document.body.removeChild(ta);done();}catch(e){toast('не удалось скопировать');}}
+function copySym(sym,ev){if(ev){ev.stopPropagation();}const done=()=>toast(sym+' скопировано');try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(sym).then(done).catch(()=>fallbackCopy(sym,done));return;}}catch(e){}fallbackCopy(sym,done);}
+function dec(p){return p>=100?2:p>=1?4:p>=0.01?6:8;}
+function sortBy(k){if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=-1;}render();}
+function render(){
+  const tb=document.getElementById('tb');
+  let rows=RESULTS.filter(r=>r.liveTxt!=='труп');
+  rows.sort((a,b)=>{let x=a[sortKey],y=b[sortKey];if(x==null)x=-1;if(y==null)y=-1;if(typeof x==='string')return sortDir*x.localeCompare(y);return sortDir*(x-y);});
+  if(!rows.length){tb.innerHTML='<tr><td colspan="8" class="mut">Нет живых монет (или скан не запущен)</td></tr>';return;}
+  tb.innerHTML=rows.map(r=>{
+    const dCls=r.dir==='UP'?'up':r.dir==='DOWN'?'dn':'mix';const dTxt=r.dir==='UP'?'▲ ВВЕРХ':r.dir==='DOWN'?'▼ ВНИЗ':'◦ СПОР';
+    const rc=r.readiness>=70?'var(--up)':r.readiness>=45?'var(--warn)':'var(--mut)';const path=r.path==null?'—':r.path+'%';
+    return '<tr class="row"><td><span class="sym" onclick="copySym(\''+r.sym+'\',event)">'+r.sym+'</span>'+(r.tension?' <span class="warn">⚡</span>':'')+' <span class="exp mut" onclick="toggle(\''+r.sym+'\')">▾</span></td>'+
+      '<td onclick="toggle(\''+r.sym+'\')" class="exp"><span class="pill '+dCls+'">'+dTxt+'</span></td>'+
+      '<td class="mut exp" onclick="toggle(\''+r.sym+'\')">'+r.regime+'</td>'+
+      '<td class="exp" onclick="toggle(\''+r.sym+'\')"><span class="rd"><i style="width:'+r.readiness+'%;background:'+rc+'"></i></span> '+r.readiness+'%</td>'+
+      '<td class="mut exp" onclick="toggle(\''+r.sym+'\')">'+path+'</td><td class="exp" onclick="toggle(\''+r.sym+'\')">'+r.strength+'</td>'+
+      '<td class="exp '+(r.live>0.35?'up':'mut')+'" onclick="toggle(\''+r.sym+'\')">'+r.liveTxt+'</td>'+
+      '<td class="hint exp" style="text-align:left" onclick="toggle(\''+r.sym+'\')">'+r.waitHint+'</td></tr>'+
+      '<tr id="d_'+r.sym+'" class="detail" style="display:none"><td colspan="8"></td></tr>';
+  }).join('');
+}
+function toggle(sym){const d=document.getElementById('d_'+sym);if(!d)return;
+  if(d.style.display==='none'){const r=RESULTS.find(x=>x.sym===sym);d.querySelector('td').innerHTML=detailHTML(r);d.style.display='';drawSpark(r);}
+  else d.style.display='none';}
+function detailHTML(r){
+  const tfn={m5:'5м',m15:'15м',h1:'1ч',h4:'4ч',d1:'1д'};let t='<div class="dwrap"><div><table class="tf-tbl"><tr><th>ТФ</th><th>стор</th><th>режим</th><th>сила</th><th>зрел</th><th>ADX</th><th>StochK</th><th>RSI</th></tr>';
+  for(const tf of['m5','m15','h1','h4','d1']){const v=r.V[tf];if(!v){t+='<tr><td>'+tfn[tf]+'</td><td colspan=7 class=mut>—</td></tr>';continue;}
+    const d=v.dir>0?'up':v.dir<0?'dn':'mut',dt=v.dir>0?'↑':v.dir<0?'↓':'·';
+    t+='<tr><td>'+tfn[tf]+'</td><td class="'+d+'">'+dt+'</td><td class="mut">'+v.regime+'</td><td>'+v.strength+'</td><td>'+v.maturity+'</td><td>'+v.adx.toFixed(0)+'</td><td>'+(v.stochK==null?'—':v.stochK.toFixed(0))+'</td><td>'+v.rsi.toFixed(0)+'</td></tr>';}
+  t+='</table>';
+  // L/S sentiment
+  t+='<div id="ls_'+r.sym+'" class="note">Загрузка L/S…</div>';
+  if(r.notes&&r.notes.length)t+='<div class="note">'+r.notes.map(n=>'• '+n).join('<br>')+'</div>';
+  t+='<div class="note">Цена '+(r.price?r.price.toFixed(dec(r.price)):'—')+' · ATR1ч '+(r.atr1h?r.atr1h.toFixed(dec(r.atr1h)):'—')+(r.spread?' · спред '+(r.spread*100).toFixed(3)+'%':'')+' · «'+r.waitHint+'»</div></div>';
+  t+='<div><canvas id="spk_'+r.sym+'" width="320" height="150"></canvas><div class="note" style="text-align:center">1ч, ~100 баров · линия — цена, серая — EMA21</div></div></div>';
+  // подгрузка L/S по клику
+  fetchLS(r.sym).then(ls=>{const el=document.getElementById('ls_'+r.sym);if(!el)return;
+    if(!ls||ls.crowd==null){el.textContent='L/S недоступно';return;}
+    const crowdLong=ls.crowd/(1+ls.crowd)*100,whaleLong=ls.whale/(1+ls.whale)*100;
+    const diverge=(ls.crowd>1)!==(ls.whale>1);
+    el.innerHTML='<b>Sentiment L/S</b> (лонги %):<br>Толпа: '+crowdLong.toFixed(0)+'% лонг '+bar(crowdLong)+'<br>Киты: '+whaleLong.toFixed(0)+'% лонг '+bar(whaleLong)+(diverge?'<br><span class="warn">⚡ толпа и киты в РАЗНЫЕ стороны</span>':'');
+  });
+  return t;
+}
+function bar(longPct){return '<span class="ls-bar"><span style="width:'+longPct+'%;background:var(--up)"></span><span style="width:'+(100-longPct)+'%;background:var(--dn)"></span></span>';}
+function drawSpark(r){const cv=document.getElementById('spk_'+r.sym);if(!cv||!r.h1c)return;const ctx=cv.getContext('2d');const W=320,H=150,pad=6;
+  const dpr=window.devicePixelRatio||1;cv.style.width=W+'px';cv.style.height=H+'px';cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0); // DPI: чёткость на телефоне/Retina
+  const c=r.h1c,e=emaArr(c,21);const lo=Math.min(...c),hi=Math.max(...c),rng=hi-lo||1;
+  const X=i=>pad+i/(c.length-1)*(W-2*pad),Y=v=>H-pad-(v-lo)/rng*(H-2*pad);
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#4a9eff';ctx.lineWidth=1.5;ctx.beginPath();c.forEach((v,i)=>{i?ctx.lineTo(X(i),Y(v)):ctx.moveTo(X(i),Y(v));});ctx.stroke();
+  ctx.strokeStyle='rgba(138,147,163,.6)';ctx.lineWidth=1;ctx.beginPath();let st=false;e.forEach((v,i)=>{if(v==null)return;if(!st){ctx.moveTo(X(i),Y(v));st=true;}else ctx.lineTo(X(i),Y(v));});ctx.stroke();
+}
+
+// ---- симулятор: выход по High/Low + слиппедж + живой тик ----
+const SIM_KEY='rk_shturman_sim_v2',COST_RT=0.0016,SL_ATR=1.2,TP_ATR=2.4,MAX_AGE=24*3600*1000,SLIP=0.0008,TRADES_CAP=800;
+let SIM=loadSim();
+function loadSim(){try{const d=localStorage.getItem(SIM_KEY);if(d)return JSON.parse(d);}catch(e){}return{bal:1000,trades:[],open:[]};}
+function saveSim(){try{if(SIM.trades.length>TRADES_CAP)SIM.trades=SIM.trades.slice(-TRADES_CAP);localStorage.setItem(SIM_KEY,JSON.stringify(SIM));}catch(e){if(e.name==='QuotaExceededError'){SIM.trades=SIM.trades.slice(-200);try{localStorage.setItem(SIM_KEY,JSON.stringify(SIM));}catch(x){}}}}
+// снимок всех показателей скана по монете в момент входа (чтобы не терять данные, если сделка не закрылась)
+function snapOf(r){const g=tf=>{const v=r.V&&r.V[tf];return v?{dir:v.dir,adx:+(+v.adx).toFixed(1),k:v.stochK==null?'':+v.stochK.toFixed(0),rsi:+(+v.rsi).toFixed(0),reg:v.regime}:{dir:'',adx:'',k:'',rsi:'',reg:''};};
+  return{readiness:r.readiness,regime:r.regime,strength:r.strength,path:r.path==null?'':r.path,live:r.live,liveTxt:r.liveTxt,waitHint:r.waitHint,tension:r.tension?1:0,m5:g('m5'),m15:g('m15'),h1:g('h1'),h4:g('h4'),d1:g('d1')};}
+function closeTrade(t,exit,reason,now){const dm=t.side==='UP'?1:-1;const gross=dm*(exit-t.entry)/t.entry;const net=gross-COST_RT;const risk=Math.abs(t.entry-t.stop)/t.entry;const R=risk>0?net/risk:0;SIM.bal*=(1+R*0.02);SIM.trades.push({sym:t.sym,side:t.side,entry:t.entry,stop:t.stop,tp:t.tp,exit:+exit,reason,netPct:+(net*100).toFixed(3),R:+R.toFixed(2),opened:t.ts,closed:now,snap:t.snap});}
+function runSim(results){
+  const th=+document.getElementById('readyTh').value||70,now=Date.now();const byS={};results.forEach(r=>{byS[r.sym]=r;if(r.price)lastPrice[r.sym]=r.price;});
+  for(let i=SIM.open.length-1;i>=0;i--){const t=SIM.open[i];const r=byS[t.sym];if(!r)continue;
+    // выход по High/Low ТОЛЬКО 5м-баров, открытых ПОСЛЕ входа (t>=trade.ts) — без ложных стопов из прошлого
+    let exit=null,reason='';
+    let hi=r.price,lo=r.price;
+    if(r.m5t&&r.m5h&&r.m5l){let seen=false;for(let j=0;j<r.m5t.length;j++){if(r.m5t[j]>=t.ts){const H=r.m5h[j],L=r.m5l[j];if(!seen){hi=H;lo=L;seen=true;}else{if(H>hi)hi=H;if(L<lo)lo=L;}}}}
+    if(t.side==='UP'){if(lo<=t.stop){exit=t.stop*(1-SLIP);reason='stop';}else if(hi>=t.tp){exit=t.tp*(1-SLIP);reason='tp';}}
+    else{if(hi>=t.stop){exit=t.stop*(1+SLIP);reason='stop';}else if(lo<=t.tp){exit=t.tp*(1+SLIP);reason='tp';}}
+    if(exit==null&&now-t.ts>MAX_AGE){exit=r.price;reason='time';}
+    if(exit!=null){closeTrade(t,exit,reason,now);SIM.open.splice(i,1);}
+  }
+  for(const r of results){if(r.readiness>=th&&(r.dir==='UP'||r.dir==='DOWN')&&r.liveTxt!=='труп'&&r.price&&r.atr1h){
+    if(SIM.open.find(t=>t.sym===r.sym))continue;
+    const side=r.dir,entry=r.price,atr=r.atr1h;
+    SIM.open.push({sym:r.sym,side,entry,stop:side==='UP'?entry-SL_ATR*atr:entry+SL_ATR*atr,tp:side==='UP'?entry+TP_ATR*atr:entry-TP_ATR*atr,ts:now,snap:snapOf(r)});
+  }}
+  saveSim();renderSim();
+}
+// живой тик: между сканами проверяем стоп/тейк открытых по реальной цене WS
+function liveTick(){if(!SIM.open.length)return;const now=Date.now();let changed=false;
+  for(let i=SIM.open.length-1;i>=0;i--){const t=SIM.open[i];const px=livePrice[t.sym];if(!px)continue;
+    let exit=null,reason='';
+    if(t.side==='UP'){if(px<=t.stop){exit=t.stop*(1-SLIP);reason='stop';}else if(px>=t.tp){exit=t.tp*(1-SLIP);reason='tp';}}
+    else{if(px>=t.stop){exit=t.stop*(1+SLIP);reason='stop';}else if(px<=t.tp){exit=t.tp*(1+SLIP);reason='tp';}}
+    if(exit!=null){closeTrade(t,exit,reason,now);SIM.open.splice(i,1);changed=true;}
+  }
+  if(changed){saveSim();renderSim();}else renderOpen(); // живой P/L между сканами без закрытия
+}
+function renderSim(){const t=SIM.trades;document.getElementById('sBal').textContent='$'+SIM.bal.toFixed(0);document.getElementById('sN').textContent=t.length;document.getElementById('sOpen').textContent=SIM.open.length;
+  const oL=SIM.open.filter(x=>x.side==='UP').length,oS=SIM.open.length-oL;document.getElementById('sLS').textContent=oL+'/'+oS;
+  if(t.length){const w=t.filter(x=>x.R>0).length;document.getElementById('sWr').textContent=(w/t.length*100).toFixed(0)+'%';const sumR=t.reduce((s,x)=>s+x.R,0);const el=document.getElementById('sR');el.textContent=(sumR>0?'+':'')+sumR.toFixed(1);el.className=sumR>0?'up':'dn';}
+  renderOpen();}
+function curPx(t){return livePrice[t.sym]||lastPrice[t.sym]||(t.snap&&t.snap.price)||t.entry;}
+function renderOpen(){const box=document.getElementById('openBox');if(!box)return;
+  if(!SIM.open.length){box.innerHTML='<div class="hint">Открытых сделок нет.</div>';return;}
+  let h='<div class="hint" style="margin-bottom:6px">потоки: '+(streamsOn?'<span class="up">вкл</span>':'<span class="warn">нет — цена из скана</span>')+'</div><table style="width:100%"><tr><th style="text-align:left">Монета</th><th>Сторона</th><th>Вход</th><th>Сейчас</th><th>P/L</th><th>до стопа</th><th>до цели</th><th>возраст</th></tr>';
+  for(const t of SIM.open){const px=curPx(t);const dm=t.side==='UP'?1:-1;const pl=dm*(px-t.entry)/t.entry*100;
+    const dStop=(px-t.stop)/px*100*(t.side==='UP'?1:-1),dTp=(t.tp-px)/px*100*(t.side==='UP'?1:-1);
+    const age=Math.round((Date.now()-t.ts)/60000);const ageTxt=age>=60?(age/60).toFixed(1)+'ч':age+'м';
+    const d=t.dec=px>=100?2:px>=1?4:6;
+    h+='<tr><td style="text-align:left">'+t.sym+'</td><td class="'+(t.side==='UP'?'up':'dn')+'">'+(t.side==='UP'?'▲':'▼')+'</td><td class="mut">'+t.entry.toFixed(d)+'</td><td>'+px.toFixed(d)+'</td><td class="'+(pl>=0?'up':'dn')+'">'+(pl>=0?'+':'')+pl.toFixed(2)+'%</td><td class="mut">'+dStop.toFixed(2)+'%</td><td class="mut">'+dTp.toFixed(2)+'%</td><td class="mut">'+ageTxt+'</td></tr>';}
+  box.innerHTML=h+'</table>';}
+function exportCSV(){
+  const q=v=>{if(v==null)return'';const s=''+v;return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
+  const iso=ms=>ms?new Date(ms).toISOString():'';
+  const tfCols=['m5','m15','h1','h4','d1'];
+  const head=['status','sym','side','opened','entry','stop','tp','exit','closed','reason','netPct','R','cur_price','cur_pnlPct',
+    'o_readiness','o_regime','o_strength','o_path','o_live','o_liveTxt','o_waitHint','o_tension'];
+  for(const tf of tfCols)head.push(tf+'_dir',tf+'_adx',tf+'_k',tf+'_rsi',tf+'_reg');
+  const snapCols=s=>{const out=[];if(!s){for(let i=0;i<8+25;i++)out.push('');return out;}
+    out.push(s.readiness,s.regime,s.strength,s.path,s.live,s.liveTxt,s.waitHint,s.tension);
+    for(const tf of tfCols){const v=s[tf]||{};out.push(v.dir,v.adx,v.k,v.rsi,v.reg);}return out;};
+  const rows=[];
+  for(const t of SIM.trades)rows.push(['CLOSED',t.sym,t.side,iso(t.opened),t.entry,t.stop==null?'':t.stop,t.tp==null?'':t.tp,t.exit,iso(t.closed),t.reason,t.netPct,t.R,'','',...snapCols(t.snap)]);
+  for(const t of SIM.open){const px=curPx(t);const dm=t.side==='UP'?1:-1;const pl=dm*(px-t.entry)/t.entry*100;
+    rows.push(['OPEN',t.sym,t.side,iso(t.ts),t.entry,t.stop,t.tp,'','','','','',+px.toFixed(8),+pl.toFixed(3),...snapCols(t.snap)]);}
+  const csv=[head.join(',')].concat(rows.map(r=>r.map(q).join(','))).join('\n');
+  const b=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='shturman_sim_v2.2.csv';a.click();}
+function resetSim(){if(confirm('Обнулить симулятор?')){SIM={bal:1000,trades:[],open:[]};saveSim();renderSim();}}
+renderSim();
+function repaint(){if(RESULTS&&RESULTS.length){render();renderSim();}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)repaint();});
+window.addEventListener('focus',repaint);window.addEventListener('pageshow',repaint);
+</script>
+</body></html>
