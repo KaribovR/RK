@@ -1,0 +1,23 @@
+{
+  "name": "rk-loader",
+  "version": "3.0.0",
+  "description": "RK_LOADER — качалка и хранилище истории Binance USDT-M Futures (RK_DATA_v3). Свечи 5m + funding + ratios + проверка целостности.",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "rk-loader": "index.js"
+  },
+  "scripts": {
+    "candles": "node index.js candles",
+    "funding": "node index.js funding",
+    "ratios": "node index.js ratios",
+    "check": "node index.js check",
+    "help": "node index.js help"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "cli-table3": "^0.6.5"
+  }
+}

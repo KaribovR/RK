@@ -1,0 +1,26 @@
+# === RK: список того, что НИКОГДА не уходит на GitHub ===
+
+# Секреты (ключи API, пароли)
+.env
+*.env
+secrets*
+
+# Архив данных (свечи, funding, ratios, oi) - живёт только на диске
+RK_DATA*/
+*.bin
+
+# Установленные библиотеки Node.js (ставятся заново командой npm install)
+node_modules/
+
+# Мусор Python
+__pycache__/
+*.pyc
+
+# Состояние и логи сервера
+rk_state.json
+*.log
+logs/
+
+# Мусор Windows
+Thumbs.db
+desktop.ini
