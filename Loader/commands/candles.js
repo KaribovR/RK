@@ -7,13 +7,20 @@
 // Гарантии:
 //  - формирующаяся свеча не сохраняется (отсекаем по времени сервера);
 //  - стык проверяется: дыра (остановка биржи) → предупреждение + счётчик в манифест,
-//    нахлёст → дедуп; тихой склейки кривых данных нет.
+//    нахлёст → дедуп; тихой склейки кривых данных нет;
+//  - пустой хвост (бары с объёмом 0 в самом конце) НЕ записывается: Binance
+//    отдаёт такие бары по остановленному контракту. Пустые бары ВНУТРИ истории
+//    (техработы биржи) не трогаются. Отрезанный хвост перекачается в следующий
+//    заход и запишется, если к тому времени появится живой бар после него.
 // ============================================================================
 const cfg = require('../config');
 const binance = require('../lib/binance');
 const rkb = require('../lib/rkb');
 const archive = require('../lib/archive');
 const log = require('../lib/log');
+
+const COL_BASE_VOL = 5;        // индекс baseVol в баре (см. cfg.RKB.COLUMNS)
+const DAY_BARS = 86400000 / cfg.TF_MS; // 288 баров в сутках
 
 // Тянем свечи вперёд от startTime до "закрытого сейчас". Пагинация по 1000.
 async function fetchForward(symbol, startTime, closedNow) {
@@ -46,6 +53,16 @@ async function fetchForward(symbol, startTime, closedNow) {
   return out;
 }
 
+// Отрезает хвост из баров с нулевым объёмом. Возвращает число отрезанных.
+function trimDeadTail(bars) {
+  let cut = 0;
+  while (bars.length && bars[bars.length - 1][COL_BASE_VOL] === 0) {
+    bars.pop();
+    cut++;
+  }
+  return cut;
+}
+
 // Обработка одной монеты. Возвращает запись для манифеста.
 async function processSymbol(symbol, meta, closedNow) {
   const last = await archive.lastCandleTime(symbol);
@@ -61,6 +78,12 @@ async function processSymbol(symbol, meta, closedNow) {
 
   const bars = await fetchForward(symbol, startTime, closedNow);
 
+  // Пустой хвост не пишем (остановленный контракт).
+  const cut = trimDeadTail(bars);
+  if (cut >= DAY_BARS) {
+    log.warn('Candles', `${symbol}: пустой хвост ${cut} баров (~${(cut / DAY_BARS).toFixed(1)} дн, объём 0) не записан — торги стоят?`);
+  }
+
   let gapDetected = false;
   if (!isFresh && bars.length) {
     const firstNew = bars[0][0];
@@ -72,7 +95,10 @@ async function processSymbol(symbol, meta, closedNow) {
     }
   }
 
-  const { written, monthsTouched } = await archive.appendCandles(symbol, bars);
+  let written = 0, monthsTouched = [];
+  if (bars.length) {
+    ({ written, monthsTouched } = await archive.appendCandles(symbol, bars));
+  }
 
   // сводка по монете для манифеста
   const months = await archive.candleMonths(symbol);

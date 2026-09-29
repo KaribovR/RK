@@ -10,6 +10,7 @@
 //   node index.js oi          - дозагрузка Open Interest (окно 30д, предупреждает о дырах)
 //   node index.js check       - проверка целостности (только чтение)
 //   node index.js plan        - оценка объёма/времени закачки свечей (ничего не качает)
+//   node index.js trim-dead   - показать мусорные хвосты свечей (--apply = обрезать с бэкапом)
 //   node index.js all         - весь цикл: ratios -> oi -> funding -> candles -> check
 //   node index.js help
 //
@@ -27,12 +28,14 @@ const ratios = require('./commands/ratios');
 const oi = require('./commands/oi');
 const integrity = require('./commands/integrity');
 const plan = require('./commands/plan');
+const trimdead = require('./commands/trimdead');
 
 function parseFlags(argv) {
-  const f = { symbols: null, archiveOnly: false };
+  const f = { symbols: null, archiveOnly: false, apply: false };
   for (const a of argv) {
     if (a.startsWith('--symbols=')) f.symbols = a.slice('--symbols='.length).split(',').map((s) => s.trim()).filter(Boolean);
     else if (a === '--archive-only') f.archiveOnly = true;
+    else if (a === '--apply') f.apply = true;
   }
   return f;
 }
@@ -64,10 +67,12 @@ RK_LOADER - история Binance USDT-M Futures -> ${cfg.FORMAT_VERSION}
   oi         Дозагрузка Open Interest (окно 30 дней! предупреждает о дырах).
   check      Проверка целостности архива. Ничего не качает.
   plan       Оценка объёма/времени закачки свечей до запуска.
+  trim-dead  Мусорные хвосты свечей (объём 0 после остановки контракта).
+             Без флага - только показать. С --apply - бэкап и обрезка.
   all        Весь цикл сразу: ratios -> oi -> funding -> candles -> check.
   help       Эта справка.
 
-Флаги: --symbols=A,B,C  |  --archive-only
+Флаги: --symbols=A,B,C  |  --archive-only  |  --apply (только для trim-dead)
 
 ВАЖНО: funding/ratios/oi невосстановимы за пределами их окон (ratios/oi - 30 дней).
 Кнопки не трогают чужие папки: candles работает только с klines_5m/, и наоборот.
@@ -87,6 +92,7 @@ async function main() {
       case 'oi':      { const { symbols } = await resolveSymbols(flags); await oi.run(symbols); break; }
       case 'plan':    { const { symbols } = await resolveSymbols(flags); await plan.run(symbols); break; }
       case 'check':   await integrity.run(); break;
+      case 'trim-dead': await trimdead.run(flags.symbols, flags.apply); break; // только архив, без сети
       case 'all': {
         const { symbols, meta } = await resolveSymbols(flags);
         await ratios.run(symbols);   // сначала невосстановимое (окно 30д)

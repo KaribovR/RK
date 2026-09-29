@@ -4,6 +4,10 @@
 // НИЧЕГО не качает. Только читает архив и отчитывается: где всё цело (зелёное),
 // где проблема (красное). Именно эта кнопка ловит невосстановимые дыры ratios
 // ДО того, как ты обнаружишь их на бэктесте.
+//
+// Остановленные монеты (статус в манифесте не TRADING И свечи не обновлялись
+// > 2 дней) показываются отдельно серым: для них "дыры" ratios/OI и устаревшие
+// свечи — не потеря, а конец торгов. Битые файлы/дубли у них проверяются как обычно.
 // ============================================================================
 const cfg = require('../config');
 const archive = require('../lib/archive');
@@ -90,6 +94,7 @@ async function run() {
   symbols.sort();
 
   const problems = [];
+  const stopped = [];
   let okCount = 0;
 
   for (const sym of symbols) {
@@ -99,14 +104,28 @@ async function run() {
     const r = await checkRatios(sym, now);
     const o = await checkOi(sym, now);
 
+    // Остановлена = биржа говорит "не TRADING" И свечи давно не обновлялись.
+    // (Второе условие страхует от статуса UNKNOWN после запуска с --symbols.)
+    const status = manifest.coins && manifest.coins[sym] ? manifest.coins[sym].status : undefined;
+    const staleDays = c.present && c.last ? (now - c.last) / DAY : null;
+    const isStopped = c.present && status !== 'TRADING' && staleDays !== null && staleDays > 2;
+
     if (!c.present) issue.push('нет свечей');
     else {
       if (c.errors && c.errors.length) issue.push(`битые .bin (${c.errors.length})`);
       if (c.dups) issue.push(`дубли ${c.dups}`);
       if (c.misalign) issue.push(`несоосность ${c.misalign}`);
-      const staleDays = (now - c.last) / DAY;
-      if (staleDays > 2) issue.push(`свечи устарели ${staleDays.toFixed(1)}д`);
+      if (!isStopped && staleDays > 2) issue.push(`свечи устарели ${staleDays.toFixed(1)}д`);
     }
+
+    if (isStopped) {
+      // Для остановленной монеты окна ratios/OI и свежесть funding не проверяем:
+      // новых данных по ней не бывает, это не потеря.
+      stopped.push({ sym, c, status: status || 'нет статуса' });
+      if (issue.length) problems.push({ sym, c, f, r, o, issue });
+      continue;
+    }
+
     if (!f.present) issue.push('нет funding');
     if (!r.present) issue.push('нет ratios');
     else if (r.daysLeft < 3) {
@@ -130,8 +149,17 @@ async function run() {
 
   // --- Отчёт ---
   log.nl();
+  const d = (ts) => ts ? new Date(ts).toISOString().slice(0, 10) : '—';
   console.log(chalk.bold(`Архив: ${cfg.DATA_DIR}`));
-  console.log(`Монет всего: ${symbols.length}   ${chalk.green('целых: ' + okCount)}   ${problems.length ? chalk.red('с проблемами: ' + problems.length) : chalk.green('проблем нет')}`);
+  console.log(`Монет всего: ${symbols.length}   ${chalk.green('целых: ' + okCount)}   ` +
+    `${chalk.gray('остановленных: ' + stopped.length)}   ` +
+    `${problems.length ? chalk.red('с проблемами: ' + problems.length) : chalk.green('проблем нет')}`);
+
+  if (stopped.length) {
+    for (const s of stopped) {
+      console.log(chalk.gray(`  - ${s.sym}: торги остановлены (статус ${s.status}), последний бар ${d(s.c.last)}. Дыры ratios/OI после этой даты — не потеря.`));
+    }
+  }
 
   if (problems.length) {
     const t = new Table({
@@ -140,15 +168,14 @@ async function run() {
       colWidths: [13, 22, 8, 12, 16, 14, 30],
       wordWrap: true,
     });
-    const d = (ts) => ts ? new Date(ts).toISOString().slice(0, 10) : '—';
     for (const p of problems) {
       t.push([
         p.sym,
         p.c.present ? `${p.c.bars} / ${d(p.c.last)}` : '—',
         p.c.present ? String(p.c.gaps) : '—',
-        p.f.present ? d(p.f.last) : chalk.red('нет'),
-        p.r.present ? `${p.r.daysLeft.toFixed(1)}д` : chalk.red('нет'),
-        p.o.present ? `${p.o.daysLeft.toFixed(1)}д` : chalk.red('нет'),
+        p.f && p.f.present ? d(p.f.last) : chalk.red('нет'),
+        p.r && p.r.present ? `${p.r.daysLeft.toFixed(1)}д` : chalk.red('нет'),
+        p.o && p.o.present ? `${p.o.daysLeft.toFixed(1)}д` : chalk.red('нет'),
         p.issue.join('; '),
       ]);
     }
