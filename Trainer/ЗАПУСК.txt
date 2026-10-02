@@ -4,9 +4,9 @@ RK_TRAINER — как запустить (Windows, cmd). Логика v0.4: пр
 1) Открыть cmd и вставить строки ПО ОДНОЙ (Enter после каждой):
 
 chcp 65001
-set PATH=C:\Users\rahim.karibov\node;%PATH%
-set RK_KLINES_DIR=C:\Users\rahim.karibov\Downloads\Scan\Files
-cd /d "C:\Users\rahim.karibov\Downloads\Scan\Files\RK_TRAINER"
+set PATH=C:\Users\<USER>\node;%PATH%
+set RK_KLINES_DIR=C:\Users\<USER>\Downloads\Scan\Files
+cd /d "C:\Users\<USER>\Downloads\Scan\Files\RK_TRAINER"
 
    RK_KLINES_DIR — папка, ГДЕ ЛЕЖАТ папки монет (не сама папка монеты).
 

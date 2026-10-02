@@ -24,3 +24,6 @@ logs/
 # Мусор Windows
 Thumbs.db
 desktop.ini
+
+# Результаты прогонов тренажёра (большие html/jsonl, у каждого свои)
+runs/
