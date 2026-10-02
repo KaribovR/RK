@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RK тренажёр — плеер прогноза</title>
+<style>
+  :root {
+    --bg: #141b2d; --panel: #1b2438; --line: #2a3550; --text: #d6deee; --muted: #8a96b0;
+    --c15m: #4fc3c7; --c1h: #e8b04b; --c4h: #a98bf5; --c1d: #f07f8c;
+    --p1h: #5ee0ff; --p4h: #ffb347; --ok: #6fd08c; --bad: #ff6b6b; --exp: #9aa4b8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 13px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
+  button, select, input { font: inherit; color: var(--text); }
+  button { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+  button.primary { background: #2c3a5c; border-color: #3d4f78; font-weight: 600; }
+  button.on { background: #34466e; border-color: #6a80b8; }
+  select { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+  .app { display: grid; grid-template-rows: auto 1fr auto; height: 100%; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 16px; font-weight: 600; margin: 0; }
+  .now { font-size: 15px; font-variant-numeric: tabular-nums; }
+  .now small { color: var(--muted); font-size: 12px; margin-left: 6px; }
+  .grp { display: flex; gap: 6px; align-items: center; }
+  .grp > label { color: var(--muted); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; border-right: 1px solid var(--line); padding: 5px 12px; }
+  .seg button:last-child { border-right: 0; }
+  .spacer { flex: 1; }
+  main { display: grid; grid-template-columns: 1fr 390px; min-height: 0; }
+  .chartwrap { position: relative; min-height: 0; }
+  canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+  canvas.dragging { cursor: grabbing; }
+  #tip { position: absolute; pointer-events: none; background: #0f1524f0; border: 1px solid var(--line); border-radius: 6px;
+    padding: 8px 10px; font-size: 12px; max-width: 340px; display: none; white-space: pre-line; }
+  #banner { position: absolute; left: 12px; top: 10px; padding: 6px 10px; border-radius: 6px; background: #0f1524e0;
+    border: 1px solid var(--line); font-size: 13px; display: none; }
+  aside { border-left: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+  aside section { padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  aside h2 { font-size: 13px; font-weight: 600; margin: 0 0 6px; }
+  .active { max-height: 46vh; overflow: auto; }
+  .card { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; }
+  .card .hd { font-weight: 600; margin-bottom: 4px; }
+  .card .kv { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; font-variant-numeric: tabular-nums; }
+  .card .kv span:nth-child(odd) { color: var(--muted); }
+  details summary { cursor: pointer; color: var(--muted); margin-top: 6px; }
+  pre { white-space: pre-wrap; font: 12px/1.5 Consolas, "Segoe UI Mono", monospace; margin: 6px 0 0; color: #c8d2e6; }
+  .listhead { display: flex; gap: 8px; align-items: center; padding: 10px 14px 4px; }
+  .listhead h2 { margin: 0; flex: 1; font-size: 13px; }
+  .plist { flex: 1; overflow: auto; padding: 4px 8px 10px; min-height: 120px; }
+  .pr { display: grid; grid-template-columns: 38px 30px 18px 44px 1fr; gap: 6px; padding: 3px 6px; border-radius: 4px; cursor: pointer; font-variant-numeric: tabular-nums; }
+  .pr:hover { background: #243050; }
+  .pr.cur { background: #2c3a5c; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); } .exp { color: var(--exp); } .muted { color: var(--muted); }
+  footer { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--line); }
+  footer input[type=range] { flex: 1; min-width: 240px; accent-color: var(--c4h); }
+  .toggles { display: flex; gap: 12px; flex-wrap: wrap; }
+  .toggles label { display: flex; gap: 4px; align-items: center; cursor: pointer; }
+  /* отчёт */
+  #rep { position: fixed; inset: 0; background: #0c1120f2; display: none; z-index: 10; }
+  #rep .box { position: absolute; inset: 24px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; }
+  #rep .bar { display: flex; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  #rep .bar h2 { margin: 0; font-size: 16px; flex: 1; }
+  #rep .body { overflow: auto; padding: 14px 20px 30px; }
+  #rep .body > * { max-width: 980px; }
+  #rep table { border-collapse: collapse; margin: 6px 0 12px; font-variant-numeric: tabular-nums; }
+  #rep td, #rep th { border: 1px solid var(--line); padding: 4px 10px; text-align: right; }
+  #rep td:first-child, #rep th:first-child { text-align: left; }
+  #rep h3 { font-size: 14px; margin: 18px 0 4px; display: flex; gap: 10px; align-items: center; }
+  #rep p { margin: 4px 0; }
+  @media (max-width: 1000px) { main { grid-template-columns: 1fr; grid-template-rows: 60vh auto; } aside { border-left: 0; border-top: 1px solid var(--line); } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1 id="title">—</h1>
+    <div class="now" id="now">—</div>
+    <div class="grp">
+      <button id="bPrevP" title="К предыдущей точке или развязке (Shift+←)">⏮</button>
+      <button id="bPrev" title="Шаг назад (←)">◀ шаг</button>
+      <button id="bPlay" class="primary" title="Играть до следующей точки или развязки (пробел)">▶ играть</button>
+      <button id="bNext" title="Шаг вперёд (→)">шаг ▶</button>
+      <button id="bNextP" title="Сразу к следующей точке или развязке (Shift+→)">⏭</button>
+    </div>
+    <div class="grp"><label for="sStep">шаг</label>
+      <select id="sStep"><option value="15m">15 мин</option><option value="1h" selected>1 час</option><option value="4h">4 часа</option></select>
+    </div>
+    <div class="grp"><label for="sSpeed">скорость</label>
+      <select id="sSpeed"><option value="3">3 шага/с</option><option value="10" selected>10 шагов/с</option><option value="30">30 шагов/с</option><option value="120">120 шагов/с</option></select>
+    </div>
+    <div class="grp"><label>ТФ</label><div class="seg" id="tfseg"></div></div>
+    <div class="spacer"></div>
+    <button id="bReport" class="primary">Отчёт</button>
+    <button id="bShot">Сохранить скрин</button>
+  </header>
+  <main>
+    <div class="chartwrap"><canvas id="cv"></canvas><div id="tip"></div><div id="banner"></div></div>
+    <aside>
+      <section>
+        <h2>Активные точки прогноза</h2>
+        <div class="active" id="active"><span class="muted">нет</span></div>
+      </section>
+      <div class="listhead"><h2>Все точки</h2>
+        <select id="sList" aria-label="Какие точки показывать">
+          <option value="draw">на графике (от 50%)</option><option value="all">все, включая ниже 50%</option>
+        </select>
+      </div>
+      <div class="plist" id="plist"></div>
+    </aside>
+  </main>
+  <footer>
+    <input type="range" id="slider" min="0" max="0" value="0" aria-label="Время прогона">
+    <div class="toggles" id="toggles"></div>
+  </footer>
+</div>
+<div id="rep" role="dialog" aria-label="Отчёт">
+  <div class="box">
+    <div class="bar"><h2 id="repTitle">Отчёт</h2>
+      <select id="repFilter" aria-label="Фильтр отчёта">
+        <option value="all">все точки</option><option value="draw">только на графике (от 50%)</option>
+        <option value="дошла">только «дошла»</option><option value="сорвалась">только «сорвалась»</option><option value="истекла">только «истекла»</option>
+      </select>
+      <button id="repDl">Скачать отчёт (.md)</button>
+      <button id="repClose" class="primary">Закрыть</button>
+    </div>
+    <div class="body" id="repBody"></div>
+  </div>
+</div>
+<script>
+const DATA = /*__DATA__*/null;
+(function () {
+  'use strict';
+  if (!DATA) { document.body.textContent = 'Нет данных. Это шаблон; открой файл replay_<МОНЕТА>.html из папки runs.'; return; }
+
+  // ================= утилиты =================
+  const $ = id => document.getElementById(id);
+  const toMs = m => DATA.base + m * 60000;
+  const MS = DATA.tfMs, TFS = DATA.tfs;                 // ['15m','1h','4h','1d']
+  const COL = { '15m': '#4fc3c7', '1h': '#e8b04b', '4h': '#a98bf5', '1d': '#f07f8c' };
+  const PCOL = { '1h': '#5ee0ff', '4h': '#ffb347' };    // цвет точек прогноза: 1H сплошная, 4H полая
+  const OCOL = { 'дошла': '#6fd08c', 'сорвалась': '#ff6b6b', 'истекла': '#9aa4b8' };
+  const TFN = { '15m': '15m', '1h': '1H', '4h': '4H', '1d': '1D' };
+  const STATUS = ['жив', 'стареет', 'мёртв'];
+  const pad = n => String(n).padStart(2, '0');
+  const fmtT = t => { const d = new Date(t); return `${pad(d.getUTCDate())}.${pad(d.getUTCMonth() + 1)}.${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; };
+  const fmtShort = t => { const d = new Date(t); return `${pad(d.getUTCDate())}.${pad(d.getUTCMonth() + 1)} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; };
+  const fmtP = p => p == null ? '—' : (+p).toPrecision(5);
+  const pctS = x => (x >= 0 ? '+' : '') + x.toFixed(1) + '%';
+  const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  function lastLE(arr, t, key) { let lo = 0, hi = arr.length - 1, ans = -1; while (lo <= hi) { const m = (lo + hi) >> 1; const v = key ? arr[m][key] : arr[m]; if (v <= t) { ans = m; lo = m + 1; } else hi = m - 1; } return ans; }
+  function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+
+  // время из минут → миллисекунды
+  for (const tf of Object.keys(DATA.candles)) DATA.candles[tf].t = DATA.candles[tf].t.map(toMs);
+  const SNAP_T = {}; for (const tf of Object.keys(DATA.snaps)) SNAP_T[tf] = DATA.snaps[tf].map(s => toMs(s.t));
+  const FC = DATA.forecasts.map(f => ({ ...f, t: toMs(f.t), start: [toMs(f.start[0]), f.start[1]], out: f.out ? { type: f.out.type, t: toMs(f.out.t) } : null }));
+  const FG = DATA.figures.map(g => ({ ...g, tb: toMs(g.tb), pts: g.pts.map(p => [toMs(p[0]), p[1]]) }));
+  const drawn = f => f.few || f.conf >= DATA.drawFrom;   // v0.4: «мало истории» рисуется прозрачной
+  const prS = f => f.few ? 'мало ист.' : `${Math.round(f.conf * 100)}%`;
+  const RELN = { 'по': 'по ориентиру', 'против': 'против ориентира', 'нет': 'ориентира нет' };
+  // ориентир (v0.4): смены стороны старшего ТФ → [мс, 'up'|'down']
+  const ORI = {}; for (const tf of Object.keys(DATA.orient || {})) ORI[tf] = DATA.orient[tf].map(x => [toMs(x[0]), x[1]]);
+
+  // ================= состояние =================
+  const S = {
+    T: DATA.historyEnd, step: '1h', view: '1h', playing: false, timer: null, zoom: 1, pan: 0,
+    older: true, nodes: true, figs: true, future: false, allZones: false, low: false, past: true,
+  };
+  const baseStep = MS['15m'];
+  const nSteps = Math.floor((DATA.end - DATA.historyEnd) / baseStep);
+  $('title').textContent = `${DATA.coin} · логика ${DATA.logic}`;
+  $('slider').max = nSteps;
+  const visibleFc = f => drawn(f) || S.low;
+
+  // ТФ-переключатель: меняет ВЕСЬ вид (свечи, линия и зоны этого ТФ)
+  const seg = $('tfseg');
+  for (const tf of TFS) {
+    const b = document.createElement('button'); b.textContent = TFN[tf]; b.dataset.tf = tf;
+    b.style.color = COL[tf];
+    b.onclick = () => { S.view = tf; S.zoom = 1; S.pan = 0; for (const x of seg.children) x.classList.toggle('on', x.dataset.tf === tf); drawChart(); };
+    if (tf === S.view) b.classList.add('on');
+    seg.appendChild(b);
+  }
+  // переключатели внизу
+  const tg = $('toggles');
+  function toggle(label, prop, title) {
+    const l = document.createElement('label'); if (title) l.title = title;
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = S[prop];
+    cb.onchange = () => { S[prop] = cb.checked; renderAll(); };
+    l.append(cb, document.createTextNode(label)); tg.appendChild(l);
+  }
+  toggle('зоны старших ТФ (бледно)', 'older');
+  toggle('узлы', 'nodes');
+  toggle('фигуры', 'figs');
+  toggle('итоги прошлых точек', 'past');
+  toggle('точки ниже 50%', 'low', 'точки с подтверждением меньше 50% — на графике не рисуются, в отчёте есть');
+  toggle('все зоны (без фокуса у цены)', 'allZones');
+  toggle('показать будущее', 'future');
+
+  // ---------------- снимки карты ----------------
+  // В файле снимки хранятся «разницей» к прошлому + полный кадр (K) через каждые N шагов,
+  // время — в минутах от начала прогона. Здесь восстанавливаем полный снимок по запросу.
+  const KEYS = { n: x => x[0] + ':' + x[2] + ':' + x[3], f: x => String(x[0]), g: x => x[0] + ':' + x[2] };
+  const SORT = { n: (a, b) => a[0] - b[0], f: (a, b) => b[0] - a[0], g: (a, b) => a[0] - b[0] };
+  const cache = {};                       // cache[tf] = { i, raw }
+  function applyDiff(list, d, key) { const rm = new Set(d.r); return list.filter(x => !rm.has(key(x))).concat(d.a); }
+  function rawAt(tf, i) {
+    const arr = DATA.snaps[tf];
+    let k = i; while (k > 0 && !arr[k].K) k--;
+    let start = k, raw = null;
+    const c = cache[tf];
+    if (c && c.i <= i && c.i >= k) { start = c.i; raw = c.raw; }
+    else { const s = arr[k]; raw = s.ready ? { n: s.n, f: s.f, g: s.g } : null; }
+    for (let j = start + 1; j <= i; j++) {
+      const s = arr[j];
+      if (s.K || !raw) { raw = s.ready ? { n: s.n, f: s.f, g: s.g } : null; continue; }
+      raw = { n: applyDiff(raw.n, s.n, KEYS.n).sort(SORT.n), f: applyDiff(raw.f, s.f, KEYS.f).sort(SORT.f), g: applyDiff(raw.g, s.g, KEYS.g).sort(SORT.g) };
+    }
+    cache[tf] = { i, raw };
+    return raw;
+  }
+  const decoded = {};                     // маленький кэш полностью восстановленных снимков
+  function full(tf, i) {
+    const key = tf + ':' + i; if (decoded[key]) return decoded[key];
+    const s = DATA.snaps[tf][i];
+    let out;
+    if (!s.ready) out = { t: SNAP_T[tf][i], ready: 0, reason: s.reason };
+    else {
+      const r = rawAt(tf, i);
+      out = { t: SNAP_T[tf][i], ready: 1, tol: s.tol,
+        n: r.n.map(x => [toMs(x[0]), x[1], x[2], x[3]]),
+        f: r.f.map(x => { const y = x.slice(); y[8] = toMs(x[8]); y[9] = toMs(x[9]); return y; }),
+        g: r.g.map(x => [toMs(x[0]), x[1], toMs(x[2]), x[3]]) };
+    }
+    const keys = Object.keys(decoded); if (keys.length > 24) delete decoded[keys[0]];
+    decoded[key] = out; return out;
+  }
+  function snapAt(tf, T) { const i = lastLE(SNAP_T[tf], T); return i >= 0 ? { s: full(tf, i), i } : null; }
+
+  // цена «сейчас» = закрытие последней закрытой 15m (или 1H) свечи
+  function priceAt(T) {
+    for (const tf of ['15m', '1h']) { const C = DATA.candles[tf]; const i = lastLE(C.t, T - MS[tf]); if (i >= 0) return C.c[i]; }
+    return null;
+  }
+  const activeAt = T => FC.filter(f => f.t <= T && (!f.out || f.out.t > T));
+
+  // ================= график =================
+  const cv = $('cv'), ctx = cv.getContext('2d'), tip = $('tip');
+  let W = 0, H = 0, DPR = 1, hit = [];
+  const PAD = { l: 8, r: 80, t: 14, b: 34 };
+  const SPAN = { '15m': 3 * 86400000, '1h': 12 * 86400000, '4h': 45 * 86400000, '1d': 160 * 86400000 };
+  const FUT = 0.30;                                     // доля ширины под «пустоту» справа от «сейчас»
+  function resize() { DPR = window.devicePixelRatio || 1; const r = cv.getBoundingClientRect(); W = r.width; H = r.height; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); ctx.setTransform(DPR, 0, 0, DPR, 0, 0); drawChart(); }
+  window.addEventListener('resize', resize);
+  function viewRange() { const span = SPAN[S.view] * S.zoom; const fut = span * FUT / (1 - FUT); return [S.T - span + S.pan, S.T + fut + S.pan]; }
+
+  function drawChart() {
+    if (!W) return;
+    hit = [];
+    ctx.fillStyle = '#141b2d'; ctx.fillRect(0, 0, W, H);
+    const [x0t, x1t] = viewRange();
+    const cw = W - PAD.l - PAD.r, ch = H - PAD.t - PAD.b;
+    const X = t => PAD.l + (t - x0t) / (x1t - x0t) * cw;
+    const xT = X(S.T), xEnd = W - PAD.r;
+    const price = priceAt(S.T);
+    const act = activeAt(S.T).filter(visibleFc);
+
+    // свечи вида
+    const C = DATA.candles[S.view], tfm = MS[S.view], vis = [];
+    for (let i = 0; i < C.t.length; i++) {
+      const t = C.t[i]; if (t + tfm < x0t || t > x1t) continue;
+      if (t + tfm > S.T && !S.future) continue;
+      vis.push(i);
+    }
+    let lo = Infinity, hi = -Infinity;
+    for (const i of vis) { lo = Math.min(lo, C.l[i]); hi = Math.max(hi, C.h[i]); }
+    for (const f of act) { lo = Math.min(lo, f.target, f.behind); hi = Math.max(hi, f.target, f.behind); }
+    if (!isFinite(lo)) { lo = price || 1; hi = lo * 1.1; }
+    const lp = (Math.log(hi) - Math.log(lo)) * 0.07 || 0.01;
+    const ly0 = Math.log(lo) - lp, ly1 = Math.log(hi) + lp;
+    const Y = p => PAD.t + (ly1 - Math.log(p)) / (ly1 - ly0) * ch;
+    const inY = p => p > Math.exp(ly0) && p < Math.exp(ly1);
+
+    ctx.font = '11px "Segoe UI", system-ui, sans-serif';
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    for (let k = 0; k <= 6; k++) { const p = Math.exp(ly0 + (ly1 - ly0) * k / 6), y = Y(p); ctx.strokeStyle = '#222c44'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(xEnd, y); ctx.stroke(); ctx.fillStyle = '#8a96b0'; ctx.fillText(fmtP(p), xEnd + 6, y); }
+    const day = 86400000, span = x1t - x0t;
+    const tick = span > 90 * day ? 14 * day : span > 30 * day ? 7 * day : span > 6 * day ? day : span > 2 * day ? day / 4 : day / 12;
+    ctx.textBaseline = 'top'; ctx.textAlign = 'center';
+    let lastLbl = -1e9;
+    for (let t = Math.ceil(x0t / tick) * tick; t < Math.min(x1t, S.T + 1); t += tick) {
+      const x = X(t); ctx.strokeStyle = '#1f2840'; ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, H - PAD.b); ctx.stroke();
+      if (x - lastLbl >= 80) { ctx.fillStyle = '#8a96b0'; ctx.fillText(fmtShort(t), x, H - PAD.b + 6); lastLbl = x; }   // подписи без наложения
+    }
+    ctx.textAlign = 'left';
+    // пустота справа
+    ctx.fillStyle = 'rgba(8,12,22,0.55)'; ctx.fillRect(xT, PAD.t, xEnd - xT, ch);
+
+    // ---- зоны: ТФ вида ярко, старшие бледно, младшие скрыты; фокус у цены ----
+    const vi = TFS.indexOf(S.view);
+    const viewSnap = snapAt(S.view, S.T);
+    const focusLog = viewSnap && viewSnap.s.ready ? 3 * viewSnap.s.tol : 0.2;
+    const labels = [];
+    const zoneTfs = TFS.filter((tf, i) => i === vi || (S.older && i > vi)).reverse();
+    for (const tf of zoneTfs) {
+      const main = tf === S.view;
+      const sa = snapAt(tf, S.T); if (!sa || !sa.s.ready) continue;
+      for (const f of sa.s.f) {
+        const st = f[6]; if (st === 2) continue;
+        if (!inY(f[2]) && !inY(f[1])) continue;
+        const nearPrice = price && Math.abs(Math.log(f[0] / price)) <= focusLog;
+        if (!S.allZones && !nearPrice && !(!main && f[5] >= 2)) continue;
+        const xs = Math.max(X(f[8]), PAD.l), xe = xT;
+        const y1 = Y(f[2]), hgt = Math.max(2, Y(f[1]) - y1);
+        const a = main ? (st === 0 ? 0.22 : 0.10) : (st === 0 ? 0.08 : 0.04);
+        if (xe > xs) {
+          ctx.fillStyle = hexA(COL[tf], a); ctx.fillRect(xs, y1, xe - xs, hgt);
+          ctx.strokeStyle = hexA(COL[tf], main ? 0.6 : 0.25); ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(xs, y1); ctx.lineTo(xe, y1); ctx.moveTo(xs, y1 + hgt); ctx.lineTo(xe, y1 + hgt); ctx.stroke();
+        }
+        if (st === 0) { ctx.setLineDash([3, 5]); ctx.strokeStyle = hexA(COL[tf], main ? 0.5 : 0.25); ctx.beginPath(); ctx.moveTo(xT, Y(f[0])); ctx.lineTo(xEnd, Y(f[0])); ctx.stroke(); ctx.setLineDash([]); }
+        if (main && st === 0) {
+          const ly = Y(f[0]);
+          if (!labels.some(v => Math.abs(v - ly) < 12)) { labels.push(ly); ctx.fillStyle = COL[tf]; ctx.textBaseline = 'middle'; ctx.fillText(`${TFN[tf]} ${fmtP(f[0])}${f[5] > 1 ? ' э' + f[5] : ''}`, Math.max(PAD.l + 4, xT - 110), ly - 8); }
+        }
+        hit.push({ kind: 'zone', x0: xs, x1: xEnd, y0: y1 - 2, y1: y1 + hgt + 2, tf, f });
+      }
+    }
+
+    // ---- свечи ----
+    const bw = Math.max(1, cw / ((x1t - x0t) / tfm) * 0.62);
+    for (const i of vis) {
+      const t = C.t[i], x = X(t + tfm / 2), past = t + tfm <= S.T, up = C.c[i] >= C.o[i];
+      ctx.globalAlpha = past ? 0.9 : 0.3;
+      ctx.strokeStyle = ctx.fillStyle = up ? '#6fbf8e' : '#d9766c';
+      ctx.beginPath(); ctx.moveTo(x, Y(C.h[i])); ctx.lineTo(x, Y(C.l[i])); ctx.stroke();
+      const yo = Y(C.o[i]), yc = Y(C.c[i]); ctx.fillRect(x - bw / 2, Math.min(yo, yc), bw, Math.max(1, Math.abs(yc - yo)));
+    }
+    ctx.globalAlpha = 1;
+
+    // ---- линия и узлы ТФ вида ----
+    if (viewSnap && viewSnap.s.ready) {
+      const N = viewSnap.s.n.filter(n => n[0] >= x0t - SPAN[S.view] && n[0] <= S.T);
+      ctx.strokeStyle = hexA(COL[S.view], 0.95); ctx.lineWidth = 1.6;
+      ctx.beginPath(); N.forEach((n, k) => { const x = X(n[0] + tfm / 2), y = Y(n[1]); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
+      if (S.nodes) for (const n of N) { const x = X(n[0] + tfm / 2), y = Y(n[1]); ctx.beginPath(); ctx.arc(x, y, n[3] ? 4.5 : 3, 0, 7); if (n[3]) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke(); } else { ctx.fillStyle = n[2] === '-' ? hexA(COL[S.view], 0.5) : COL[S.view]; ctx.fill(); } }
+    }
+
+    // ---- фигуры (ТФ вида, подтверждённые к «сейчас») ----
+    if (S.figs) for (const g of FG) {
+      if (g.tf !== S.view || g.tb > S.T || g.pts[g.pts.length - 1][0] < x0t || g.pts[0][0] > S.T) continue;
+      const cf = g.dir === 'up' ? '#6fd08c' : '#ff8a8a';
+      ctx.strokeStyle = hexA(cf.length === 7 ? cf : '#ffffff', 0.9); ctx.lineWidth = 2;
+      ctx.beginPath(); g.pts.forEach((p, k) => { const x = X(p[0] + tfm / 2), y = Y(p[1]); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
+      ctx.setLineDash([6, 4]); ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(X(g.pts[0][0]), Y(g.neck)); ctx.lineTo(X(g.tb), Y(g.neck)); ctx.stroke();
+      // длина фигуры, отложенная от шеи = цель
+      ctx.beginPath(); ctx.moveTo(X(g.tb), Y(g.neck)); ctx.lineTo(X(g.tb), Y(g.target)); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(X(g.tb) - 8, Y(g.target)); ctx.lineTo(X(g.tb) + 8, Y(g.target)); ctx.stroke();
+      ctx.fillStyle = cf; ctx.textBaseline = 'bottom';
+      ctx.fillText(`Ф${g.id} ${g.kind} · длина ${g.lenPct}%${g.zones.length ? ' · цель на зонах ' + g.zones.map(z => TFN[z]).join('+') : ''}`, Math.max(PAD.l + 4, X(g.pts[0][0])), Y(g.neck) - 4);
+    }
+
+    // ---- итоги прошлых точек ----
+    if (S.past) for (const f of FC) {
+      if (!f.out || f.out.t > S.T || !visibleFc(f) || f.out.t < x0t) continue;
+      const x = X(f.out.t), p = f.out.type === 'сорвалась' ? f.behind : f.out.type === 'дошла' ? f.edge : priceAt(f.out.t);
+      if (!p || !inY(p)) continue;
+      ctx.fillStyle = OCOL[f.out.type]; ctx.globalAlpha = 0.85;
+      ctx.beginPath(); ctx.arc(x, Y(p), 3.5, 0, 7); ctx.fill();
+      ctx.textBaseline = 'middle'; ctx.fillText(String(f.id), x + 5, Y(p)); ctx.globalAlpha = 1;
+    }
+
+    // ---- активные точки прогноза: пунктир в пустоту через станции ----
+    for (const f of act) {
+      const col = PCOL[f.tf], alpha = !f.few && f.conf >= DATA.brightFrom ? 1 : 0.45;
+      const xP = xT + (xEnd - xT) * (f.tf === '1h' ? 0.55 : 0.88);
+      // старт поезда
+      if (f.start[0] >= x0t) { ctx.fillStyle = hexA(col, 0.9 * alpha); const sx = X(f.start[0]), sy = Y(f.start[1]); ctx.beginPath(); ctx.moveTo(sx, sy - 5); ctx.lineTo(sx + 5, sy); ctx.lineTo(sx, sy + 5); ctx.lineTo(sx - 5, sy); ctx.closePath(); ctx.fill(); }
+      // зона цели (полоса) и путь
+      const up = f.dir === 'up';
+      ctx.fillStyle = hexA(col, 0.10 * alpha + 0.04); const ya = Y(f.target * Math.exp(f.mt)), yb = Y(f.target * Math.exp(-f.mt)); ctx.fillRect(xT, ya, xP - xT + 14, yb - ya);
+      const pts = [[xT, Y(price)]];
+      const stops = f.path.filter(p => (up ? p > price : p < price));
+      stops.forEach((p, k) => {
+        const x = xT + (xP - xT) * (k + 1) / (stops.length + 1);
+        pts.push([x, Y(p)]);
+        const back = Math.exp(Math.log(p) - (up ? 1 : -1) * f.mt);   // небольшая коррекция-ступень
+        pts.push([x + (xP - xT) / (stops.length + 1) * 0.35, Y(back)]);
+      });
+      pts.push([xP, Y(f.target)]);
+      ctx.setLineDash([6, 5]); ctx.strokeStyle = hexA(col, alpha); ctx.lineWidth = 1.6;
+      ctx.beginPath(); pts.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.stroke(); ctx.setLineDash([]);
+      // срыв (станция позади)
+      ctx.strokeStyle = hexA('#ff6b6b', 0.8 * alpha + 0.2); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(xT - 30, Y(f.behind)); ctx.lineTo(xT + 30, Y(f.behind)); ctx.stroke();
+      ctx.fillStyle = '#ff8a8a'; ctx.textBaseline = 'middle'; ctx.fillText(`срыв ${f.id}`, xT + 34, Y(f.behind));
+      // сама точка: 1H сплошная, 4H полая
+      ctx.globalAlpha = alpha; ctx.beginPath();
+      ctx.arc(xP, Y(f.target), 7, 0, 7);
+      if (f.tf === '1h') { ctx.fillStyle = col; ctx.fill(); } else { ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.stroke(); }
+      ctx.fillStyle = col; ctx.font = '600 14px "Segoe UI", system-ui, sans-serif'; ctx.textBaseline = 'middle';
+      ctx.fillText(String(f.id), xP + 11, Y(f.target)); ctx.font = '11px "Segoe UI", system-ui, sans-serif';
+      ctx.fillText(`${prS(f)} · ${f.rel === 'против' ? 'против' : f.rel === 'по' ? 'по ор.' : 'без ор.'}`, xP + 11, Y(f.target) + 14);
+      ctx.globalAlpha = 1;
+      hit.push({ kind: 'fc', x0: xP - 10, x1: xP + 40, y0: Y(f.target) - 10, y1: Y(f.target) + 22, f });
+    }
+
+    // ---- ориентир (v0.4): полоски 4H и 1D внизу графика, только прошлое до «сейчас» ----
+    ['4h', '1d'].forEach((otf, k) => {
+      const L = ORI[otf]; if (!L || !L.length) return;
+      const y = H - PAD.b - 22 + k * 11;
+      for (let j = 0; j < L.length; j++) {
+        const a = Math.max(L[j][0], x0t), b = Math.min(j + 1 < L.length ? L[j + 1][0] : Infinity, S.T, x1t);
+        if (b <= a) continue;
+        ctx.fillStyle = L[j][1] === 'up' ? 'rgba(80,200,120,0.85)' : 'rgba(240,90,90,0.85)';
+        ctx.fillRect(X(a), y, X(b) - X(a), 5);
+      }
+      ctx.fillStyle = '#8a96b0'; ctx.font = '10px "Segoe UI", system-ui, sans-serif'; ctx.textBaseline = 'middle';
+      ctx.fillText(`ор. ${TFN[otf]}`, xEnd + 6, y + 3);
+      ctx.font = '11px "Segoe UI", system-ui, sans-serif';
+    });
+
+    // «сейчас»
+    ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(xT, PAD.t); ctx.lineTo(xT, H - PAD.b); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.textBaseline = 'top'; ctx.fillText('сейчас', xT + 4, PAD.t + 2);
+    if (price) { ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.fillText(fmtP(price), xEnd + 6, Y(price)); }
+  }
+
+  // подсказка
+  cv.addEventListener('mousemove', ev => {
+    if (drag) return;
+    const r = cv.getBoundingClientRect(), mx = ev.clientX - r.left, my = ev.clientY - r.top;
+    const h = hit.filter(z => mx >= z.x0 && mx <= z.x1 && my >= z.y0 && my <= z.y1).pop();
+    if (!h) { tip.style.display = 'none'; return; }
+    if (h.kind === 'fc') tip.textContent = `${h.f.head}\nцель ${fmtP(h.f.target)} (${h.f.src.join(', ')}) · пробита зона ${fmtP(h.f.zone[0])}–${fmtP(h.f.zone[1])}\nсрыв при закрытии за ${fmtP(h.f.behind)}\nклик — мышление в панели справа`;
+    else { const f = h.f; tip.textContent = `${TFN[h.tf]} этаж ${fmtP(f[0])} (зона ${fmtP(f[1])}–${fmtP(f[2])})\nстатус: ${STATUS[f[6]]}; визитов ${f[3]}, реакций ${f[4]}, эпох ${f[5]}` + (f[10] ? `\nвнутри зон старших: ${f[10].replace(/\|/g, ', ')}` : '') + (f[11] ? `\nскопление младших (этажей/узлов): ${f[11].replace(/\|/g, ', ')}` : ''); }
+    tip.style.display = 'block'; tip.style.left = Math.min(mx + 14, r.width - 350) + 'px'; tip.style.top = Math.min(my + 14, r.height - 150) + 'px';
+  });
+  cv.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+  cv.addEventListener('click', ev => {
+    const r = cv.getBoundingClientRect(), mx = ev.clientX - r.left, my = ev.clientY - r.top;
+    const h = hit.filter(z => z.kind === 'fc' && mx >= z.x0 && mx <= z.x1 && my >= z.y0 && my <= z.y1).pop();
+    if (h) { const el = document.querySelector(`[data-card="${h.f.id}"] details`); if (el) { el.open = true; el.scrollIntoView({ block: 'nearest' }); } }
+  });
+  let drag = null;
+  cv.addEventListener('mousedown', ev => { drag = { x: ev.clientX, pan: S.pan, moved: false }; cv.classList.add('dragging'); tip.style.display = 'none'; });
+  window.addEventListener('mouseup', () => { drag = null; cv.classList.remove('dragging'); });
+  window.addEventListener('mousemove', ev => { if (!drag) return; const [a, b] = viewRange(); S.pan = drag.pan - (ev.clientX - drag.x) * (b - a) / (W - PAD.l - PAD.r); drawChart(); });
+  cv.addEventListener('wheel', ev => { ev.preventDefault(); S.zoom = Math.min(20, Math.max(0.1, S.zoom * (ev.deltaY > 0 ? 1.15 : 1 / 1.15))); drawChart(); }, { passive: false });
+
+  // ================= панель справа =================
+  const kv = (k, v) => `<span>${k}</span><span>${v}</span>`;
+  function card(f, open) {
+    const oc = f.out && f.out.t <= S.T ? `<span class="${f.out.type === 'дошла' ? 'ok' : f.out.type === 'сорвалась' ? 'bad' : 'exp'}">${f.out.type}</span>` : 'активна';
+    const pr = priceAt(S.T);
+    return `<div class="card" data-card="${f.id}">
+      <div class="hd" style="color:${PCOL[f.tf]}">${esc(f.head)}</div>
+      <div class="kv">${kv('цель', `${fmtP(f.target)} (${pr ? pctS((f.target / pr - 1) * 100) : ''} от цены сейчас)`)}${kv('ориентир', RELN[f.rel])}${kv('пробита зона', `${fmtP(f.zone[0])}–${fmtP(f.zone[1])}`)}${kv('срыв', `закрытие ${f.dir === 'up' ? 'ниже' : 'выше'} ${fmtP(f.behind)}`)}${kv('состояние', oc)}</div>
+      <details${open ? ' open' : ''}><summary>мышление сканера</summary><pre>${esc(f.text.join('\n'))}</pre></details>
+      <div style="margin-top:6px"><button data-jump="${f.id}">к моменту построения</button></div></div>`;
+  }
+  function renderActive() {
+    const act = activeAt(S.T).filter(visibleFc);
+    // только что закончившиеся на этом шаге — тоже показать
+    const stepMs = MS[S.step];
+    const justDone = FC.filter(f => visibleFc(f) && f.out && f.out.t > S.T - stepMs && f.out.t <= S.T);
+    const list = [...act, ...justDone.filter(f => !act.includes(f))];
+    $('active').innerHTML = list.length ? list.map(f => card(f, false)).join('') : '<span class="muted">нет — нажми «играть», сканер остановится на следующей точке</span>';
+  }
+  function renderList() {
+    const all = $('sList').value === 'all';
+    const rows = FC.filter(f => all || drawn(f)).map(f => {
+      const o = f.out ? `<span class="${f.out.type === 'дошла' ? 'ok' : f.out.type === 'сорвалась' ? 'bad' : 'exp'}">${f.out.type}</span>` : '<span class="muted">активна</span>';
+      return `<div class="pr" data-id="${f.id}"><b>${f.id}</b><span style="color:${PCOL[f.tf]}">${TFN[f.tf]}</span><span>${f.dir === 'up' ? '▲' : '▼'}</span><span>${f.few ? '—' : Math.round(f.conf * 100) + '%'}</span><span>${f.rel === 'против' ? '<span class="muted">против · </span>' : ''}${o}</span></div>`;
+    });
+    $('plist').innerHTML = rows.join('') || '<span class="muted">точек нет</span>';
+  }
+  function markList() {
+    const act = new Set(activeAt(S.T).map(f => f.id));
+    let first = null;
+    for (const n of $('plist').children) { const on = act.has(+n.dataset.id); n.classList.toggle('cur', on); if (on && !first) first = n; }
+    if (first) first.scrollIntoView({ block: 'nearest' });
+  }
+  $('plist').addEventListener('click', ev => { const n = ev.target.closest('.pr'); if (n) jumpToPoint(+n.dataset.id); });
+  $('active').addEventListener('click', ev => { const b = ev.target.closest('[data-jump]'); if (b) jumpToPoint(+b.dataset.jump); });
+  $('sList').onchange = () => { renderList(); markList(); };
+
+  // ================= время, шаги, «играть» =================
+  // Остановки «играть»: появилась новая точка (на графике) или у точки развязка.
+  function stopsBetween(a, b) {
+    const out = [];
+    for (const f of FC) { if (!visibleFc(f)) continue; if (f.t > a && f.t <= b) out.push({ t: f.t, why: `новая точка ${f.id} (${TFN[f.tf]}, ${prS(f)}, ${RELN[f.rel]})` }); if (f.out && f.out.t > a && f.out.t <= b) out.push({ t: f.out.t, why: `точка ${f.id}: ${f.out.type}` }); }
+    return out.sort((x, y) => x.t - y.t);
+  }
+  const allStops = () => { const o = []; for (const f of FC) { if (!visibleFc(f)) continue; o.push(f.t); if (f.out) o.push(f.out.t); } return [...new Set(o)].sort((a, b) => a - b); };
+  function banner(text) { const b = $('banner'); if (!text) { b.style.display = 'none'; return; } b.textContent = text; b.style.display = 'block'; }
+  function setT(t, why) {
+    S.T = Math.max(DATA.historyEnd, Math.min(DATA.end, t)); S.pan = 0;
+    $('slider').value = Math.round((S.T - DATA.historyEnd) / baseStep);
+    $('now').innerHTML = `${fmtT(S.T)} UTC<small>день ${Math.floor((S.T - DATA.historyEnd) / 86400000) + 1} из ${Math.ceil((DATA.end - DATA.historyEnd) / 86400000)}</small>`;
+    banner(why || null);
+    drawChart(); renderActive(); markList();
+  }
+  const ceilTo = (t, m) => Math.ceil(t / m) * m;
+  function step(dir) {
+    const sm = MS[S.step], base = Math.floor(S.T / sm) * sm;
+    const nt = dir > 0 ? base + sm : (base === S.T ? base - sm : base);
+    const st = dir > 0 ? stopsBetween(S.T, nt) : [];
+    setT(nt, st.length ? st.map(x => x.why).join(' · ') : null);
+    return st.length > 0;
+  }
+  function jumpStop(dir) {
+    stop();
+    const list = allStops();
+    const t = dir > 0 ? list.find(x => x > S.T) : [...list].reverse().find(x => x < S.T);
+    if (t == null) return;
+    const w = stopsBetween(t - 1, t);
+    setT(ceilTo(t, baseStep), w.map(x => x.why).join(' · '));
+  }
+  function jumpToPoint(id) { stop(); const f = FC.find(x => x.id === id); if (!f) return; setT(ceilTo(f.t, baseStep), `точка ${f.id} построена`); const el = document.querySelector(`[data-card="${id}"] details`); if (el) el.open = true; }
+  function play() {
+    if (S.playing) return stop();
+    S.playing = true; $('bPlay').textContent = '⏸ пауза';
+    S.timer = setInterval(() => { if (S.T >= DATA.end) return stop(); if (step(1)) stop(); }, 1000 / +$('sSpeed').value);
+  }
+  function stop() { S.playing = false; clearInterval(S.timer); $('bPlay').textContent = '▶ играть'; }
+
+  $('bPlay').onclick = play;
+  $('bNext').onclick = () => { stop(); step(1); };
+  $('bPrev').onclick = () => { stop(); step(-1); };
+  $('bNextP').onclick = () => jumpStop(1);
+  $('bPrevP').onclick = () => jumpStop(-1);
+  $('sStep').onchange = e => { S.step = e.target.value; };
+  $('sSpeed').onchange = () => { if (S.playing) { stop(); play(); } };
+  $('slider').oninput = e => { stop(); setT(DATA.historyEnd + (+e.target.value) * baseStep); };
+  window.addEventListener('keydown', ev => {
+    if ($('rep').style.display === 'block') { if (ev.key === 'Escape') closeReport(); return; }
+    if (ev.target.tagName === 'SELECT' || ev.target.tagName === 'INPUT') return;
+    if (ev.key === 'ArrowRight') { ev.preventDefault(); ev.shiftKey ? jumpStop(1) : (stop(), step(1)); }
+    if (ev.key === 'ArrowLeft') { ev.preventDefault(); ev.shiftKey ? jumpStop(-1) : (stop(), step(-1)); }
+    if (ev.key === ' ') { ev.preventDefault(); play(); }
+  });
+
+  // ================= ОТЧЁТ =================
+  function mdTable(lines) {
+    const rows = lines.filter(l => l.startsWith('|') && !/^\|\s*-/.test(l)).map(l => l.split('|').slice(1, -1).map(c => c.trim()));
+    if (!rows.length) return '';
+    return '<table>' + rows.map((r, i) => '<tr>' + r.map(c => i ? `<td>${esc(c)}</td>` : `<th>${esc(c)}</th>`).join('') + '</tr>').join('') + '</table>';
+  }
+  function renderReport() {
+    const flt = $('repFilter').value;
+    const pick = FC.filter(f => flt === 'all' || (flt === 'draw' ? drawn(f) : f.out && f.out.type === flt));
+    const sum = DATA.summary;
+    const html = [];
+    html.push(`<p>Логика <b>${esc(DATA.logic)}</b> — только геометрия, без индикаторов. Прошлое до ${fmtT(DATA.historyEnd)}, прогон до ${fmtT(DATA.end)} UTC.</p>`);
+    html.push(`<p class="muted">Логика ${esc(DATA.logic)}: повод — пробой зоны, цель — следующая зона не слабее пробитой, срыв — закрытие за пробитой зоной; ориентир — ТФ на ступень старше; вероятность — по прошлым пробоям монеты. На графике — от ${DATA.drawFrom * 100}% и «мало истории», ярко — от ${DATA.brightFrom * 100}%. Всё ниже 50% тоже записано.</p>`);
+    html.push('<h3>Итоги</h3>', mdTable(sum), ...sum.filter(l => l && !l.startsWith('|')).map(l => `<p>${esc(l)}</p>`));
+    html.push(`<h3>Точки прогноза (${pick.length})</h3>`);
+    for (const f of pick) html.push(`<h3 style="color:${PCOL[f.tf]}">${esc(f.head)} <button data-rjump="${f.id}">показать на графике</button></h3><pre>${esc(f.text.join('\n'))}</pre>`);
+    if (FG.length) { html.push(`<h3>Фигуры (${FG.length})</h3>`); for (const g of FG) html.push(`<pre>${esc(g.text.join('\n'))}</pre>`); }
+    $('repBody').innerHTML = html.join('');
+  }
+  function openReport() { stop(); renderReport(); $('rep').style.display = 'block'; $('repClose').focus(); }
+  function closeReport() { $('rep').style.display = 'none'; }
+  $('repTitle').textContent = `Отчёт — ${DATA.coin}`;
+  $('bReport').onclick = openReport;
+  $('repClose').onclick = closeReport;
+  $('repFilter').onchange = renderReport;
+  $('repBody').addEventListener('click', ev => { const b = ev.target.closest('[data-rjump]'); if (b) { closeReport(); jumpToPoint(+b.dataset.rjump); } });
+  $('repDl').onclick = () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([DATA.reportMd], { type: 'text/markdown;charset=utf-8' }));
+    a.download = `report_${DATA.coin}_${DATA.logic}.md`; a.click();
+  };
+
+  // ================= скрин =================
+  $('bShot').onclick = () => {
+    const out = document.createElement('canvas'); const hh = 34 * DPR;
+    out.width = cv.width; out.height = cv.height + hh;
+    const o = out.getContext('2d'); o.fillStyle = '#141b2d'; o.fillRect(0, 0, out.width, out.height); o.drawImage(cv, 0, hh);
+    o.scale(DPR, DPR); o.fillStyle = '#d6deee'; o.font = '600 14px "Segoe UI", system-ui, sans-serif'; o.textBaseline = 'middle';
+    const act = activeAt(S.T).filter(visibleFc).map(f => f.id).join(', ');
+    o.fillText(`${DATA.coin}  ${fmtT(S.T)} UTC  ·  ТФ ${TFN[S.view]}  ·  активные точки: ${act || 'нет'}  ·  логика ${DATA.logic}`, 10, 17);
+    const d = new Date(S.T), a = document.createElement('a');
+    a.download = `${DATA.coin}_${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}_${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}_${S.view}.png`;
+    a.href = out.toDataURL('image/png'); a.click();
+  };
+
+  function renderAll() { renderList(); setT(S.T, $('banner').style.display === 'block' ? $('banner').textContent : null); }
+  window.__rk = { full, SNAP_T, setT, S, step, jumpStop, FC, openReport };   // для самопроверки
+  resize(); renderAll();
+})();
+</script>
+</body>
+</html>

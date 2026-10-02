@@ -1,0 +1,14 @@
+{
+  "name": "rk-trainer",
+  "version": "0.1.0",
+  "description": "RK_TRAINER — одноразовый тренажёр: прогон сканера вперёд по архиву RK_DATA_v3 (Этапы 1–4, отчёты каждого шага).",
+  "type": "commonjs",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "replay": "node replay.js",
+    "selftest:data": "node tools/selftest_data.js",
+    "selftest:geometry": "node tools/selftest_geometry.js"
+  },
+  "dependencies": {}
+}
